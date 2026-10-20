@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Kiel by Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Libre+Caslon+Display&display=swap">
+<link rel="stylesheet" href="css/theme.css">
+<script>
+  // Theme vor dem ersten Rendern setzen (kein Aufblitzen)
+  try { const t = localStorage.getItem("kbn-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (_) {}
+</script>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <div class="brand">
+    <h1>Kiel by Night</h1><span class="coords">54°19′ N · 10°08′ O · VTM V5</span>
+    <span class="who-box" id="who"></span>
+  </div>
+  <nav class="tabs" id="nav" aria-label="Bereiche"></nav>
+</div></header>
+<main id="main"><div class="empty">Chronik wird geladen …</div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Kiel by Night · Schutz gegen die Supabase-Pause nach 7 Tagen Inaktivität
+# Läuft montags und donnerstags (max. 4 Tage Abstand). Braucht die Repo-Secrets
+# SUPABASE_URL und SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions).
+# Hinweis GitHub: geplante Workflows in öffentlichen Repos werden nach 60 Tagen ohne
+# Repo-Aktivität automatisch deaktiviert. Dann unter Actions wieder aktivieren.
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "23 5 * * 1,4"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ping()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" || { echo "Secret SUPABASE_URL fehlt"; exit 1; }
+          test -n "$SUPABASE_ANON_KEY" || { echo "Secret SUPABASE_ANON_KEY fehlt"; exit 1; }
+          curl -fsS --retry 3 --retry-delay 10 -X POST "$SUPABASE_URL/rest/v1/rpc/ping" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo

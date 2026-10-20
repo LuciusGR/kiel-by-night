@@ -1,0 +1,8 @@
+# Kiel by Night · Supabase-CLI-Konfiguration (minimal)
+# project_id ist nur der lokale Name; die Verbindung zum Cloud-Projekt macht `supabase link`.
+project_id = "kiel-by-night"
+
+[functions.notion-proxy]
+# false: Das Gateway prüft das JWT nicht selbst; die Function prüft jeden Aufruf per
+# auth.getUser() + is_st(). So funktioniert es mit alten und neuen JWT-Signaturschlüsseln.
+verify_jwt = false
