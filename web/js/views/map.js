@@ -157,7 +157,8 @@ export function MapView(root, src) {
     if (!cy) {
       canvas.replaceChildren();
       // A1: Standard-Zoomgeschwindigkeit (v1 hatte 0.25 = viermal langsamer)
-      cy = cytoscape({ container: canvas, elements: elementsFor(), style: cyStyle(), minZoom: .1, maxZoom: 3 });
+      // layout "preset": sonst legt Cytoscape nach dem Start ein Raster über die gespeicherten Positionen
+      cy = cytoscape({ container: canvas, elements: elementsFor(), style: cyStyle(), layout: { name: "preset" }, minZoom: .1, maxZoom: 3 });
       const placed = cy.nodes().filter(n => !!positions[n.id()]).length;
       if (placed < cy.nodes().length * 0.6) relayout(false, true);      // Erstanordnung wird gespeichert
       else { const fresh = placeMissing(); cy.fit(undefined, 30); capZoom(); if (fresh.length) queuePos(fresh); }
