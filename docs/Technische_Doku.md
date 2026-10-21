@@ -215,7 +215,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 150 Fälle, Stand 22.10.2026: 149 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 152 Fälle, Stand 22.10.2026: 151 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -233,6 +233,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.5.3):** `lib.js` überspringt leere Kinder (`null`, `undefined`, `false`) bei `append`, `prepend` und `replaceChildren` (vorher erschien der Text „null“). Handy-Regeln in `theme.css` (`.toggle.wrap`, flachere `.session-item`, kleinere Innenabstände unter 600 px). Tests U217, U163.
 - **22.10.2026 (Version 1.5.2):** Sessions-Ansicht als Akkordeon (`item()`, `sessionBody()` in `sessions.js`, Inhalt lazy), statt Liste links und Inhalt rechts. Neue UAT-Fälle U61, U62.
 - **22.10.2026 (Version 1.5.1):** Anmeldung unterscheidet Netzfehler-Ursachen (`diagnoseNetwork()` in `lib.js`).
 - **22.10.2026 (Version 1.5):** Chroniken, Kapitel, `session_info` und Szenenkarten (Migrationen 20261022120000 und 20261022120100, Ansichten `chronicles.js` und `scenes.js`, Szenen-Import mit NPC-Verknüpfung, „Kommt vor in“ auf der ST-Karte). Rechte-Test bildet Default Privileges nach.
