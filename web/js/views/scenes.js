@@ -145,7 +145,7 @@ export function sceneBlock(session) {
       sc.details ? h("details", {}, h("summary", { class: "muted", style: "cursor:pointer" }, "Weitere Details und Infos"), h("div", { class: "pre", style: "margin-top:6px" }, sc.details)) : null,
       sc.threads.length ? h("div", { class: "chips" }, ...sc.threads.map(t => h("span", { class: "badge st" }, t))) : null,
       h("div", { class: "row" },
-        h("div", { class: "toggle", role: "group", "aria-label": "Status der Szene" }, ...Object.entries(STATUS).map(([k, l]) => h("button", { type: "button", "aria-pressed": String(sc.status === k), onclick: () => setStatus(sc, k) }, l))),
+        h("div", { class: "toggle wrap", role: "group", "aria-label": "Status der Szene" }, ...Object.entries(STATUS).map(([k, l]) => h("button", { type: "button", "aria-pressed": String(sc.status === k), onclick: () => setStatus(sc, k) }, l))),
         h("button", { class: "btn small", type: "button", "aria-label": "Szene nach oben", disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
         h("button", { class: "btn small", type: "button", "aria-label": "Szene nach unten", disabled: i === scenes.length - 1, onclick: () => move(i, 1) }, "↓"),
         h("button", { class: "btn small", type: "button", onclick: () => { editing = sc; draw(); } }, "Bearbeiten"),
