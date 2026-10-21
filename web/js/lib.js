@@ -1,5 +1,7 @@
 // Kiel by Night · DOM- und Hilfsfunktionen (aus v1 übernommen, ohne window.claude)
 
+import { SUPABASE_URL } from "./config.js";
+
 export function h(tag, props, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) {
@@ -20,7 +22,7 @@ export function h(tag, props, ...kids) {
 export function toast(msg, bad) {
   const t = h("div", { class: "toast" + (bad ? " bad" : ""), role: "status" }, msg);
   document.body.append(t);
-  setTimeout(() => t.remove(), bad ? 5200 : 2600);
+  setTimeout(() => t.remove(), bad ? Math.max(5200, String(msg).length * 80) : 2600);
 }
 
 // Supabase-/PostgREST-Fehler in verständliche Meldungen übersetzen
@@ -33,6 +35,19 @@ export function errMsg(e) {
   if (c === "PGRST301" || /JWT/i.test(m)) return "Anmeldung abgelaufen. Seite neu laden und erneut anmelden.";
   if (/Failed to fetch|NetworkError/i.test(m)) return "Keine Verbindung. Netz prüfen und erneut versuchen.";
   return "Fehler: " + (m || "unbekannt").slice(0, 160);
+}
+
+// Ursache eines Netzfehlers eingrenzen, damit der Hinweis nur kommt, wenn er stimmt:
+// kein Internet, Server (supabase.co) von diesem Gerät aus nicht erreichbar oder Server erreichbar.
+export async function diagnoseNetwork() {
+  if (navigator.onLine === false) return "Kein Internet. WLAN oder mobile Daten prüfen und erneut versuchen.";
+  const reach = async url => {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 6000);
+    try { await fetch(url, { mode: "no-cors", cache: "no-store", signal: ac.signal }); return true; } catch (_) { return false; } finally { clearTimeout(t); }
+  };
+  if (!(await reach(location.origin + location.pathname))) return "Keine Verbindung zum Internet. Netz prüfen und erneut versuchen.";
+  if (!(await reach(SUPABASE_URL + "/auth/v1/health"))) return "Diese Seite erreicht den Server (supabase.co) von diesem Gerät aus nicht, andere Seiten gehen aber. Meist blockiert ein Werbeblocker, ein VPN, privates DNS oder ein Filter im WLAN die Adresse. Das ausschalten, einen anderen Browser oder ein anderes Netz (WLAN oder mobile Daten) probieren.";
+  return "Der Server ist erreichbar, die Anfrage ist trotzdem fehlgeschlagen. Seite neu laden und noch einmal versuchen. Bleibt es, dem Storyteller melden.";
 }
 
 // Supabase-Antwort {data,error} auswerten; Fehler als Toast, dann werfen
