@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.2.0 – 21.10.2026
+Zwei Modi für Charakterbögen und Spielerkarte.
+
+- **Ansicht und Bearbeitung:** Auf jedem Charakterbogen, den man ändern darf, und auf der Spielerkarte schaltet ein Schalter oben zwischen **Ansicht** (Standard, alles gesperrt) und **Bearbeitung** um. In der Ansicht sind Eingaben, Anlegen, Bearbeiten, Löschen, Verschieben und „Neu anordnen“ gesperrt. Suche, Filter und Auswählen bleiben möglich. Wer den Bogen nicht ändern darf, sieht nur die Ansicht und hat keinen Schalter. Beim Zurückschalten wird Ausstehendes gespeichert. Die ST-Karte (schreibgeschützt) hat keinen Schalter.
+
 ## 1.1.0 – 21.10.2026
 Korrekturen aus dem UAT und Anmeldung mit Benutzername.
 
