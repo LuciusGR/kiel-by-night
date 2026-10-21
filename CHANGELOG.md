@@ -3,6 +3,13 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.3.0 – 21.10.2026
+Storyteller als Administrator.
+
+- **Rechte:** Der Storyteller darf alles sehen, ändern und löschen: private Notizen und Session-Notizen aller (auch im Namen anderer anlegen), Profile (Anzeigename, Rolle, anlegen, löschen), Notion-Cache und Dateien in fremden Ordnern. Migration `20261021120000_st_admin_v1_1.sql`.
+- **Schutz:** Nur der ST ändert Rollen (Trigger `profiles_guard`). Die eigene Rolle und das eigene Profil sind gesperrt, damit sich der ST nicht aussperrt. Spieler behalten ihre bisherigen Rechte.
+- **Oberfläche:** Noch unverändert. Bearbeiten und Löschen fremder Notizen über die App ist nicht eingebaut, die Rechte gelten auf Datenbankebene.
+
 ## 1.2.0 – 21.10.2026
 Zwei Modi für Charakterbögen und Spielerkarte.
 
