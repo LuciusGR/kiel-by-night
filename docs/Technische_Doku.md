@@ -77,7 +77,9 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 |---|---|---|
 | `overview.js` | Übersicht | Charakterkarten, „Letzte Änderungen“ aus Wiki, Dokumenten, Session-Notizen (RLS blendet Verstecktes aus) |
 | `characters.js` | Charaktere | V5-Bogen als ein JSON-Dokument (`characters.sheet`). **Modi Ansicht (Standard) und Bearbeitung**. Autospeichern 800 ms nach der letzten Eingabe, beim Zurückschalten oder Verlassen sofort |
-| `sessions.js` | Sessions | Eine Seite pro Session, jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions` |
+| `sessions.js` | Sessions | Eine Seite pro Session, jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
+| `chronicles.js` | Chroniken | Liste und Zeitleiste (Chronik → Kapitel → Sessions). Der ST legt an, bearbeitet, verwaltet Kapitel und ordnet Sessions zu. Lädt `chronicles`, `chapters`, `session_info`, `sessions`, `session_notes` |
+| `scenes.js` | Szenenkarten (nur ST) | Block in der Session-Ansicht: Karten, Status, Reihenfolge, Bearbeiten, Import (`parseScenes`, Vorschau, NPC-Abgleich `matchNpc`), `sceneMentions` für die ST-Karte |
 | `private.js` | Privat | Private Notizen (Spieler); der ST liest sie im Storyteller-Bereich |
 | `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten |
 | `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
@@ -105,6 +107,10 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - Theme hell/dunkel/automatisch (`data-theme`, gemerkt in `localStorage` `kbn-theme`).
 - Fehlertexte aus PostgREST-Codes in `lib.js` (`errMsg`), Rückfragen vor Löschen (`confirmBtn`).
 
+### 4.7 Szenen-Import
+
+Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()` prüft die Datei vollständig (Fehlerliste, nichts wird gespeichert) und normalisiert sie. NPC-Namen werden gegen die NPC-Liste der Edge Function `notion-proxy` abgeglichen (`loadNotionNpcs()`, Antwort aus dem Cache, `refresh: false`). Bei Treffer wird die **Notion-ID** in `scene_npcs.notion_id` gespeichert. Der Import hängt neue Szenen hinten an und wählt gleichnamige Szenen der Session ab, er ersetzt nie von allein. Schreibt die Datenbank mittendrin nicht mehr, bleiben schon angelegte Szenen bestehen (kein Rollback, der Aufruf läuft über einzelne API-Anfragen). Die ST-Karte öffnet mit `go("st", { focus: notionId })` direkt einen Knoten (`MapView`: `src.focus`).
+
 ## 5. Datenbank (Supabase Postgres)
 
 | Tabelle | Inhalt |
@@ -120,6 +126,11 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `player_map_nodes` | `label` (eindeutig ohne Groß/Klein), `type`, `tags`, `description`, `is_pc`, `character_id` |
 | `player_map_edges` | `from_node`, `to_node`, `label`, `direction` (directed, mutual, undirected), `description` |
 | `map_positions` | `scope`, `node_key`, `x`, `y` |
+| `chronicles` | `title`, `description`, `status` (`draft`, `running`, `done`), `started_on`, `sort` |
+| `chapters` | `chronicle_id`, `number` (je Chronik eindeutig), `title` |
+| `session_info` | `session_number` (Schlüssel), `chronicle_id`, `chapter_id` (beide `on delete set null`), `ingame_date`, `summary`. Nur der ST schreibt |
+| `scenes` | `session_number`, `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
+| `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
 **Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
@@ -134,8 +145,10 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `20261020120300_seed_v1_0.sql` | 3 Charaktere, Spielerkarten-Knoten, Wiki-Kategorien |
 | `20261020120400_notion_cache_service_role_v1_0.sql` | `service_role` darf `notion_cache` schreiben |
 | `20261021120000_st_admin_v1_1.sql` | Storyteller als Administrator |
+| `20261022120000_chronicles_v1_4.sql` | Chroniken, Kapitel, Session-Infos, Szenenkarten mit Rechten |
+| `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 
-Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus.
+Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
 
 ## 6. Rechte
 
@@ -153,6 +166,10 @@ Grundsatz: `anon` darf nichts außer `ping()`. `authenticated` bekommt Tabellenr
 | `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); ändern (freigeben) ST; löschen Uploader und ST |
 | `player_map_*` | Mitglieder | Mitglieder (auch Löschen von Spielercharakter-Knoten) |
 | `map_positions` | `player`: Mitglieder, `st`: ST | wie Lesen |
+| `chronicles` | Mitglieder (Entwürfe nur ST) | ST |
+| `chapters` | Mitglieder, soweit die Chronik sichtbar ist | ST |
+| `session_info` | Mitglieder, soweit die Chronik sichtbar ist (ohne Chronik: alle) | ST |
+| `scenes`, `scene_npcs` | ST | ST |
 | `notion_cache` | ST | ST direkt, die Edge Function über `service_role` |
 | Storage `documents` | eigener Ordner, ST alles, Mitglieder: Dateien zu freigegebenen Dokumenten | hochladen: eigener Ordner (ST jeder Ordner); löschen: eigener Ordner und ST |
 
@@ -198,7 +215,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 167 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 131 Fälle, Stand 21.10.2026: 130 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 145 Fälle, Stand 22.10.2026: 144 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -216,5 +233,6 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.5):** Chroniken, Kapitel, `session_info` und Szenenkarten (Migrationen 20261022120000 und 20261022120100, Ansichten `chronicles.js` und `scenes.js`, Szenen-Import mit NPC-Verknüpfung, „Kommt vor in“ auf der ST-Karte). Rechte-Test bildet Default Privileges nach.
 - **21.10.2026 (Version 1.4):** „Auf Spielerkarte“ überträgt keinen Typ mehr (`ensurePlayerNode()`). Kartensuche in `map.js`: `searchIds()` liefert alle Treffer (Label, Alias), `applySearch()` markiert sie, `resultsView()` zeigt je Treffer ein `<details>`, offen nur bei genau einem Treffer. Zustand `resultsOn`, endet beim Antippen eines Knotens. UAT-Skripte liegen jetzt in `tests/uat`.
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung, Kartenfix, ST als Administrator.
