@@ -116,14 +116,13 @@ function notionSource() {
   };
 }
 
-// Nur Name und Typ, keine Beschreibung, keine Notion-Tags.
+// Nur der Name. Typ (Kindred, Sterblicher, …) bleibt leer: Die Spieler tragen ihn selbst ein, weil er nicht immer offensichtlich ist. Keine Beschreibung, keine Notion-Tags.
 async function ensurePlayerNode(n) {
   const { data, error } = await sb.from("player_map_nodes").select("id, label");
   if (error) throw error;
   const hit = data.find(d => d.label.toLowerCase() === n.label.toLowerCase());
   if (hit) return hit.id;
-  const type = n.type === "Ohne NPC-Eintrag" ? "" : normType(n.type);
-  const { data: r, error: e2 } = await sb.from("player_map_nodes").insert({ label: n.label, type, tags: n.pc ? ["Spielercharakter"] : [], description: "", is_pc: !!n.pc }).select("id").single();
+  const { data: r, error: e2 } = await sb.from("player_map_nodes").insert({ label: n.label, type: "", tags: n.pc ? ["Spielercharakter"] : [], description: "", is_pc: !!n.pc }).select("id").single();
   if (e2) throw e2;
   return r.id;
 }
