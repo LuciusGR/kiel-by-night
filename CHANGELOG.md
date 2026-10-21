@@ -3,6 +3,9 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.6.1 – 22.10.2026
+- **Kontrast:** Im Dunkelmodus ist der Rotton für Text (`--blood`) heller (`#df7482` statt `#d76675`). Rote Badges („Nur Storyteller“, „versteckt“) erreichen 5,2:1 statt 4,48:1 und erfüllen damit WCAG AA. Der Test U155b ist grün.
+
 ## 1.6.0 – 22.10.2026
 - **Szenen-Vorrat:** Neuer Tab „Szenen“ (nur Storyteller). Szenenkarten lassen sich sammeln, ohne sie vorab einer Session zuzuordnen. Ansichten Vorrat, Zugeordnet, Alle, dazu eine Suche über Titel, Ort, Stimmung, Ziel, Gegenspieler, Ablauf, Fäden und NPC-Namen.
 - **Zuordnen und Verschieben:** Eine Szene aus dem Vorrat ordnest du einer Session zu (auch „Session N (neu)“), verschiebst sie in eine andere oder legst sie in den Vorrat zurück.
