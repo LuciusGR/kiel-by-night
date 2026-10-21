@@ -4,6 +4,7 @@ const ST = "11111111-1111-1111-1111-111111111111", P1 = "22222222-2222-2222-2222
 const me = ROLE === "st" ? ST : P1;
 const uuid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
+const chr1 = uuid(), chp1 = uuid();
 const catP = uuid(), catST = uuid(), c1 = uuid(), c2 = uuid(), c3 = uuid(), n1 = uuid(), n2 = uuid(), n3 = uuid();
 const db = {
   profiles: [{ id: ST, display_name: "Roland", role: "st" }, { id: P1, display_name: "Anna", role: "player" }],
@@ -23,10 +24,14 @@ const db = {
     { id: n3, label: "Prinz Aniq", type: "Ghul", tags: [], description: "", is_pc: false }],
   player_map_edges: [{ id: uuid(), from_node: n1, to_node: n3, label: "misstraut", direction: "directed", description: "" }],
   map_positions: [],
+  chronicles: [{ id: chr1, title: "Kiel by Night", description: "Beispielchronik", status: "running", started_on: "2026-10-01", sort: 0, created_at: now() }],
+  chapters: [{ id: chp1, chronicle_id: chr1, number: 1, title: "Auftakt", created_at: now() }],
+  session_info: [{ session_number: 1, chronicle_id: chr1, chapter_id: chp1, ingame_date: "Nacht vom 11. März", summary: "Die Gruppe trifft den Prinzen." }],
+  scenes: [], scene_npcs: [],
   notion_cache: [],
 };
 window.__db = db;
-const KEYS = { map_positions: ["scope", "node_key"], sessions: ["number"] };
+const KEYS = { map_positions: ["scope", "node_key"], sessions: ["number"], session_info: ["session_number"] };
 
 class Q {
   constructor(t) { this.t = t; this.f = []; this.op = "select"; this.ret = false; }
