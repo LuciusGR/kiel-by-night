@@ -47,6 +47,7 @@ for (const role of ["st", "player"]) {
     await page.waitForTimeout(400);
     await page.locator(".pc").first().click({ timeout: 5000 });
     await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Bearbeitung", exact: true }).click({ timeout: 5000 });
     await page.getByRole("button", { name: "Hunger 4" }).click({ timeout: 5000 });
     await page.waitForTimeout(1200);
     const saved = await page.locator(".save-state").innerText();
