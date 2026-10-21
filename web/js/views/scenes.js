@@ -1,4 +1,4 @@
-// Kiel by Night · Szenenkarten (nur Storyteller): Karten je Session, Import aus JSON mit Vorschau, NPC-Verknüpfung zur ST-Karte
+// Kiel by Night · Szenenkarten (nur Storyteller): Karten je Session oder im Vorrat, Import aus JSON mit Vorschau, NPC-Verknüpfung zur ST-Karte
 import { h, toast, guard, confirmBtn } from "../lib.js";
 import { sb, go } from "../core.js";
 
@@ -8,13 +8,14 @@ const MAX_SCENES = 100, MAX_TEXT = 20000;
 
 // ---------- Format prüfen und normalisieren ----------
 // Gibt { errors: [...], data: { session, chronicle, scenes: [...] } } zurück. Bei Fehlern wird nichts importiert.
+// "session" ist optional: ohne Angabe ist die Datei für den Vorrat gedacht.
 export function parseScenes(text) {
   const errors = [];
   let j;
   try { j = JSON.parse(text); } catch (_) { return { errors: ["Die Datei ist kein gültiges JSON."], data: null }; }
   if (!j || typeof j !== "object" || Array.isArray(j)) return { errors: ["Die Datei muss ein JSON-Objekt sein."], data: null };
   if (j.format !== SCENE_FORMAT) errors.push("Unbekanntes Format: erwartet \"" + SCENE_FORMAT + "\"" + (j.format ? ", gefunden \"" + String(j.format).slice(0, 40) + "\"." : "."));
-  if (!Number.isInteger(j.session) || j.session < 1) errors.push("\"session\" muss eine ganze Zahl ab 1 sein.");
+  if (j.session != null && (!Number.isInteger(j.session) || j.session < 1)) errors.push("\"session\" muss, wenn vorhanden, eine ganze Zahl ab 1 sein.");
   if (!Array.isArray(j.szenen) || !j.szenen.length) errors.push("\"szenen\" muss eine Liste mit mindestens einer Szene sein.");
   else if (j.szenen.length > MAX_SCENES) errors.push("Zu viele Szenen (höchstens " + MAX_SCENES + ").");
   if (errors.length) return { errors, data: null };
@@ -55,7 +56,7 @@ export function parseScenes(text) {
   });
   if (errors.length) return { errors, data: null };
   scenes.sort((a, b) => ((a.order ?? a.idx + 1) - (b.order ?? b.idx + 1)) || (a.idx - b.idx));
-  return { errors: [], data: { session: j.session, chronicle: typeof j.chronik === "string" ? j.chronik.trim() : "", scenes } };
+  return { errors: [], data: { session: j.session ?? null, chronicle: typeof j.chronik === "string" ? j.chronik.trim() : "", scenes } };
 }
 
 // ---------- NPCs der ST-Karte (aus dem Notion-Cache der Edge Function) ----------
@@ -83,11 +84,29 @@ export function matchNpc(name, npcs) {
 }
 
 // ---------- Daten ----------
-async function loadScenes(session) {
-  const [s, n] = await Promise.all([sb.from("scenes").select("*").eq("session_number", session), sb.from("scene_npcs").select("*")]);
+// f.session: nur diese Session. f.mode: "pool" (ohne Session), "assigned" (mit Session), sonst alle.
+async function loadScenes(f) {
+  const q = sb.from("scenes").select("*");
+  const [s, n] = await Promise.all([f.session != null ? q.eq("session_number", f.session) : q, sb.from("scene_npcs").select("*")]);
   if (s.error || n.error) throw s.error || n.error;
-  const scenes = s.data.sort((a, b) => (a.position - b.position) || (Date.parse(a.created_at) - Date.parse(b.created_at)));
-  return scenes.map(sc => ({ ...sc, npcs: n.data.filter(x => x.scene_id === sc.id).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)) }));
+  let rows = s.data;
+  if (f.mode === "pool") rows = rows.filter(x => x.session_number == null);
+  else if (f.mode === "assigned") rows = rows.filter(x => x.session_number != null);
+  rows = rows.sort((a, b) => ((a.session_number ?? 0) - (b.session_number ?? 0)) || (a.position - b.position) || (Date.parse(a.created_at) - Date.parse(b.created_at)));
+  return rows.map(sc => ({ ...sc, npcs: n.data.filter(x => x.scene_id === sc.id).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)) }));
+}
+// bekannte Session-Nummern (aus Sessions, Zusatzangaben, Notizen und Szenen), neueste zuerst
+async function loadSessionNumbers() {
+  const rs = await Promise.all([sb.from("sessions").select("number"), sb.from("session_info").select("session_number"), sb.from("session_notes").select("session_number"), sb.from("scenes").select("session_number")]);
+  const set = new Set();
+  for (const [i, r] of rs.entries()) for (const x of (r.error ? [] : r.data)) { const v = i === 0 ? x.number : x.session_number; if (Number.isInteger(v)) set.add(v); }
+  return [...set].sort((a, b) => b - a);
+}
+// höchste Position im Ziel (Session oder Vorrat), damit neue Karten hinten landen
+async function maxPosition(session) {
+  const { data, error } = await sb.from("scenes").select("session_number, position");
+  if (error) throw error;
+  return data.filter(x => (x.session_number ?? null) === session).reduce((m, x) => Math.max(m, x.position || 0), 0);
 }
 async function insertScene(session, sc, position) {
   const row = await guard(sb.from("scenes").insert({
@@ -103,39 +122,67 @@ export async function sceneMentions(notionId) {
   const [n, s] = await Promise.all([sb.from("scene_npcs").select("*").eq("notion_id", notionId), sb.from("scenes").select("id, session_number, position, title")]);
   if (n.error || s.error) return [];
   return n.data.map(x => ({ npc: x, scene: s.data.find(y => y.id === x.scene_id) })).filter(x => x.scene)
-    .sort((a, b) => (b.scene.session_number - a.scene.session_number) || (a.scene.position - b.scene.position));
+    .sort((a, b) => ((b.scene.session_number ?? 0) - (a.scene.session_number ?? 0)) || (a.scene.position - b.scene.position));
 }
 
-// ---------- Block in der Session-Ansicht ----------
-export function sceneBlock(session) {
+// ---------- Szenenkarten-Brett ----------
+// opts.session: Nummer = Szenen dieser Session, sonst Vorrat. opts.mode "pool" | "assigned" | "all" für die Ansicht im Tab Szenen.
+export const sceneBlock = session => sceneBoard({ session });
+export function sceneBoard(opts) {
+  const home = opts.session ?? null;                 // Ziel für neue und importierte Szenen (null = Vorrat)
+  const sessionView = home != null;
   const root = h("section", { class: "panel stack", "aria-labelledby": "scenes-h" });
-  let scenes = [], editing = null, importing = null, busy = false;
+  let scenes = [], nums = [], editing = null, importing = null, busy = false, query = "";
 
   async function reload() {
-    try { scenes = await loadScenes(session); } catch (e) { root.replaceChildren(h("div", { class: "notice bad" }, "Szenenkarten konnten nicht geladen werden.")); return false; }
+    try { [scenes, nums] = await Promise.all([loadScenes({ session: home, mode: opts.mode }), loadSessionNumbers()]); }
+    catch (e) { root.replaceChildren(h("div", { class: "notice bad" }, "Szenenkarten konnten nicht geladen werden.")); return false; }
     return true;
   }
   async function refresh() { if (await reload()) draw(); }
+  const shown = () => {
+    if (!query) return scenes;
+    return scenes.filter(sc => [sc.title, sc.place, sc.mood, sc.goal, sc.antagonist, sc.body, sc.details, ...sc.threads, ...sc.npcs.map(n => n.name)].join(" ").toLowerCase().includes(query));
+  };
 
   async function setStatus(sc, status) { await guard(sb.from("scenes").update({ status }).eq("id", sc.id)); await refresh(); }
-  async function move(i, dir) {
-    const j = i + dir; if (j < 0 || j >= scenes.length) return;
-    const order = scenes.slice(); [order[i], order[j]] = [order[j], order[i]];
+  async function move(list, i, dir) {
+    const j = i + dir; if (j < 0 || j >= list.length) return;
+    const order = list.slice(); [order[i], order[j]] = [order[j], order[i]];
     for (let k = 0; k < order.length; k++) if (order[k].position !== k + 1) await guard(sb.from("scenes").update({ position: k + 1 }).eq("id", order[k].id));
     await refresh();
+  }
+  // Szene einer Session zuordnen, in eine andere verschieben oder in den Vorrat zurücklegen
+  async function relocate(sc, target) {
+    if ((sc.session_number ?? null) === target) { toast("Die Szene liegt dort schon."); return; }
+    const pos = (await maxPosition(target)) + 1;
+    await guard(sb.from("scenes").update({ session_number: target, position: pos }).eq("id", sc.id), target == null ? "In den Vorrat gelegt." : "Session " + target + " zugeordnet.");
+    await refresh();
+  }
+  function moveRow(sc) {
+    const next = (nums[0] || 0) + 1, pool = sc.session_number == null;
+    const sel = h("select", { "aria-label": pool ? "Session zuordnen" : "Verschieben nach" },
+      h("option", { value: pool ? "" : "pool" }, pool ? "Session wählen …" : "Vorrat (keine Session)"),
+      ...nums.map(n => h("option", { value: String(n), selected: n === sc.session_number ? true : null }, "Session " + n)),
+      h("option", { value: "new" }, "Session " + next + " (neu)"));
+    return h("div", { class: "row", style: "align-items:center" }, h("div", { class: "field", style: "flex:1 1 180px" }, sel),
+      h("button", { class: "btn small", type: "button", onclick: async () => {
+        if (sel.value === "") { toast("Bitte eine Session wählen.", true); return; }
+        await relocate(sc, sel.value === "pool" ? null : sel.value === "new" ? next : Number(sel.value));
+      } }, pool ? "Zuordnen" : "Verschieben"));
   }
 
   function npcChip(n) {
     const linked = !!n.notion_id;
     const label = h("span", {}, n.name);
-    const chip = linked
+    return linked
       ? h("button", { class: "chip", type: "button", title: "Auf der ST-Karte zeigen", onclick: () => go("st", { tab: "map", focus: n.notion_id }) }, label)
       : h("span", { class: "chip", title: "Nicht mit der ST-Karte verknüpft", style: "cursor:default;border-style:dashed" }, label);
-    return chip;
   }
 
-  function card(sc, i) {
+  function card(sc, i, list) {
     const kv = [["Ort", sc.place], ["Stimmung", sc.mood], ["Ziel", sc.goal], ["Gegenspieler", sc.antagonist]].filter(([, v]) => v);
+    const arrows = opts.mode !== "all" && opts.mode !== "assigned" && !query;
     const body = h("div", { class: "stack", style: "margin-top:10px" },
       kv.length ? h("dl", { class: "kv" }, ...kv.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])) : null,
       sc.npcs.length ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"),
@@ -144,14 +191,16 @@ export function sceneBlock(session) {
       sc.body ? h("div", { class: "pre" }, sc.body) : null,
       sc.details ? h("details", {}, h("summary", { class: "muted", style: "cursor:pointer" }, "Weitere Details und Infos"), h("div", { class: "pre", style: "margin-top:6px" }, sc.details)) : null,
       sc.threads.length ? h("div", { class: "chips" }, ...sc.threads.map(t => h("span", { class: "badge st" }, t))) : null,
+      moveRow(sc),
       h("div", { class: "row" },
         h("div", { class: "toggle wrap", role: "group", "aria-label": "Status der Szene" }, ...Object.entries(STATUS).map(([k, l]) => h("button", { type: "button", "aria-pressed": String(sc.status === k), onclick: () => setStatus(sc, k) }, l))),
-        h("button", { class: "btn small", type: "button", "aria-label": "Szene nach oben", disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
-        h("button", { class: "btn small", type: "button", "aria-label": "Szene nach unten", disabled: i === scenes.length - 1, onclick: () => move(i, 1) }, "↓"),
+        arrows ? h("button", { class: "btn small", type: "button", "aria-label": "Szene nach oben", disabled: i === 0, onclick: () => move(list, i, -1) }, "↑") : null,
+        arrows ? h("button", { class: "btn small", type: "button", "aria-label": "Szene nach unten", disabled: i === list.length - 1, onclick: () => move(list, i, 1) }, "↓") : null,
         h("button", { class: "btn small", type: "button", onclick: () => { editing = sc; draw(); } }, "Bearbeiten"),
         confirmBtn("Löschen", async () => { await guard(sb.from("scenes").delete().eq("id", sc.id), "Gelöscht."); await refresh(); })));
-    return h("details", { class: "panel", open: scenes.length === 1 ? true : null, "data-scene": sc.id },
-      h("summary", { style: "cursor:pointer" }, h("strong", {}, (i + 1) + ". " + sc.title), " ", h("span", { class: sc.status === "open" ? "badge" : "badge st" }, STATUS[sc.status]), sc.place ? h("span", { class: "muted" }, " · " + sc.place) : null), body);
+    return h("details", { class: "panel", open: list.length === 1 ? true : null, "data-scene": sc.id },
+      h("summary", { style: "cursor:pointer" }, h("strong", {}, (sessionView ? (i + 1) + ". " : "") + sc.title), " ", h("span", { class: sc.status === "open" ? "badge" : "badge st" }, STATUS[sc.status]),
+        !sessionView && sc.session_number != null ? h("span", { class: "badge" }, "Session " + sc.session_number) : null, sc.place ? h("span", { class: "muted" }, " · " + sc.place) : null), body);
   }
 
   // ---------- Bearbeiten / Neu ----------
@@ -189,7 +238,7 @@ export function sceneBlock(session) {
             await guard(sb.from("scene_npcs").delete().eq("scene_id", sc.id));
             if (npcs.length) await guard(sb.from("scene_npcs").insert(npcs.map(n => ({ scene_id: sc.id, ...n }))));
             toast("Gespeichert.");
-          } else { await insertScene(session, { ...fields, npcs }, scenes.length + 1); toast("Szene angelegt."); }
+          } else { await insertScene(home, { ...fields, npcs }, (await maxPosition(home)) + 1); toast("Szene angelegt."); }
           editing = null; await refresh();
         } }, "Speichern"),
         h("button", { class: "btn", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen")));
@@ -206,14 +255,15 @@ export function sceneBlock(session) {
       const { errors, data } = parseScenes(await f.text());
       if (errors.length) { out.append(h("div", { class: "notice bad" }, h("strong", {}, "Import nicht möglich. Es wurde nichts gespeichert."), h("ul", { style: "margin:6px 0 0;padding-left:20px" }, ...errors.slice(0, 12).map(e => h("li", {}, e))))); return; }
       const npcs = await loadNotionNpcs();
-      const existing = new Set(scenes.map(s => s.title.trim().toLowerCase()));
+      const same = await loadScenes(sessionView ? { session: home } : { mode: "pool" });
+      const existing = new Set(same.map(s => s.title.trim().toLowerCase()));
       const items = data.scenes.map(sc => ({ sc, include: !existing.has(sc.title.toLowerCase()), dup: existing.has(sc.title.toLowerCase()),
         npcs: sc.npcs.map(n => { const m = matchNpc(n.name, npcs); return { ...n, notion_id: m ? m.id : "", matched: m ? m.name : "", exact: m ? m.exact : false }; }) }));
       importing = { session: data.session, items };
       renderPreview(out, npcs);
     });
     return h("div", { class: "panel stack" }, h("h3", {}, "Szenen importieren"),
-      h("p", { class: "muted" }, "Datei im Format " + SCENE_FORMAT + " (JSON). Vorhandene Szenen bleiben unverändert, neue werden angehängt."),
+      h("p", { class: "muted" }, "Datei im Format " + SCENE_FORMAT + " (JSON). " + (sessionView ? "Die Szenen kommen in diese Session. " : "Die Szenen kommen in den Vorrat. ") + "Vorhandene Szenen bleiben unverändert, neue werden angehängt."),
       h("div", { class: "field" }, h("label", { for: "sc-file" }, "Datei wählen"), file), out,
       h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: () => { importing = null; draw(); } }, "Schließen")));
   }
@@ -221,8 +271,11 @@ export function sceneBlock(session) {
     const { items } = importing;
     const todo = items.filter(x => x.include);
     const unlinked = items.reduce((a, x) => a + (x.include ? x.npcs.filter(n => !n.notion_id).length : 0), 0);
+    const where = sessionView
+      ? (importing.session != null && importing.session !== home ? " Achtung: Die Datei gehört zu Session " + importing.session + ", importiert wird in Session " + home + "." : "")
+      : (importing.session != null ? " Die Datei nennt Session " + importing.session + ", die Szenen kommen trotzdem in den Vorrat und lassen sich dort zuordnen." : "");
     out.replaceChildren(
-      h("div", { role: "status", class: "notice" }, "Vorschau: " + items.length + " Szenen in der Datei, " + todo.length + " werden importiert." + (importing.session !== session ? " Achtung: Die Datei gehört zu Session " + importing.session + ", importiert wird in Session " + session + "." : "")),
+      h("div", { role: "status", class: "notice" }, "Vorschau: " + items.length + " Szenen in der Datei, " + todo.length + " werden importiert." + where),
       ...items.map((it, k) => h("div", { class: "panel stack", "data-import": String(k) },
         h("label", { class: "row", style: "align-items:center;gap:8px" }, h("input", { type: "checkbox", checked: it.include ? true : null, style: "width:auto", "aria-label": "Szene importieren: " + it.sc.title, onchange: e => { it.include = e.target.checked; renderPreview(out, npcs); } }),
           h("strong", {}, it.sc.title), it.dup ? h("span", { class: "badge st" }, "Titel gibt es schon") : null),
@@ -237,8 +290,8 @@ export function sceneBlock(session) {
       h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", disabled: !todo.length || busy ? true : null, onclick: async ev => {
         busy = true; ev.target.disabled = true;
         try {
-          let pos = scenes.reduce((m, s) => Math.max(m, s.position), 0);
-          for (const it of todo) await insertScene(session, { ...it.sc, npcs: it.npcs }, ++pos);
+          let pos = await maxPosition(home);
+          for (const it of todo) await insertScene(home, { ...it.sc, npcs: it.npcs }, ++pos);
           toast(todo.length + (todo.length === 1 ? " Szene importiert." : " Szenen importiert."));
           importing = null; busy = false; await refresh();
         } catch (_) { busy = false; ev.target.disabled = false; toast("Import abgebrochen. Bereits angelegte Szenen bleiben bestehen.", true); await refresh(); }
@@ -246,15 +299,17 @@ export function sceneBlock(session) {
   }
 
   function draw() {
+    const list = shown();
     root.replaceChildren(
-      h("div", { class: "row", style: "align-items:center" }, h("div", { style: "flex:1 1 200px" }, h("span", { class: "badge st" }, "Nur Storyteller"), h("h3", { id: "scenes-h", style: "margin-top:4px" }, "Szenenkarten"), h("p", { class: "muted" }, "Vorbereitung für diese Session. Spieler sehen nichts davon.")),
+      h("div", { class: "row", style: "align-items:center" }, h("div", { style: "flex:1 1 200px" }, h("span", { class: "badge st" }, "Nur Storyteller"), h("h3", { id: "scenes-h", style: "margin-top:4px" }, opts.title || "Szenenkarten"), h("p", { class: "muted" }, opts.text || "Vorbereitung für diese Session. Spieler sehen nichts davon.")),
         h("button", { class: "btn", type: "button", onclick: () => { importing = {}; editing = null; draw(); } }, "Szenen importieren"),
         h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, npcs: [] }; importing = null; draw(); } }, "Neue Szene")),
       importing ? importDialog() : null,
       editing ? editor(editing) : null,
-      ...(scenes.length ? scenes.map(card) : [h("div", { class: "empty" }, "Noch keine Szenenkarten für diese Session.")]));
+      ...(list.length ? list.map((sc, i) => card(sc, i, list)) : [h("div", { class: "empty" }, query ? "Keine Szene passt zur Suche." : (opts.empty || "Noch keine Szenenkarten für diese Session."))]));
   }
 
+  root.setQuery = q => { query = String(q || "").trim().toLowerCase(); draw(); };
   refresh();
   return root;
 }
