@@ -116,14 +116,16 @@ function sheetUI(data, s, ed, save, redraw) {
   for (let i = 0; i < 10; i++) hum.append(h("button", { type: "button", class: i < s.humanity ? "hum" : (i >= 10 - s.stains ? "stain" : ""), "aria-label": "Humanity " + (i + 1), disabled: ed ? null : true, onclick: () => set(() => s.humanity = (s.humanity === i + 1 ? i : i + 1)) }));
   const hung = h("span", { class: "boxes" });
   for (let i = 0; i < 5; i++) hung.append(h("button", { type: "button", class: i < s.hunger ? "hunger" : "", "aria-label": "Hunger " + (i + 1), disabled: ed ? null : true, onclick: () => set(() => s.hunger = (s.hunger === i + 1 ? i : i + 1)) }));
-  const num = (label, key, min, max) => { const id = "n-" + key; return h("div", { class: "field", style: "flex:0 1 110px" }, h("label", { for: id }, label), h("input", { type: "number", id, min, max, value: s[key], disabled: ed ? null : true, onchange: () => redraw(), oninput: e => { s[key] = Math.max(min, Math.min(max, Number(e.target.value) || 0)); save(); } })); };
+  // Zahlenfelder zeichnen den Bogen nicht neu (sonst gehen Fokus und Eingabe im nächsten Feld verloren)
+  const xpText = () => "XP frei: " + (s.xpTotal - s.xpSpent), xpFree = h("div", { class: "mono muted" }, xpText());
+  const num = (label, key, min, max) => { const id = "n-" + key; return h("div", { class: "field", style: "flex:0 1 110px" }, h("label", { for: id }, label), h("input", { type: "number", id, min, max, value: s[key], disabled: ed ? null : true, onchange: e => { e.target.value = s[key]; }, oninput: e => { s[key] = Math.max(min, Math.min(max, Number(e.target.value) || 0)); xpFree.textContent = xpText(); save(); } })); };
   out.append(h("div", { class: "grid3" },
     h("div", { class: "panel stack" }, h("h4", {}, "Health (" + hmax + ")"), trackUI(s.health, hmax, ed, a => set(() => s.health = a), "Health"), h("h4", {}, "Willpower (" + wmax + ")"), trackUI(s.wp, wmax, ed, a => set(() => s.wp = a), "Willpower"), h("p", { class: "muted", style: "font-size:.82rem" }, "Klick: leer → oberflächlich → schwer. Health = Stamina + 3, Willpower = Composure + Resolve.")),
     h("div", { class: "panel stack" }, h("h4", {}, "Humanity " + s.humanity + " · Stains " + s.stains), hum,
       h("div", { class: "row" }, h("button", { class: "btn small", type: "button", disabled: ed ? null : true, onclick: () => set(() => s.stains = Math.max(0, s.stains - 1)) }, "Stain −"), h("button", { class: "btn small", type: "button", disabled: ed ? null : true, onclick: () => set(() => s.stains = Math.min(10, s.stains + 1)) }, "Stain +")),
       h("h4", {}, "Hunger"), hung),
     h("div", { class: "panel stack" }, h("div", { class: "row" }, num("Blood Potency", "bp", 0, 10), num("XP gesamt", "xpTotal", 0, 9999), num("XP ausgegeben", "xpSpent", 0, 9999)),
-      h("div", { class: "mono muted" }, "XP frei: " + (s.xpTotal - s.xpSpent)), txt("Resonanz", "resonance"))));
+      xpFree, txt("Resonanz", "resonance"))));
   const discs = h("div", {});
   s.disc.forEach((d, i) => {
     discs.append(h("div", { class: "disc" },
