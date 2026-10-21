@@ -22,7 +22,7 @@ Bitte ein **eigenes, langes Passwort** wählen, das nirgends sonst verwendet wir
 
 ## 2. Aufbau der Seite
 
-Oben stehen die Bereiche: **Übersicht, Charaktere, Sessions, Spielerkarte, Wiki, Dokumente** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben.
+Oben stehen die Bereiche: **Übersicht, Charaktere, Chroniken, Sessions, Spielerkarte, Wiki, Dokumente** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben.
 
 Hinweis: Die Zurück-Taste des Browsers führt aus der Seite hinaus. Innerhalb der Seite navigierst du mit den Bereichen oben und den Knöpfen „← Alle Charaktere“ usw. Nach einem Neuladen (F5) steht wieder die Liste des Bereichs vor dir.
 
@@ -57,6 +57,16 @@ Wichtig: Ändern zwei Personen gleichzeitig denselben Bogen, gilt der **letzte**
 - Eigene Notizen: „Bearbeiten“, dann ändern oder „Löschen“ (mit Rückfrage „Wirklich?“).
 - **Nur meine** zeigt alle eigenen Notizen, **Alle** kehrt zurück.
 - Titel und Spieldatum einer Session stehen unter „… — bearbeiten“ (aufklappen, „Speichern“).
+- Oben in der Session steht die **Zusammenfassung** des Storytellers mit Chronik, Kapitel und Ingame-Datum. Alle lesen sie. Der Storyteller schreibt sie unter „Chronik, Kapitel und Zusammenfassung — bearbeiten“.
+
+## 5a. Chroniken
+
+Eine **Chronik** ist eine Geschichte, die ihr gemeinsam erzählt. Sie gliedert sich in **Kapitel**, und jedes Kapitel enthält Sessions.
+
+- **Übersicht:** Jede Chronik steht als Karte da, mit Status (laufend, abgeschlossen), Beschreibung, Zahl der Sessions und Kapitel, aktuellem Kapitel und nächster Session.
+- **Zeitleiste:** „Zeitleiste öffnen“ zeigt die Kapitel mit ihren Sessions, das neueste Kapitel ist aufgeklappt. Jede Session zeigt Titel, Spielabend, Ingame-Datum, die erste Zeile der Zusammenfassung und die Zahl der Notizen. Ein Klick auf den Titel öffnet die Session.
+- **Nur Storyteller:** Chronik anlegen und bearbeiten (Titel, Beschreibung, Status, Beginn), Kapitel verwalten, Sessions einer Chronik zuordnen („Nicht zugeordnete Sessions“) und der Hinweis „Lücken“ für Sessions ohne Titel oder Zusammenfassung. **Entwürfe** sehen nur Storyteller.
+- Löschst du eine Chronik, bleiben die Sessions und Notizen erhalten. Sie sind dann keiner Chronik zugeordnet.
 
 ## 6. Privat (nur Spieler)
 
@@ -109,6 +119,16 @@ Du siehst und darfst **alles**: alle Bögen, Notizen (auch private und fremde Se
   - Die Anordnung kannst du ziehen („Neu anordnen“ ordnet alles neu). Sie bleibt gespeichert.
 - **Private Spielernotizen:** zeigt die privaten Notizen jedes Spielers (nur Lesen).
 
+### Szenenkarten
+
+In jeder Session steht unter den Notizen der Block **Szenenkarten** (nur für dich sichtbar). Eine Karte hat Ort, Grundstimmung, Ziel, Gegenspieler, NPCs mit ihrer **Motivation in dieser Szene**, mögliche Ausgänge, Ablauf, Fäden und eingeklappt „Weitere Details und Infos“.
+
+- **Neue Szene** legt eine Karte von Hand an. NPC-Namen werden automatisch mit der Beziehungskarte verknüpft.
+- **Szenen importieren:** Datei im Format `kbn-scenes/1` wählen (siehe `docs/Szenenformat_v1.md`). Claude kann sie aus deinen Stichpunkten vorbereiten. Zuerst prüft die Seite die Datei und zeigt eine **Vorschau** mit den NPC-Treffern. Du kannst Szenen abwählen und die Verknüpfung je NPC ändern. Fehlerhafte Dateien werden komplett abgelehnt, es wird nichts gespeichert.
+- **Ein zweiter Import ersetzt nichts.** Neue Szenen werden hinten angehängt, Szenen mit gleichem Titel sind abgewählt.
+- Auf jeder Karte: Status (offen, gespielt, übersprungen, verschoben), Reihenfolge per Pfeil, Bearbeiten, Löschen. Ein NPC-Name springt zum Knoten auf der Beziehungskarte.
+- Auf der **Beziehungskarte** zeigt ein Knoten unter „Kommt vor in“ alle Szenen, in denen der NPC verknüpft ist, mit der jeweiligen Motivation.
+
 ### Konten und Spieler verwalten
 Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“). Danach fehlt noch das Profil und die Zuordnung zum Charakter. Das Vorgehen steht in der Technischen Dokumentation (Abschnitt 3). Jeder Spieler ändert sein Passwort selbst.
 
@@ -123,6 +143,8 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | Beziehungskarte (Notion) | kein Zugriff | sehen und anordnen |
 | Wiki | lesen, schreiben, eigene Seiten löschen | alles, Kategorien verwalten, ST-Notizen |
 | Dokumente | hochladen, eigene löschen | alles, Entwürfe, freigeben |
+| Chroniken, Kapitel, Zusammenfassungen | lesen (Entwürfe nicht) | alles anlegen, ändern, löschen |
+| Szenenkarten | kein Zugriff | alles |
 | Profile, Rollen | eigenen Anzeigenamen | alle verwalten (Datenbank) |
 
 ## 12. Hilfe bei Problemen
@@ -147,5 +169,6 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.5):** Chroniken, Kapitel, Zusammenfassungen und Szenenkarten (Abschnitte 5, 5a, 10 und 11).
 - **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7). „Auf Spielerkarte“ überträgt keinen Typ mehr (Abschnitt 10).
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung für Bögen und Spielerkarte, ST als Administrator.
