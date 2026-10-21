@@ -17,7 +17,7 @@ tests/                    RLS-, Edge-Function- und Browser-Tests
 ```
 
 ## Einrichtung
-Siehe `docs/Setup_Anleitung_v1_0.md`.
+Siehe `docs/Setup_Anleitung_v1_1.md`.
 
 ## Tests (lokal)
 - `tests/run_tests.sh`: wendet alle Migrationen auf ein lokales Postgres 16 mit nachgebautem Supabase-Kern an und prüft die Rechte. Das braucht `postgresql-16`.
