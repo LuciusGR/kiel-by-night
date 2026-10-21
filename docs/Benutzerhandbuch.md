@@ -105,6 +105,7 @@ Handouts, Karten, Bilder, Recherchen.
 
 - **Hochladen:** Datei wählen (PDF, PNG, JPG, WEBP, GIF, TXT, MD; höchstens 20 MB), Titel und Beschreibung eintragen, „Hochladen“.
 - **Öffnen:** öffnet die Datei in einem neuen Tab. Bilder zeigen eine Vorschau.
+- **Bearbeiten:** Titel und Beschreibung lassen sich nach dem Hochladen ändern („Bearbeiten“ auf der Karte, dann „Speichern“). Das darfst du bei eigenen Dokumenten, der ST bei allen. Die Datei selbst bleibt unverändert, dafür neu hochladen.
 - **Löschen:** nur eigene Dokumente (der ST alle).
 - **ST-Entwürfe:** Der ST kann Dokumente „Als ST-Entwurf“ hochladen. Sie sind für Spieler unsichtbar, bis der ST „Freigeben“ klickt.
 
@@ -153,7 +154,7 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | Spielerkarte | alle bearbeiten | alle bearbeiten |
 | Beziehungskarte (Notion) | kein Zugriff | sehen und anordnen |
 | Wiki | lesen, schreiben, eigene Seiten löschen | alles, Kategorien verwalten, ST-Notizen |
-| Dokumente | hochladen, eigene löschen | alles, Entwürfe, freigeben |
+| Dokumente | hochladen, eigene umbenennen und löschen | alles, Entwürfe, freigeben, umbenennen |
 | Chroniken, Kapitel, Zusammenfassungen | lesen (Entwürfe nicht) | alles anlegen, ändern, löschen |
 | Szenenkarten | kein Zugriff | alles |
 | Profile, Rollen | eigenen Anzeigenamen | alle verwalten (Datenbank) |
@@ -187,6 +188,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
 - **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
 - **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
