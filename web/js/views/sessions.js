@@ -1,11 +1,13 @@
 // Kiel by Night · Session-Notizen: eine Seite pro Session, jede Person schreibt ihren eigenen Abschnitt
 import { h, toast, guard, head, fmtDate, confirmBtn } from "../lib.js";
 import { sb, S, registerView, authorName, personName } from "../core.js";
+import { sceneBlock, resetNpcCache } from "./scenes.js";
 
 registerView("sessions", async m => {
   let mine = !!(S.arg && S.arg.mine);
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
-  let notes = [], meta = {}, editing = null;
+  let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [];
+  resetNpcCache();
   const me = S.user.id;
 
   const left = h("div", { class: "stack" }), right = h("div", {});
@@ -16,12 +18,16 @@ registerView("sessions", async m => {
     h("button", { class: "btn primary", type: "button", onclick: () => newNote() }, "Neue Notiz")), h("div", { class: "split" }, left, right));
 
   async function load() {
-    const [n, s] = await Promise.all([
+    const [n, s, i, c, k] = await Promise.all([
       sb.from("session_notes").select("*").order("created_at"),
       sb.from("sessions").select("*"),
+      sb.from("session_info").select("*"), sb.from("chronicles").select("*"), sb.from("chapters").select("*"),
     ]);
     if (n.error || s.error) { toast("Sessions konnten nicht geladen werden.", true); return; }
     notes = n.data; meta = {}; for (const x of s.data) meta[x.number] = x;
+    // Chroniken sind neu: fehlen die Tabellen noch, funktionieren die Notizen trotzdem
+    info = {}; for (const x of (i.error ? [] : i.data)) info[x.session_number] = x;
+    chrons = c.error ? [] : c.data; chaps = k.error ? [] : k.data;
   }
   const sessionsList = () => { const set = new Set(notes.map(n => n.session_number)); Object.keys(meta).forEach(k => set.add(Number(k))); return [...set].sort((a, b) => b - a); };
   function newNote() { const l = sessionsList(); const next = cur ?? (l[0] || 1); editing = { id: null, session_number: next, body: "" }; mine = false; cur = next; draw(); }
@@ -58,6 +64,32 @@ registerView("sessions", async m => {
         } }, "Speichern")));
   }
 
+  // Chronik, Kapitel, Ingame-Datum und Zusammenfassung: alle lesen, nur der ST schreibt
+  function infoBlock(num) {
+    const i = info[num] || {};
+    const chr = chrons.find(c => c.id === i.chronicle_id), chap = chaps.find(k => k.id === i.chapter_id);
+    const where = [chr && chr.title + (chap ? " · Kapitel " + chap.number + (chap.title ? " " + chap.title : "") : ""), i.ingame_date && "Ingame: " + i.ingame_date].filter(Boolean).join(" · ");
+    const view = h("div", { class: "stack", style: "margin-top:10px" },
+      where ? h("div", { class: "muted", "data-info": "where" }, where) : null,
+      i.summary ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 4px" }, "Zusammenfassung"), h("div", { class: "pre", "data-info": "summary" }, i.summary)) : null);
+    if (!S.isST) return view;
+    const csel = h("select", { id: "si-chron" }, h("option", { value: "" }, "— keine Chronik —"), ...chrons.map(c => h("option", { value: c.id, selected: c.id === i.chronicle_id ? true : null }, c.title)));
+    const ksel = h("select", { id: "si-chap" });
+    const fillChaps = () => ksel.replaceChildren(h("option", { value: "" }, "— kein Kapitel —"), ...chaps.filter(k => k.chronicle_id === csel.value).sort((a, b) => a.number - b.number).map(k => h("option", { value: k.id, selected: k.id === i.chapter_id ? true : null }, "Kapitel " + k.number + (k.title ? " · " + k.title : ""))));
+    fillChaps(); csel.addEventListener("change", fillChaps);
+    const ing = h("input", { type: "text", id: "si-ingame", value: i.ingame_date || "", placeholder: "z. B. Nacht vom 11. auf den 12. März" });
+    const sum = h("textarea", { id: "si-summary", placeholder: "Was ist geschehen? Alle Spieler lesen das." }, i.summary || "");
+    return h("div", { class: "stack" }, view, h("details", { "data-info": "edit" }, h("summary", { class: "muted", style: "cursor:pointer" }, "Chronik, Kapitel und Zusammenfassung — bearbeiten (nur Storyteller)"),
+      h("div", { class: "stack", style: "margin-top:8px" },
+        h("div", { class: "row" }, h("div", { class: "field" }, h("label", { for: "si-chron" }, "Chronik"), csel), h("div", { class: "field" }, h("label", { for: "si-chap" }, "Kapitel"), ksel)),
+        h("div", { class: "field" }, h("label", { for: "si-ingame" }, "Ingame-Datum"), ing),
+        h("div", { class: "field" }, h("label", { for: "si-summary" }, "Zusammenfassung (sichtbar für alle)"), sum),
+        h("div", {}, h("button", { class: "btn", type: "button", onclick: async () => {
+          await guard(sb.from("session_info").upsert({ session_number: num, chronicle_id: csel.value || null, chapter_id: csel.value ? (ksel.value || null) : null, ingame_date: ing.value.trim(), summary: sum.value }), "Gespeichert.");
+          await load(); draw();
+        } }, "Speichern")))));
+  }
+
   function entry(n) {
     return h("div", { class: "entry" },
       h("div", { class: "by" }, h("strong", {}, authorName(n.author_id)), h("span", { class: "muted" }, personName(n.author_id) + " · " + fmtDate(n.updated_at)),
@@ -88,7 +120,7 @@ registerView("sessions", async m => {
       if (editing) right.append(noteEditor(editing));
       return;
     }
-    const art = h("div", { class: "article" }, h("span", { class: "eyebrow" }, "Session"), h("h2", {}, "Session " + cur), metaEditor(cur));
+    const art = h("div", { class: "article" }, h("span", { class: "eyebrow" }, "Session"), h("h2", {}, "Session " + cur), metaEditor(cur), infoBlock(cur));
     // eigene Abschnitte zuerst, dann die anderen in Reihenfolge des Anlegens
     const these = notes.filter(x => x.session_number === cur).sort((a, b) => (a.author_id === me ? 0 : 1) - (b.author_id === me ? 0 : 1) || Date.parse(a.created_at) - Date.parse(b.created_at));
     for (const n of these) art.append(editing && editing.id === n.id ? noteEditor(editing) : entry(n));
@@ -96,6 +128,7 @@ registerView("sessions", async m => {
     if (editing && !editing.id) art.append(noteEditor(editing));
     else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: cur, body: "" }; draw(); } }, "Eigenen Abschnitt schreiben")));
     right.replaceChildren(art);
+    if (S.isST) right.append(h("div", { style: "margin-top:16px" }, sceneBlock(cur)));
   }
 
   await load();
