@@ -56,9 +56,20 @@ async function viewSheet(m, id) {
   const stateEl = h("span", { class: "save-state", role: "status" }, "");
   const title = h("h2", {}, c.name || "Unbenannt");
   const wrap = h("div", {});
+  // Zwei Modi: Ansicht (Standard, alles gesperrt) und Bearbeitung. Wer den Bogen nicht ändern darf, sieht nur die Ansicht.
+  let mode = "view";
+  const isEdit = () => editable && mode === "edit";
+  const hint = () => !editable ? "Nur Lesen. Bearbeiten können die Person selbst und der Storyteller."
+    : mode === "edit" ? "Bearbeitung: Änderungen werden automatisch gespeichert." : "Ansicht: Bearbeiten ist gesperrt. Zum Ändern oben auf „Bearbeitung“ umschalten.";
+  const hintEl = h("p", {}, hint());
+  const bView = h("button", { type: "button", onclick: () => setMode("view") }, "Ansicht"), bEdit = h("button", { type: "button", onclick: () => setMode("edit") }, "Bearbeitung");
+  const modeToggle = editable ? h("div", { class: "toggle", role: "group", "aria-label": "Modus" }, bView, bEdit) : null;
+  const paintMode = () => { bView.setAttribute("aria-pressed", String(mode === "view")); bEdit.setAttribute("aria-pressed", String(mode === "edit")); hintEl.textContent = hint(); };
+  function setMode(next) { if (next === mode) return; if (next === "view" && pending) flush(); mode = next; paintMode(); draw(); }
+  paintMode();
   m.append(h("div", { class: "head" }, h("div", {},
     h("button", { class: "linkbtn", type: "button", onclick: () => go("chars") }, "← Alle Charaktere"), title,
-    h("p", {}, editable ? "Änderungen werden automatisch gespeichert." : "Nur Lesen. Bearbeiten können die Person selbst und der Storyteller.")), stateEl), wrap);
+    hintEl), h("div", { class: "row" }, modeToggle, stateEl)), wrap);
 
   async function flush() {
     clearTimeout(timer); timer = null;
@@ -76,7 +87,7 @@ async function viewSheet(m, id) {
   onCleanup(() => window.removeEventListener("beforeunload", flushOnUnload));
   function flushOnUnload(e) { if (pending) { flush(); e.preventDefault(); } }
 
-  const draw = () => { title.textContent = data.name || "Unbenannt"; wrap.replaceChildren(sheetUI(data, sheet, editable, save, draw)); };
+  const draw = () => { title.textContent = data.name || "Unbenannt"; wrap.replaceChildren(sheetUI(data, sheet, isEdit(), save, draw)); };
   draw();
 }
 
