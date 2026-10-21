@@ -72,7 +72,7 @@ Die gemeinsame Karte der Coterie: **Was ihr über Kiels Nächte wisst.** Alle be
 
 Bedienung:
 - **Knoten antippen:** zeigt rechts Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen. Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
-- **Suche** („Name suchen …“): springt zum Treffer, Enter springt zum nächsten.
+- **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
 - **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein.
 - **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
@@ -147,4 +147,5 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 
 ## 14. Änderungen an diesem Handbuch
 
+- **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7).
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung für Bögen und Spielerkarte, ST als Administrator.
