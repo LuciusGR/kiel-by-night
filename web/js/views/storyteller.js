@@ -125,7 +125,7 @@ function mentionsBox(notionId) {
     if (!list.length) return;
     box.append(h("h4", { class: "eyebrow", style: "margin:0" }, "Kommt vor in (" + list.length + ")"),
       ...list.map(x => h("div", { class: "conn" }, h("div", { class: "c" },
-        h("button", { class: "linkbtn", type: "button", onclick: () => go("sessions", { session: x.scene.session_number }) }, "Session " + x.scene.session_number + " · " + x.scene.title),
+        h("button", { class: "linkbtn", type: "button", onclick: () => x.scene.session_number == null ? go("scenes") : go("sessions", { session: x.scene.session_number }) }, (x.scene.session_number == null ? "Vorrat" : "Session " + x.scene.session_number) + " · " + x.scene.title),
         x.npc.motivation ? h("div", { class: "muted" }, x.npc.motivation) : null))));
   }).catch(() => {});
   return box;
