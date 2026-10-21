@@ -6,6 +6,7 @@ import "./views/overview.js";
 import "./views/characters.js";
 import "./views/chronicles.js";
 import "./views/sessions.js";
+import "./views/scenepool.js";
 import "./views/private.js";
 import "./views/playermap.js";
 import "./views/wiki.js";
@@ -13,7 +14,7 @@ import "./views/docs.js";
 import "./views/storyteller.js";
 
 const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"]];
-const VALID = new Set(["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "private", "st"]);
+const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "private", "st"]);
 
 // Supabase Auth braucht eine E-Mail als Kennung. Die Gruppe meldet sich mit einem Benutzernamen an, intern wird
 // daraus name@kbn.invalid (".invalid" kann nie eine echte Adresse sein, es werden keine Mails verschickt).
@@ -30,6 +31,7 @@ function renderNav() {
   nav.replaceChildren();
   if (!S.user) return;
   const items = [...NAV];
+  if (S.isST) items.splice(4, 0, ["scenes", "Szenen"]); // Szenenvorrat, nur Storyteller
   if (!S.isST) items.push(["private", "Privat"]);
   for (const [v, l] of items) nav.append(h("button", { type: "button", "aria-current": S.view === v ? "page" : null, onclick: () => go(v) }, l));
   if (S.isST) nav.append(h("button", { type: "button", class: "st", "aria-current": S.view === "st" ? "page" : null, onclick: () => go("st") }, "Storyteller"));
