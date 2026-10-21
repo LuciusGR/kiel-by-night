@@ -1,7 +1,8 @@
 // Kiel by Night · Spielerkarte (gemeinsam, alle bearbeiten; Form immer Kreis gemäß A5-Entscheidung)
 import { guard, head } from "../lib.js";
-import { sb, registerView } from "../core.js";
+import { sb, S, registerView } from "../core.js";
 import { MapView } from "./map.js";
+import { docLinksBox } from "./doclinks.js";
 
 export async function savePositions(scope, list) {
   if (!list.length) return;
@@ -18,7 +19,9 @@ export async function loadPositions(scope) {
 
 export function playerMapSource() {
   return {
-    editable: true,
+    editable: true, focus: (S.arg && S.arg.focus) || null,
+    // Dokumente am Knoten: Liste für alle, Verknüpfen und Lösen nur im Modus Bearbeitung
+    nodeExtras: (n, id, nodes, o) => [docLinksBox("player", id, n.label, !!(o && o.edit))],
     async load() {
       const [n, e, positions] = await Promise.all([
         sb.from("player_map_nodes").select("*"),
