@@ -1,7 +1,7 @@
 // Kiel by Night · Dokumente (Supabase Storage, privater Bucket "documents")
 // Alle laden hoch, Spieler löschen nur eigene Dateien. ST-Entwürfe sind für Spieler unsichtbar (RLS + Storage-Policy).
 import { h, toast, errMsg, guard, head, fmtDate, confirmBtn } from "../lib.js";
-import { sb, S, registerView, authorName } from "../core.js";
+import { sb, S, go, registerView, authorName } from "../core.js";
 
 const BUCKET = "documents";
 const MAX = 20 * 1024 * 1024;
@@ -9,7 +9,7 @@ const TYPES = { pdf: "application/pdf", md: "text/markdown", txt: "text/plain", 
 const safeName = n => n.normalize("NFKD").replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(-80) || "datei";
 
 registerView("docs", async m => {
-  let docs = [], editing = null;
+  let docs = [], editing = null, links = [], pLabels = new Map();
   m.append(head("Dokumente", "Handouts, Karten, Bilder und Recherchen. Alle laden hoch, gelöscht wird nur, was man selbst hochgeladen hat."));
 
   const f = h("input", { type: "file", id: "up-file", accept: Object.values(TYPES).join(",") });
@@ -46,6 +46,10 @@ registerView("docs", async m => {
     const { data, error } = await sb.from("documents").select("*").order("created_at", { ascending: false });
     if (error) { toast(errMsg(error), true); return; }
     docs = data;
+    // Verknüpfungen mit Knoten der Karten (Spielerkarte für alle, Storytellerkarte nur ST); fehlen sie noch, bleibt die Liste leer
+    const [lk, pn] = await Promise.all([sb.from("document_links").select("*"), sb.from("player_map_nodes").select("id, label")]);
+    links = lk.error ? [] : lk.data.filter(l => l.scope === "player" || S.isST);
+    pLabels = new Map((pn.error ? [] : pn.data).map(x => [x.id, x.label]));
     // Vorschaubilder: signierte URLs (1 h), nur für Bilder
     const imgs = docs.filter(x => x.content_type.startsWith("image/")).map(x => x.storage_path);
     if (imgs.length) {
@@ -77,14 +81,27 @@ registerView("docs", async m => {
         h("button", { class: "btn small", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen"))));
   }
 
+  // Karten-Elemente, mit denen das Dokument verknüpft ist: Klick springt zum Knoten
+  function linkChips(x) {
+    const mine = links.filter(l => l.document_id === x.id);
+    if (!mine.length) return null;
+    return h("div", { class: "chips", "data-doc-links": "1" }, ...mine.map(l => {
+      const st = l.scope === "st", name = (st ? l.label : pLabels.get(l.node_key)) || l.label || "Knoten";
+      return h("span", { class: "chip", style: "cursor:default" },
+        h("button", { class: "linkbtn", type: "button", title: st ? "Auf der Storytellerkarte zeigen" : "Auf der Spielerkarte zeigen", onclick: () => st ? go("st", { tab: "map", focus: l.node_key }) : go("map", { focus: l.node_key }) }, (st ? "ST: " : "") + name),
+        h("button", { class: "linkbtn", type: "button", style: "margin-left:6px", "aria-label": "Verknüpfung lösen: " + name, onclick: async () => { await guard(sb.from("document_links").delete().eq("id", l.id), "Verknüpfung gelöst."); await load(); draw(); } }, "×"));
+    }));
+  }
+
   function card(x) {
     const img = x.content_type.startsWith("image/"), ext = (x.file_name.split(".").pop() || "Datei").toUpperCase();
     const mineOrSt = S.isST || x.uploader_id === S.user.id;
     if (editing === x.id) return editForm(x);
-    return h("div", { class: "doc" },
+    return h("div", { class: "doc", "data-doc": x.id },
       h("div", { class: "thumb" }, img && x._thumb ? h("img", { src: x._thumb, alt: x.title, loading: "lazy" }) : h("span", { class: "ext" }, ext)),
       h("div", { class: "meta" }, h("strong", {}, x.title), x.description ? h("span", { class: "muted", style: "font-size:.9rem" }, x.description) : null,
         h("span", { class: "muted", style: "font-size:.82rem" }, fmtDate(x.created_at) + " · " + authorName(x.uploader_id) + (x.size_bytes ? " · " + Math.max(1, Math.round(x.size_bytes / 1024)) + " KB" : "")),
+        linkChips(x),
         h("div", { class: "actions" },
           h("button", { class: "btn small", type: "button", onclick: () => open(x) }, "Öffnen"),
           mineOrSt && (S.isST || !x.draft) ? h("button", { class: "btn small", type: "button", onclick: () => { editing = x.id; draw(); } }, "Bearbeiten") : null,
@@ -106,4 +123,7 @@ registerView("docs", async m => {
 
   await load();
   draw();
+  // Sprung von der Karte: Dokument anzeigen und hervorheben
+  const f2 = S.arg && S.arg.focus; const el = f2 && m.querySelector('[data-doc="' + f2 + '"]');
+  if (el) { if (el.scrollIntoView) el.scrollIntoView({ block: "center" }); el.style.outline = "2px solid var(--sea)"; }
 });
