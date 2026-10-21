@@ -164,7 +164,7 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 
 Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es liegt, und sagt es:
 - **„Kein Internet“:** WLAN oder mobile Daten prüfen.
-- **„Diese Seite erreicht den Server (supabase.co) von diesem Gerät aus nicht“:** Andere Seiten gehen, der Server nicht. Meist blockiert ein Werbeblocker, ein VPN, privates DNS (Android) oder ein Filter im WLAN die Adresse. Ausschalten oder einen anderen Browser oder ein anderes Netz nehmen. Zum Testen im Browser `https://ueiqslwzpjzfpexiwtbb.supabase.co/auth/v1/health` öffnen: Erscheint Text mit „GoTrue“, geht die Verbindung.
+- **„Diese Seite erreicht den Server (supabase.co) von diesem Gerät aus nicht“:** Andere Seiten gehen, der Server nicht. Meist blockiert ein Werbeblocker, ein VPN, privates DNS (Android) oder ein Filter im WLAN die Adresse. Ausschalten oder einen anderen Browser oder ein anderes Netz nehmen. Zum Testen im Browser `https://ueiqslwzpjzfpexiwtbb.supabase.co/auth/v1/health` öffnen: Erscheint irgendeine Antwort als Text (auch „No API key found in request“, das ist die Antwort des Servers ohne Schlüssel), geht die Verbindung. Erscheint eine Fehlerseite des Browsers oder bleibt es leer, wird die Adresse blockiert.
 - **„Der Server ist erreichbar, die Anfrage ist trotzdem fehlgeschlagen“:** Seite neu laden und noch einmal versuchen. Bleibt es, dem Storyteller melden.
 
 ## 13. Datenschutz
