@@ -160,9 +160,14 @@ begin
   perform pg_temp.q('R91', 'Spieler: Entwurf hochladen', p1, 'authenticated', format($x$insert into public.documents(title, storage_path, draft) values ('UAT d', %L, true)$x$, p1::text || '/d.pdf'), 'err');
   perform pg_temp.q('R92', 'Spieler: Dokument anlegen', p1, 'authenticated', format($x$insert into public.documents(title, storage_path) values ('UAT new', %L)$x$, p1::text || '/new.pdf'), 'rows=1');
   perform pg_temp.q('R93', 'Spieler: Dokument mit fremdem Uploader', p1, 'authenticated', format($x$insert into public.documents(title, storage_path, uploader_id) values ('UAT f', %L, %L)$x$, p1::text || '/f.pdf', p2), 'err');
-  perform pg_temp.q('R94', 'Spieler: Dokument ändern (freigeben)', p1, 'authenticated', $x$update public.documents set draft = false where title = 'UAT new'$x$, 'rows=0');
+  perform pg_temp.q('R94', 'Spieler: Beschreibung des eigenen Dokuments ändern', p1, 'authenticated', $x$update public.documents set description = 'neu' where title = 'UAT new'$x$, 'rows=1');
   perform pg_temp.q('R95', 'Spieler: fremdes Dokument löschen', p1, 'authenticated', $x$delete from public.documents where title = 'UAT pub'$x$, 'rows=0');
   perform pg_temp.q('R96', 'Spieler: eigenes Dokument löschen', p1, 'authenticated', $x$delete from public.documents where title = 'UAT new'$x$, 'rows=1');
+  perform pg_temp.q('R97', 'Spieler: Titel eines fremden Dokuments ändern', p1, 'authenticated', $x$update public.documents set title = 'UAT geklaut' where title = 'UAT pub'$x$, 'rows=0');
+  perform pg_temp.q('R98', 'Spieler: eigenes Dokument zum Entwurf machen', p1, 'authenticated', $x$update public.documents set draft = true where title = 'UAT p1doc'$x$, 'err');
+  perform pg_temp.q('R99', 'Spieler: Speicherpfad des eigenen Dokuments ändern', p1, 'authenticated', $x$update public.documents set storage_path = 'x/y.pdf' where title = 'UAT p1doc'$x$, 'err');
+  perform pg_temp.q('R99a', 'Spieler: Titel des eigenen Dokuments ändern', p1, 'authenticated', $x$update public.documents set title = 'UAT p1doc', description = 'beschrieben' where title = 'UAT p1doc'$x$, 'rows=1');
+  perform pg_temp.q('R99b', 'Spieler: Uploader des eigenen Dokuments ändern', p1, 'authenticated', format($x$update public.documents set uploader_id = %L where title = 'UAT p1doc'$x$, p2), 'err');
   perform pg_temp.q('R100', 'Spieler: Storage sieht eigene + freigegebene Dateien', p1, 'authenticated', $x$select count(*) from storage.objects where bucket_id = 'documents'$x$, 'n=2');
   perform pg_temp.q('R101', 'Spieler: Upload in eigenen Ordner', p1, 'authenticated', format($x$insert into storage.objects(bucket_id,name) values ('documents', %L)$x$, p1::text || '/x.pdf'), 'rows=1');
   perform pg_temp.q('R102', 'Spieler: Upload in fremden Ordner', p1, 'authenticated', format($x$insert into storage.objects(bucket_id,name) values ('documents', %L)$x$, p2::text || '/x.pdf'), 'err');
@@ -216,6 +221,8 @@ begin
   perform pg_temp.q('R160', 'ST: sieht Entwürfe', st, 'authenticated', $x$select count(*) from public.documents where title like 'UAT%'$x$, 'n=3');
   perform pg_temp.q('R161', 'ST: gibt Entwurf frei', st, 'authenticated', $x$update public.documents set draft = false where title = 'UAT draft'$x$, 'rows=1');
   perform pg_temp.q('R162', 'ST: lädt Entwurf hoch', st, 'authenticated', format($x$insert into public.documents(title, storage_path, draft) values ('UAT d2', %L, true)$x$, st::text || '/d2.pdf'), 'rows=1');
+  perform pg_temp.q('R164', 'ST: Titel eines fremden Dokuments ändern', st, 'authenticated', $x$update public.documents set title = 'UAT pub', description = 'vom ST' where title = 'UAT pub'$x$, 'rows=1');
+  perform pg_temp.q('R164a', 'ST: Speicherpfad ändern bleibt gesperrt', st, 'authenticated', $x$update public.documents set storage_path = 'x/z.pdf' where title = 'UAT pub'$x$, 'err');
   perform pg_temp.q('R163', 'ST: löscht Spieler-Dokument', st, 'authenticated', $x$delete from public.documents where title = 'UAT p1doc'$x$, 'rows=1');
   perform pg_temp.q('R165', 'ST: Storage sieht alle Dateien', st, 'authenticated', $x$select count(*) from storage.objects where bucket_id = 'documents' and name like '%.pdf'$x$, 'n=5');
   perform pg_temp.q('R166', 'ST: Upload in eigenen Ordner', st, 'authenticated', format($x$insert into storage.objects(bucket_id,name) values ('documents', %L)$x$, st::text || '/x.pdf'), 'rows=1');
@@ -311,7 +318,7 @@ begin
   perform pg_temp.q('R192', 'authenticated ohne TRUNCATE/REFERENCES/TRIGGER', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')$x$, 'n=0');
   perform pg_temp.q('R193', 'Funktionsrechte nur wie vorgesehen (ping 2x, is_st, is_member, wiki_category_visible)', null, 'postgres', $x$select count(*) from information_schema.role_routine_grants where grantee in ('anon','authenticated') and routine_schema = 'public'$x$, 'n=5');
   perform pg_temp.q('R194', 'RLS auf allen public-Tabellen', null, 'postgres', $x$select count(*) from pg_tables where schemaname = 'public' and not rowsecurity$x$, 'n=0');
-  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=63');
+  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=64');
   perform pg_temp.q('R196', 'security definer Funktionen mit festem search_path', null, 'postgres', $x$select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'))$x$, 'n=0');
   perform pg_temp.q('R197', 'Bucket documents ist privat, Limit 20 MB', null, 'postgres', $x$select count(*) from storage.buckets where id = 'documents' and not public and file_size_limit = 20971520$x$, 'n=1');
   perform pg_temp.q('R198', 'profiles.role akzeptiert nur st/player', null, 'postgres', format($x$insert into public.profiles(id, role) values (%L, 'admin')$x$, nop), 'err');
