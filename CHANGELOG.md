@@ -1,7 +1,12 @@
 # Changelog · Kiel by Night Website
 
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
-Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Änderungen am Schema kommen immer als **neue** Migration.
+Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
+
+## 1.3.1 – 21.10.2026
+Dokumentation.
+
+- **Neu:** `docs/Technische_Doku.md` (Architektur, Datenbank, Rechte, Edge Function, Betrieb) und `docs/Benutzerhandbuch.md` (Bedienung für Spieler und Storyteller). Beide sind lebende Dokumente, die Pflegeregel steht in der README.
 
 ## 1.3.0 – 21.10.2026
 Storyteller als Administrator.
