@@ -17,3 +17,5 @@ grant select, insert, delete on storage.objects to authenticated;
 grant execute on function storage.foldername(text) to authenticated, anon;
 create publication supabase_realtime;
 grant all on schema public to service_role;
+-- Wie Supabase: neue Tabellen im Schema public bekommen automatisch alle Rechte (Default Privileges)
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
