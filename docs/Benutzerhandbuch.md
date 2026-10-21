@@ -105,7 +105,7 @@ Du siehst und darfst **alles**: alle Bögen, Notizen (auch private und fremde Se
 ### Storyteller-Bereich
 - **Beziehungskarte:** zeigt NPCs und Beziehungen aus Notion (nur Lesen). Oben steht „Stand … (Cache)“ oder „(frisch)“. **„Aus Notion neu laden“** holt den aktuellen Stand.
   - **Formen** zeigen die Sekte: Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis. **Farben** zeigen das Wesen (Kindred, Ghoul, Sterblicher …). **Abgedunkelt** sind Tote, Spielercharaktere haben einen Doppelring. Grau „Ohne NPC-Eintrag“ sind Orte oder Gruppen, die nur in Beziehungen vorkommen.
-  - **Knoten antippen:** Details aus Notion, „In Notion öffnen“ und **„Auf Spielerkarte“**. Das legt den Knoten auf der Spielerkarte an, **nur mit Name und Typ, ohne Beschreibung**. Für Verbindungen gilt dasselbe ohne Beschriftung. Ein zweiter Klick legt nichts doppelt an.
+  - **Knoten antippen:** Details aus Notion, „In Notion öffnen“ und **„Auf Spielerkarte“**. Das legt den Knoten auf der Spielerkarte an, **nur mit dem Namen, ohne Typ und ohne Beschreibung**. Den Typ (Kindred, Sterblicher, …) tragen die Spieler selbst ein, weil er nicht immer offensichtlich ist. Für Verbindungen gilt dasselbe ohne Beschriftung. Ein zweiter Klick legt nichts doppelt an.
   - Die Anordnung kannst du ziehen („Neu anordnen“ ordnet alles neu). Sie bleibt gespeichert.
 - **Private Spielernotizen:** zeigt die privaten Notizen jedes Spielers (nur Lesen).
 
@@ -147,5 +147,5 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 
 ## 14. Änderungen an diesem Handbuch
 
-- **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7).
+- **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7). „Auf Spielerkarte“ überträgt keinen Typ mehr (Abschnitt 10).
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung für Bögen und Spielerkarte, ST als Administrator.
