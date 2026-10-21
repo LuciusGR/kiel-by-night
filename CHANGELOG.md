@@ -3,6 +3,16 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.5.0 – 22.10.2026
+- **Chroniken:** Neuer Bereich „Chroniken“. Eine Chronik gliedert sich in Kapitel und Sessions und zeigt eine Zeitleiste. Der Storyteller legt Chroniken und Kapitel an, ordnet Sessions zu und sieht Lücken. Entwürfe sieht nur der Storyteller.
+- **Sessions:** Zusammenfassung, Chronik, Kapitel und Ingame-Datum je Session (alle lesen, der Storyteller schreibt).
+- **Szenenkarten (nur Storyteller):** Karten je Session mit Ort, Stimmung, Ziel, Gegenspieler, NPCs mit Motivation, Ausgängen, Ablauf, Fäden und Details. Status, Reihenfolge, Bearbeiten, Löschen.
+- **Import:** Szenen als JSON im Format `kbn-scenes/1` (siehe `docs/Szenenformat_v1.md`) mit Prüfung und Vorschau. Ein zweiter Import ersetzt nichts.
+- **NPC-Verknüpfung:** NPCs werden über die Notion-ID mit der ST-Karte verknüpft. Auf der ST-Karte zeigt „Kommt vor in“ die Szenen mit Motivation, ein NPC in der Szene springt zum Knoten.
+- **Datenbank:** Migrationen `20261022120000_chronicles_v1_4.sql` und `20261022120100_chronicles_grants_v1_4.sql` (Rechte der neuen Tabellen nachgezogen, weil Supabase neue Tabellen für `anon` freigibt).
+- **Tests:** Rechte 224 Fälle (57 neue), Browser 145 Fälle (14 neue). Der Rechte-Test bildet die Default Privileges von Supabase nach.
+- **Doku:** Benutzerhandbuch und Technische Doku auf Version 1.5, neu `docs/Szenenformat_v1.md`.
+
 ## 1.4.0 – 21.10.2026
 - **Karten:** Die Suche zeigt alle Treffer als Liste im Seitenfeld (Spielerkarte und Beziehungskarte). Mehrere Treffer sind zugeklappt, genau ein Treffer ist aufgeklappt. Alle Treffer werden auf der Karte hervorgehoben.
 - **Storyteller:** „Auf Spielerkarte“ überträgt den Typ (Kindred, Sterblicher, …) nicht mehr. Die Spieler tragen ihn selbst ein, weil er nicht immer offensichtlich ist. Bereits übertragene Knoten behalten ihren Typ.
