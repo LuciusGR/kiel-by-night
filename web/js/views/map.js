@@ -318,12 +318,14 @@ export function MapView(root, src) {
   }
   function nodeForm(d) {
     d = d || {};
-    const types = [...new Set([...nodes.values()].map(n => normType(n.type)).filter(Boolean))];
-    const label = h("input", { type: "text", id: "nf-label", value: d.label || "" }), type = h("input", { type: "text", id: "nf-type", value: normType(d.type), list: "nf-types" });
+    const cur = normType(d.type);
+    const types = ["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", ...[...nodes.values()].map(n => normType(n.type)), cur].filter((v, i, a) => v && a.indexOf(v) === i);
+    const label = h("input", { type: "text", id: "nf-label", value: d.label || ""});
+    const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)));
     const tags = h("input", { type: "text", id: "nf-tags", value: (d.tags || []).join(", "), placeholder: "durch Komma getrennt" }), desc = h("textarea", { id: "nf-desc" }, d.description || "");
     return h("div", { class: "panel stack" }, h("h3", {}, d.id ? "Knoten bearbeiten" : "Neuer Knoten"),
       h("div", { class: "field" }, h("label", { for: "nf-label" }, "Name"), label),
-      h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type, h("datalist", { id: "nf-types" }, ...["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", ...types].filter((v, i, a) => a.indexOf(v) === i).map(t => h("option", { value: t })))),
+      h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type),
       h("div", { class: "field" }, h("label", { for: "nf-tags" }, "Tags"), tags),
       h("div", { class: "field" }, h("label", { for: "nf-desc" }, "Was wir wissen"), desc),
       h("div", { class: "row" },
