@@ -27,6 +27,7 @@ declare
   catpub uuid; catst uuid; pg_pub uuid; pg_st uuid; pg_p1 uuid; sn1 uuid; sn2 uuid;
   ch1 uuid; ch2 uuid; ch3 uuid; nA uuid; nB uuid; eAB uuid;
   nchars int; nprof int; nnodes int; ncatpub int;
+  chr_run uuid; chr_draft uuid; chap_run uuid; chap_draft uuid; sc1 uuid;
   rep text;
 begin
   -- ---------- Fixtures (als postgres, werden zurückgerollt) ----------
@@ -64,6 +65,15 @@ begin
   select count(*) into nprof from public.profiles;
   select count(*) into nnodes from public.player_map_nodes;
   select count(*) into ncatpub from public.wiki_categories where not st_only;
+  insert into public.chronicles(title, status) values ('UAT laufend', 'running') returning id into chr_run;
+  insert into public.chronicles(title, status) values ('UAT Entwurf', 'draft') returning id into chr_draft;
+  insert into public.chapters(chronicle_id, number, title) values (chr_run, 1, 'UAT K1') returning id into chap_run;
+  insert into public.chapters(chronicle_id, number, title) values (chr_draft, 1, 'UAT K1 Entwurf') returning id into chap_draft;
+  insert into public.session_info(session_number, chronicle_id, chapter_id, summary) values
+    (9201, chr_run, chap_run, 'UAT Zusammenfassung'), (9202, chr_draft, chap_draft, 'UAT geheim'), (9203, null, null, 'UAT ohne Chronik');
+  insert into public.scenes(session_number, position, title) values (9201, 1, 'UAT Szene 1') returning id into sc1;
+  insert into public.scenes(session_number, position, title) values (9201, 2, 'UAT Szene 2');
+  insert into public.scene_npcs(scene_id, notion_id, name, motivation) values (sc1, 'abc', 'UAT NPC', 'Motiv');
 
   -- ---------- A: anonym ----------
   perform pg_temp.q('R01', 'anon liest characters', null, 'anon', 'select count(*) from public.characters', 'err');
@@ -229,13 +239,72 @@ begin
   perform pg_temp.q('R188', 'ST: Session-Notiz im Namen eines Spielers anlegen', st, 'authenticated', format($x$insert into public.session_notes(session_number, author_id, body) values (1, %L, 'Import')$x$, p1), 'rows=1');
   perform pg_temp.q('R189', 'ST: private Notiz im Namen eines Spielers anlegen', st, 'authenticated', format($x$insert into public.private_notes(owner_id, title) values (%L, 'UAT vom ST')$x$, p1), 'rows=1');
 
+  -- ---------- F: Chroniken, Kapitel, Session-Infos, Szenen (v1.4) ----------
+  perform pg_temp.q('R201', 'anon liest chronicles', null, 'anon', $x$select count(*) from public.chronicles$x$, 'err');
+  perform pg_temp.q('R202', 'anon liest scenes', null, 'anon', $x$select count(*) from public.scenes$x$, 'err');
+  perform pg_temp.q('R203', 'ohne Profil: chronicles', nop, 'authenticated', $x$select count(*) from public.chronicles$x$, 'n=0');
+  perform pg_temp.q('R204', 'ohne Profil: chapters', nop, 'authenticated', $x$select count(*) from public.chapters$x$, 'n=0');
+  perform pg_temp.q('R205', 'ohne Profil: session_info', nop, 'authenticated', $x$select count(*) from public.session_info$x$, 'n=0');
+  perform pg_temp.q('R206', 'ohne Profil: scenes', nop, 'authenticated', $x$select count(*) from public.scenes$x$, 'n=0');
+  perform pg_temp.q('R207', 'ohne Profil: scene_npcs', nop, 'authenticated', $x$select count(*) from public.scene_npcs$x$, 'n=0');
+  perform pg_temp.q('R208', 'ohne Profil: Chronik anlegen', nop, 'authenticated', $x$insert into public.chronicles(title) values ('x')$x$, 'err');
+  perform pg_temp.q('R210', 'Spieler: sieht laufende Chronik', p1, 'authenticated', $x$select count(*) from public.chronicles where title like 'UAT%'$x$, 'n=1');
+  perform pg_temp.q('R211', 'Spieler: Entwurf ist unsichtbar', p1, 'authenticated', $x$select count(*) from public.chronicles where title = 'UAT Entwurf'$x$, 'n=0');
+  perform pg_temp.q('R212', 'Spieler: Chronik anlegen', p1, 'authenticated', $x$insert into public.chronicles(title) values ('x')$x$, 'err');
+  perform pg_temp.q('R213', 'Spieler: Chronik ändern', p1, 'authenticated', $x$update public.chronicles set title = 'x' where title = 'UAT laufend'$x$, 'rows=0');
+  perform pg_temp.q('R214', 'Spieler: Chronik löschen', p1, 'authenticated', $x$delete from public.chronicles where title = 'UAT laufend'$x$, 'rows=0');
+  perform pg_temp.q('R215', 'Spieler: sieht Kapitel der laufenden Chronik', p1, 'authenticated', $x$select count(*) from public.chapters where title like 'UAT%'$x$, 'n=1');
+  perform pg_temp.q('R216', 'Spieler: Kapitel des Entwurfs unsichtbar', p1, 'authenticated', $x$select count(*) from public.chapters where title = 'UAT K1 Entwurf'$x$, 'n=0');
+  perform pg_temp.q('R217', 'Spieler: Kapitel anlegen', p1, 'authenticated', format($x$insert into public.chapters(chronicle_id, number) values (%L, 2)$x$, chr_run), 'err');
+  perform pg_temp.q('R218', 'Spieler: Kapitel ändern', p1, 'authenticated', $x$update public.chapters set title = 'x' where title = 'UAT K1'$x$, 'rows=0');
+  perform pg_temp.q('R219', 'Spieler: Session-Infos ohne Entwurf', p1, 'authenticated', $x$select count(*) from public.session_info where session_number between 9201 and 9203$x$, 'n=2');
+  perform pg_temp.q('R220', 'Spieler: Session-Info anlegen', p1, 'authenticated', $x$insert into public.session_info(session_number) values (9210)$x$, 'err');
+  perform pg_temp.q('R221', 'Spieler: Session-Info ändern', p1, 'authenticated', $x$update public.session_info set summary = 'x' where session_number = 9201$x$, 'rows=0');
+  perform pg_temp.q('R222', 'Spieler: Session-Info löschen', p1, 'authenticated', $x$delete from public.session_info where session_number = 9201$x$, 'rows=0');
+  perform pg_temp.q('R223', 'Spieler: Szenen lesen', p1, 'authenticated', $x$select count(*) from public.scenes$x$, 'n=0');
+  perform pg_temp.q('R224', 'Spieler: Szene anlegen', p1, 'authenticated', $x$insert into public.scenes(session_number, title) values (9201, 'x')$x$, 'err');
+  perform pg_temp.q('R225', 'Spieler: Szene ändern', p1, 'authenticated', $x$update public.scenes set title = 'x'$x$, 'rows=0');
+  perform pg_temp.q('R226', 'Spieler: Szene löschen', p1, 'authenticated', $x$delete from public.scenes$x$, 'rows=0');
+  perform pg_temp.q('R227', 'Spieler: Szenen-NPCs lesen', p1, 'authenticated', $x$select count(*) from public.scene_npcs$x$, 'n=0');
+  perform pg_temp.q('R228', 'Spieler: Szenen-NPC anlegen', p1, 'authenticated', format($x$insert into public.scene_npcs(scene_id, name) values (%L, 'x')$x$, sc1), 'err');
+  perform pg_temp.q('R229', 'Spieler: Szenen-NPC ändern', p1, 'authenticated', $x$update public.scene_npcs set motivation = 'x'$x$, 'rows=0');
+  perform pg_temp.q('R230', 'Spieler: Szenen-NPC löschen', p1, 'authenticated', $x$delete from public.scene_npcs$x$, 'rows=0');
+  perform pg_temp.q('R240', 'ST: sieht alle Chroniken', st, 'authenticated', $x$select count(*) from public.chronicles where title like 'UAT%'$x$, 'n=2');
+  perform pg_temp.q('R241', 'ST: sieht alle Kapitel', st, 'authenticated', $x$select count(*) from public.chapters where title like 'UAT%'$x$, 'n=2');
+  perform pg_temp.q('R242', 'ST: sieht alle Session-Infos', st, 'authenticated', $x$select count(*) from public.session_info where session_number between 9201 and 9203$x$, 'n=3');
+  perform pg_temp.q('R243', 'ST: Chronik anlegen', st, 'authenticated', $x$insert into public.chronicles(title) values ('UAT neu')$x$, 'rows=1');
+  perform pg_temp.q('R244', 'ST: Chronik ändern', st, 'authenticated', $x$update public.chronicles set status = 'done' where title = 'UAT neu'$x$, 'rows=1');
+  perform pg_temp.q('R245', 'ST: ungültiger Chronik-Status', st, 'authenticated', $x$insert into public.chronicles(title, status) values ('UAT x', 'x')$x$, 'err');
+  perform pg_temp.q('R246', 'ST: Chronik ohne Titel', st, 'authenticated', $x$insert into public.chronicles(title) values ('  ')$x$, 'err');
+  perform pg_temp.q('R247', 'ST: Kapitel anlegen', st, 'authenticated', $x$insert into public.chapters(chronicle_id, number, title) select id, 1, 'UAT KN' from public.chronicles where title = 'UAT neu'$x$, 'rows=1');
+  perform pg_temp.q('R248', 'ST: doppelte Kapitelnummer', st, 'authenticated', $x$insert into public.chapters(chronicle_id, number, title) select id, 1, 'UAT KN2' from public.chronicles where title = 'UAT neu'$x$, 'err');
+  perform pg_temp.q('R249', 'ST: Kapitelnummer 0', st, 'authenticated', $x$insert into public.chapters(chronicle_id, number) select id, 0 from public.chronicles where title = 'UAT neu'$x$, 'err');
+  perform pg_temp.q('R250', 'ST: Chronik löschen', st, 'authenticated', $x$delete from public.chronicles where title = 'UAT neu'$x$, 'rows=1');
+  perform pg_temp.q('R251', 'Kapitel der gelöschten Chronik sind weg', st, 'authenticated', $x$select count(*) from public.chapters where title = 'UAT KN'$x$, 'n=0');
+  perform pg_temp.q('R252', 'ST: Session-Info anlegen', st, 'authenticated', $x$insert into public.session_info(session_number, summary) values (9210, 'x')$x$, 'rows=1');
+  perform pg_temp.q('R253', 'ST: Session-Info ändern', st, 'authenticated', $x$update public.session_info set summary = 'y' where session_number = 9210$x$, 'rows=1');
+  perform pg_temp.q('R254', 'ST: Session-Nummer 0', st, 'authenticated', $x$insert into public.session_info(session_number) values (0)$x$, 'err');
+  perform pg_temp.q('R255', 'ST: Szene anlegen', st, 'authenticated', $x$insert into public.scenes(session_number, position, title, outcomes) values (9201, 3, 'UAT Szene 3', '["Erfolg"]')$x$, 'rows=1');
+  perform pg_temp.q('R256', 'ST: Szene ohne Titel', st, 'authenticated', $x$insert into public.scenes(session_number, title) values (9201, '')$x$, 'err');
+  perform pg_temp.q('R257', 'ST: ungültiger Szenenstatus', st, 'authenticated', $x$insert into public.scenes(session_number, title, status) values (9201, 'UAT y', 'x')$x$, 'err');
+  perform pg_temp.q('R258', 'ST: Ausgänge müssen eine Liste sein', st, 'authenticated', $x$insert into public.scenes(session_number, title, outcomes) values (9201, 'UAT z', '{}')$x$, 'err');
+  perform pg_temp.q('R259', 'ST: sieht alle Szenen', st, 'authenticated', $x$select count(*) from public.scenes where title like 'UAT%'$x$, 'n=3');
+  perform pg_temp.q('R260', 'ST: Szene ändern', st, 'authenticated', $x$update public.scenes set status = 'played' where title = 'UAT Szene 3'$x$, 'rows=1');
+  perform pg_temp.q('R261', 'ST: NPC an Szene hängen', st, 'authenticated', format($x$insert into public.scene_npcs(scene_id, notion_id, name, motivation) values (%L, 'abd', 'UAT NPC2', 'will x')$x$, sc1), 'rows=1');
+  perform pg_temp.q('R262', 'ST: NPC ohne Namen', st, 'authenticated', format($x$insert into public.scene_npcs(scene_id, name) values (%L, '')$x$, sc1), 'err');
+  perform pg_temp.q('R263', 'ST: sieht Szenen-NPCs', st, 'authenticated', $x$select count(*) from public.scene_npcs where notion_id in ('abc','abd')$x$, 'n=2');
+  perform pg_temp.q('R264', 'ST: Szene löschen', st, 'authenticated', format($x$delete from public.scenes where id = %L$x$, sc1), 'rows=1');
+  perform pg_temp.q('R265', 'NPCs der gelöschten Szene sind weg', st, 'authenticated', $x$select count(*) from public.scene_npcs where notion_id in ('abc','abd')$x$, 'n=0');
+  perform pg_temp.q('R266', 'ST: laufende Chronik löschen', st, 'authenticated', format($x$delete from public.chronicles where id = %L$x$, chr_run), 'rows=1');
+  perform pg_temp.q('R267', 'Session-Info bleibt, Chronik und Kapitel sind leer', st, 'authenticated', $x$select count(*) from public.session_info where session_number = 9201 and chronicle_id is null and chapter_id is null$x$, 'n=1');
+
   -- ---------- E: Konfiguration der Datenbank ----------
   perform pg_temp.q('R190', 'service_role darf notion_cache schreiben', null, 'postgres', $x$select count(*) from (select 1 where has_table_privilege('service_role','public.notion_cache','INSERT') and has_table_privilege('service_role','public.notion_cache','UPDATE')) s$x$, 'n=1');
   perform pg_temp.q('R191', 'anon hat keine Tabellenrechte in public', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public'$x$, 'n=0');
   perform pg_temp.q('R192', 'authenticated ohne TRUNCATE/REFERENCES/TRIGGER', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')$x$, 'n=0');
   perform pg_temp.q('R193', 'Funktionsrechte nur wie vorgesehen (ping 2x, is_st, is_member, wiki_category_visible)', null, 'postgres', $x$select count(*) from information_schema.role_routine_grants where grantee in ('anon','authenticated') and routine_schema = 'public'$x$, 'n=5');
   perform pg_temp.q('R194', 'RLS auf allen public-Tabellen', null, 'postgres', $x$select count(*) from pg_tables where schemaname = 'public' and not rowsecurity$x$, 'n=0');
-  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=55');
+  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=63');
   perform pg_temp.q('R196', 'security definer Funktionen mit festem search_path', null, 'postgres', $x$select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'))$x$, 'n=0');
   perform pg_temp.q('R197', 'Bucket documents ist privat, Limit 20 MB', null, 'postgres', $x$select count(*) from storage.buckets where id = 'documents' and not public and file_size_limit = 20971520$x$, 'n=1');
   perform pg_temp.q('R198', 'profiles.role akzeptiert nur st/player', null, 'postgres', format($x$insert into public.profiles(id, role) values (%L, 'admin')$x$, nop), 'err');
