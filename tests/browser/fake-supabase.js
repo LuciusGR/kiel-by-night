@@ -27,7 +27,7 @@ const db = {
   chronicles: [{ id: chr1, title: "Kiel by Night", description: "Beispielchronik", status: "running", started_on: "2026-10-01", sort: 0, created_at: now() }],
   chapters: [{ id: chp1, chronicle_id: chr1, number: 1, title: "Auftakt", created_at: now() }],
   session_info: [{ session_number: 1, chronicle_id: chr1, chapter_id: chp1, ingame_date: "Nacht vom 11. März", summary: "Die Gruppe trifft den Prinzen." }],
-  scenes: [], scene_npcs: [],
+  scenes: [], scene_npcs: [], document_links: [],
   notion_cache: [],
 };
 window.__db = db;
