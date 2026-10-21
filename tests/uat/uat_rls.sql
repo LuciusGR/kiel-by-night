@@ -73,6 +73,7 @@ begin
     (9201, chr_run, chap_run, 'UAT Zusammenfassung'), (9202, chr_draft, chap_draft, 'UAT geheim'), (9203, null, null, 'UAT ohne Chronik');
   insert into public.scenes(session_number, position, title) values (9201, 1, 'UAT Szene 1') returning id into sc1;
   insert into public.scenes(session_number, position, title) values (9201, 2, 'UAT Szene 2');
+  insert into public.scenes(position, title) values (1, 'UAT Vorrat Fix');
   insert into public.scene_npcs(scene_id, notion_id, name, motivation) values (sc1, 'abc', 'UAT NPC', 'Motiv');
 
   -- ---------- A: anonym ----------
@@ -269,6 +270,7 @@ begin
   perform pg_temp.q('R228', 'Spieler: Szenen-NPC anlegen', p1, 'authenticated', format($x$insert into public.scene_npcs(scene_id, name) values (%L, 'x')$x$, sc1), 'err');
   perform pg_temp.q('R229', 'Spieler: Szenen-NPC ändern', p1, 'authenticated', $x$update public.scene_npcs set motivation = 'x'$x$, 'rows=0');
   perform pg_temp.q('R230', 'Spieler: Szenen-NPC löschen', p1, 'authenticated', $x$delete from public.scene_npcs$x$, 'rows=0');
+  perform pg_temp.q('R231', 'Spieler: Szenen im Vorrat sind unsichtbar', p1, 'authenticated', $x$select count(*) from public.scenes where title = 'UAT Vorrat Fix'$x$, 'n=0');
   perform pg_temp.q('R240', 'ST: sieht alle Chroniken', st, 'authenticated', $x$select count(*) from public.chronicles where title like 'UAT%'$x$, 'n=2');
   perform pg_temp.q('R241', 'ST: sieht alle Kapitel', st, 'authenticated', $x$select count(*) from public.chapters where title like 'UAT%'$x$, 'n=2');
   perform pg_temp.q('R242', 'ST: sieht alle Session-Infos', st, 'authenticated', $x$select count(*) from public.session_info where session_number between 9201 and 9203$x$, 'n=3');
@@ -288,7 +290,7 @@ begin
   perform pg_temp.q('R256', 'ST: Szene ohne Titel', st, 'authenticated', $x$insert into public.scenes(session_number, title) values (9201, '')$x$, 'err');
   perform pg_temp.q('R257', 'ST: ungültiger Szenenstatus', st, 'authenticated', $x$insert into public.scenes(session_number, title, status) values (9201, 'UAT y', 'x')$x$, 'err');
   perform pg_temp.q('R258', 'ST: Ausgänge müssen eine Liste sein', st, 'authenticated', $x$insert into public.scenes(session_number, title, outcomes) values (9201, 'UAT z', '{}')$x$, 'err');
-  perform pg_temp.q('R259', 'ST: sieht alle Szenen', st, 'authenticated', $x$select count(*) from public.scenes where title like 'UAT%'$x$, 'n=3');
+  perform pg_temp.q('R259', 'ST: sieht alle Szenen (inkl. Vorrat)', st, 'authenticated', $x$select count(*) from public.scenes where title like 'UAT%'$x$, 'n=4');
   perform pg_temp.q('R260', 'ST: Szene ändern', st, 'authenticated', $x$update public.scenes set status = 'played' where title = 'UAT Szene 3'$x$, 'rows=1');
   perform pg_temp.q('R261', 'ST: NPC an Szene hängen', st, 'authenticated', format($x$insert into public.scene_npcs(scene_id, notion_id, name, motivation) values (%L, 'abd', 'UAT NPC2', 'will x')$x$, sc1), 'rows=1');
   perform pg_temp.q('R262', 'ST: NPC ohne Namen', st, 'authenticated', format($x$insert into public.scene_npcs(scene_id, name) values (%L, '')$x$, sc1), 'err');
@@ -297,6 +299,11 @@ begin
   perform pg_temp.q('R265', 'NPCs der gelöschten Szene sind weg', st, 'authenticated', $x$select count(*) from public.scene_npcs where notion_id in ('abc','abd')$x$, 'n=0');
   perform pg_temp.q('R266', 'ST: laufende Chronik löschen', st, 'authenticated', format($x$delete from public.chronicles where id = %L$x$, chr_run), 'rows=1');
   perform pg_temp.q('R267', 'Session-Info bleibt, Chronik und Kapitel sind leer', st, 'authenticated', $x$select count(*) from public.session_info where session_number = 9201 and chronicle_id is null and chapter_id is null$x$, 'n=1');
+  perform pg_temp.q('R268', 'ST: Szene ohne Session (Vorrat) anlegen', st, 'authenticated', $x$insert into public.scenes(title) values ('UAT Vorrat neu')$x$, 'rows=1');
+  perform pg_temp.q('R269', 'ST: Session 0 bleibt verboten', st, 'authenticated', $x$insert into public.scenes(session_number, title) values (0, 'UAT null')$x$, 'err');
+  perform pg_temp.q('R270', 'ST: Szene aus einer Session in den Vorrat legen', st, 'authenticated', $x$update public.scenes set session_number = null where title = 'UAT Szene 3'$x$, 'rows=1');
+  perform pg_temp.q('R271', 'ST: Szene aus dem Vorrat einer Session zuordnen', st, 'authenticated', $x$update public.scenes set session_number = 9201 where title = 'UAT Vorrat neu'$x$, 'rows=1');
+  perform pg_temp.q('R272', 'ST: sieht die Vorrat-Szenen', st, 'authenticated', $x$select count(*) from public.scenes where session_number is null and title like 'UAT%'$x$, 'n=2');
 
   -- ---------- E: Konfiguration der Datenbank ----------
   perform pg_temp.q('R190', 'service_role darf notion_cache schreiben', null, 'postgres', $x$select count(*) from (select 1 where has_table_privilege('service_role','public.notion_cache','INSERT') and has_table_privilege('service_role','public.notion_cache','UPDATE')) s$x$, 'n=1');
