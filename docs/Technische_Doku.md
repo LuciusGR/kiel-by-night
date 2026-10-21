@@ -77,7 +77,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 |---|---|---|
 | `overview.js` | Übersicht | Charakterkarten, „Letzte Änderungen“ aus Wiki, Dokumenten, Session-Notizen (RLS blendet Verstecktes aus) |
 | `characters.js` | Charaktere | V5-Bogen als ein JSON-Dokument (`characters.sheet`). **Modi Ansicht (Standard) und Bearbeitung**. Autospeichern 800 ms nach der letzten Eingabe, beim Zurückschalten oder Verlassen sofort |
-| `sessions.js` | Sessions | Eine Seite pro Session, jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
+| `sessions.js` | Sessions | Liste aufklappbarer Zeilen (`details.session-item`), je Session eine. Höchstens eine ist offen, ihr Inhalt (Notizen, `infoBlock()`, Szenenblock) wird erst beim Aufklappen aufgebaut. Beim Start ist die neueste offen, `S.arg.session` öffnet eine bestimmte und scrollt dorthin. Jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
 | `chronicles.js` | Chroniken | Liste und Zeitleiste (Chronik → Kapitel → Sessions). Der ST legt an, bearbeitet, verwaltet Kapitel und ordnet Sessions zu. Lädt `chronicles`, `chapters`, `session_info`, `sessions`, `session_notes` |
 | `scenes.js` | Szenenkarten (nur ST) | Block in der Session-Ansicht: Karten, Status, Reihenfolge, Bearbeiten, Import (`parseScenes`, Vorschau, NPC-Abgleich `matchNpc`), `sceneMentions` für die ST-Karte |
 | `private.js` | Privat | Private Notizen (Spieler); der ST liest sie im Storyteller-Bereich |
@@ -215,7 +215,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 145 Fälle, Stand 22.10.2026: 144 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 150 Fälle, Stand 22.10.2026: 149 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -233,6 +233,8 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.5.2):** Sessions-Ansicht als Akkordeon (`item()`, `sessionBody()` in `sessions.js`, Inhalt lazy), statt Liste links und Inhalt rechts. Neue UAT-Fälle U61, U62.
+- **22.10.2026 (Version 1.5.1):** Anmeldung unterscheidet Netzfehler-Ursachen (`diagnoseNetwork()` in `lib.js`).
 - **22.10.2026 (Version 1.5):** Chroniken, Kapitel, `session_info` und Szenenkarten (Migrationen 20261022120000 und 20261022120100, Ansichten `chronicles.js` und `scenes.js`, Szenen-Import mit NPC-Verknüpfung, „Kommt vor in“ auf der ST-Karte). Rechte-Test bildet Default Privileges nach.
 - **21.10.2026 (Version 1.4):** „Auf Spielerkarte“ überträgt keinen Typ mehr (`ensurePlayerNode()`). Kartensuche in `map.js`: `searchIds()` liefert alle Treffer (Label, Alias), `applySearch()` markiert sie, `resultsView()` zeigt je Treffer ein `<details>`, offen nur bei genau einem Treffer. Zustand `resultsOn`, endet beim Antippen eines Knotens. UAT-Skripte liegen jetzt in `tests/uat`.
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung, Kartenfix, ST als Administrator.
