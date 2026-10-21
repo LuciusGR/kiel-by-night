@@ -251,6 +251,7 @@ export function MapView(root, src) {
     }
     drawPanel();
   }
+  function selectNode(id) { if (!cy) return; const n = cy.getElementById(id); if (n.empty()) return; sel = { kind: "node", id }; resultsOn = false; highlight(); drawPanel(); n.select(); cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 }); }
   function focusNode(id) { if (!cy) return; const n = cy.getElementById(id); if (!n.empty()) cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 }); }
   search.addEventListener("input", applySearch);
   search.addEventListener("keydown", e => { if (e.key === "Enter") applySearch(); }); // Enter: Ansicht erneut auf die Treffer einpassen
@@ -359,6 +360,7 @@ export function MapView(root, src) {
   // Start: Daten UND Positionen zuerst laden, dann zeichnen (A2: kein Race wie in v1)
   refresh().then(() => {
     if (alive && src.watch) unwatch = src.watch(() => { if (!editing) refresh(); });
+    if (alive && src.focus) selectNode(src.focus);
   });
   return { refresh };
 }
