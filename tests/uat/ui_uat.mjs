@@ -105,13 +105,13 @@ T("U03", "Anmeldung", "Konto ohne Profil: klare Meldung, kein Zugriff auf Inhalt
   assert.match(t, /kein Profil/); assert.equal(await p.locator("#nav button").count(), 0);
   return p;
 });
-T("U04", "Navigation", "ST sieht 6 Bereiche plus Storyteller, aber nicht Privat", async () => {
+T("U04", "Navigation", "ST sieht 7 Bereiche plus Storyteller, aber nicht Privat", async () => {
   const p = await openApp("st"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Storyteller"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Storyteller"]); return p;
 });
-T("U05", "Navigation", "Spieler sieht 6 Bereiche plus Privat, aber nicht Storyteller", async () => {
+T("U05", "Navigation", "Spieler sieht 7 Bereiche plus Privat, aber nicht Storyteller", async () => {
   const p = await openApp("player"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Privat"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Privat"]); return p;
 });
 T("U06", "Navigation", "Kopfzeile zeigt Rolle und Namen", async () => {
   const a = await openApp("st"); assert.match(await a.locator("#who").innerText(), /Storyteller · Roland/); await a.close();
@@ -662,9 +662,119 @@ T("U141", "ST-Karte", "Legende der Formen ist sichtbar", async () => {
 });
 
 // =====================================================================
+// K · Chroniken, Session-Infos, Szenenkarten
+// =====================================================================
+const SAMPLE = { format: "kbn-scenes/1", chronik: "Kiel by Night", session: 1, szenen: [
+  { titel: "Treffen im Hafen", reihenfolge: 1, ort: "Hafen", stimmung: "Neblig und angespannt", ziel: "Kontakt herstellen", gegenspieler: "Zoll",
+    npcs: [{ name: "Aniq", motivation: "Will die Loyalität der Gruppe prüfen" }, { name: "Unbekannter Händler", motivation: "Will Geld" }],
+    faeden: ["Faden A"], ausgaenge: ["Erfolg: a", "Fehlschlag: b"], text: "Ablauf der Szene", details: "Weitere Infos zur Szene" },
+  { titel: "Elysium", reihenfolge: 2, npcs: ["Mara"] },
+  { titel: "Rückweg", reihenfolge: 3 }] };
+const importFile = async (p, obj, name = "szenen.json") => {
+  await p.getByRole("button", { name: "Szenen importieren", exact: true }).first().click();
+  await p.setInputFiles("#sc-file", { name, mimeType: "application/json", buffer: Buffer.from(typeof obj === "string" ? obj : JSON.stringify(obj)) }); await p.waitForTimeout(600);
+};
+const stSession = async () => openApp("st", "sessions", { wait: 1000 });
+const scn = p => db(p, "scenes");
+T("U200", "Chroniken", "Spieler sieht die laufende Chronik mit Sessions, aktuellem Kapitel und ohne Verwaltungsknöpfe", async () => {
+  const p = await openApp("player", "chronicles"); const t = await p.locator("section[data-chronicle]").innerText();
+  assert.equal(await p.locator("section[data-chronicle]").count(), 1); assert.match(t, /Kiel by Night/); assert.match(t, /laufend/i); assert.match(t, /1 Session/); assert.match(t, /Kapitel 1 · Auftakt/);
+  assert.equal(await p.getByRole("button", { name: "Neue Chronik" }).count(), 0); return p;
+});
+T("U201", "Chroniken", "ST legt Chronik an: Titel ist Pflicht, Entwurf wird gespeichert", async () => {
+  const p = await openApp("st", "chronicles"); await p.getByRole("button", { name: "Neue Chronik", exact: true }).click(); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Titel/);
+  await p.fill("#ch-title", "Zweite Chronik"); await p.selectOption("#ch-status", "draft"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Chronik angelegt/); await p.waitForTimeout(400);
+  assert.equal(await p.locator("section[data-chronicle]").count(), 2); const r = (await db(p, "chronicles")).find(c => c.title === "Zweite Chronik"); assert.equal(r.status, "draft"); assert.match(await p.locator("main").innerText(), /entwurf/i); return p;
+});
+T("U202", "Chroniken", "Detail: Zeitleiste mit Kapitel, Session, Ingame-Datum und Zusammenfassung; Spieler ohne Bearbeiten-Knöpfe", async () => {
+  const a = await openApp("player", "chronicles"); await a.locator(".linkbtn", { hasText: "Kiel by Night" }).click(); await a.waitForTimeout(300);
+  const t = await a.locator("main").innerText(); assert.match(t, /Kapitel 1 · Auftakt/); assert.match(t, /Session 1 · Auftakt/); assert.match(t, /Ingame Nacht vom 11\. März/); assert.match(t, /Die Gruppe trifft den Prinzen\./);
+  assert.equal(await a.locator("details[data-chapter]").first().evaluate(e => e.open), true, "neuestes Kapitel ist aufgeklappt");
+  for (const n of ["Chronik bearbeiten", "Kapitel verwalten"]) assert.equal(await a.getByRole("button", { name: n }).count(), 0, n); return a;
+});
+T("U203", "Chroniken", "ST: Kapitel anlegen; doppelte Nummer und Nummer 0 werden abgewiesen", async () => {
+  const p = await openApp("st", "chronicles"); await p.locator(".linkbtn", { hasText: "Kiel by Night" }).click(); await p.getByRole("button", { name: "Kapitel verwalten" }).click();
+  assert.equal(await p.inputValue("#kn-nr"), "2"); await p.fill("#kn-title", "Zweites"); await p.getByRole("button", { name: "Kapitel anlegen" }).click(); await waitToast(p, /Kapitel angelegt/); await p.waitForTimeout(300);
+  assert.equal((await db(p, "chapters")).length, 2);
+  if (!(await p.locator("#kn-nr").count())) await p.getByRole("button", { name: "Kapitel verwalten" }).click();
+  await p.fill("#kn-nr", "1"); await p.getByRole("button", { name: "Kapitel anlegen" }).click(); await waitToast(p, /gibt es schon/); await p.fill("#kn-nr", "0"); await p.getByRole("button", { name: "Kapitel anlegen" }).click(); await waitToast(p, /ab 1/);
+  assert.equal((await db(p, "chapters")).length, 2); return p;
+});
+T("U204", "Chroniken", "ST: nicht zugeordnete Session wird der Chronik zugeordnet und erscheint in der Zeitleiste", async () => {
+  const p = await openApp("st", "chronicles"); await p.evaluate(() => window.__db.sessions.push({ number: 2, title: "Zwei", play_date: null }));
+  await nav(p, "Charaktere", 300); await nav(p, "Chroniken", 600); assert.match(await p.locator("main").innerText(), /noch keiner Chronik zugeordnet/);
+  await p.locator(".linkbtn", { hasText: "Kiel by Night" }).click(); await p.waitForTimeout(300); assert.equal(await p.locator("[data-unassigned]").count(), 1);
+  await p.getByRole("button", { name: "Dieser Chronik zuordnen" }).click(); await waitToast(p, /Zugeordnet/); await p.waitForTimeout(400);
+  assert.equal(await p.locator("[data-unassigned]").count(), 0); assert.ok(await p.locator('[data-session="2"]').count()); return p;
+});
+T("U205", "Sessions", "Zusammenfassung ist für Spieler sichtbar; Bearbeiten-Formular und Szenenkarten nur für den ST", async () => {
+  const a = await openApp("player", "sessions"); assert.match(await a.locator("[data-info=summary]").innerText(), /Die Gruppe trifft den Prinzen\./); assert.match(await a.locator("[data-info=where]").innerText(), /Kiel by Night · Kapitel 1 Auftakt/);
+  assert.equal(await a.locator("[data-info=edit]").count(), 0); assert.equal(await a.locator("#si-summary").count(), 0); assert.equal(await a.getByText("Szenenkarten").count(), 0); await a.close();
+  const b = await stSession(); assert.equal(await b.locator("[data-info=edit]").count(), 1); assert.ok(await b.getByText("Szenenkarten").count()); return b;
+});
+T("U206", "Sessions", "ST speichert Chronik, Ingame-Datum und Zusammenfassung der Session", async () => {
+  const p = await stSession(); await p.locator("[data-info=edit] summary").click(); await p.fill("#si-ingame", "Nacht vom 13. März"); await p.fill("#si-summary", "Neue Zusammenfassung"); await p.locator("[data-info=edit]").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert/);
+  const i = (await db(p, "session_info")).find(x => x.session_number === 1); assert.equal(i.summary, "Neue Zusammenfassung"); assert.equal(i.ingame_date, "Nacht vom 13. März"); assert.ok(i.chronicle_id && i.chapter_id); return p;
+});
+T("U210", "Szenenkarten", "Neue Szene mit NPC und Motivation: NPC wird mit der ST-Karte verknüpft (Notion-ID)", async () => {
+  const p = await stSession(); assert.match(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /Noch keine Szenenkarten/);
+  await p.getByRole("button", { name: "Neue Szene", exact: true }).click(); await p.locator("section[aria-labelledby=scenes-h]").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Titel/);
+  await p.fill("#sc-title", "Hafen"); await p.fill("#sc-place", "Dock 4"); await p.fill("#sc-mood", "Neblig"); await p.getByRole("button", { name: "NPC hinzufügen" }).click();
+  await p.fill('input[aria-label="NPC-Name"]', "aniq"); await p.fill('input[aria-label="Motivation"]', "Will prüfen"); await p.fill("#sc-det", "Details hier");
+  await p.locator("section[aria-labelledby=scenes-h]").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Szene angelegt/); await p.waitForTimeout(500);
+  const s = (await scn(p))[0], n = (await db(p, "scene_npcs"))[0]; assert.equal(s.title, "Hafen"); assert.equal(s.details, "Details hier"); assert.equal(n.notion_id, "a1"); assert.equal(n.motivation, "Will prüfen");
+  const t = await p.locator("[data-scene]").innerText(); assert.match(t, /Neblig/); assert.match(t, /Will prüfen/); assert.match(t, /Weitere Details und Infos/); return p;
+});
+T("U211", "Szenenkarten", "Import: Vorschau zeigt Szenen und NPC-Treffer, danach stehen alle Felder in den Karten", async () => {
+  const p = await stSession(); await importFile(p, SAMPLE);
+  assert.match(await p.locator("[role=status]").first().innerText(), /Vorschau: 3 Szenen in der Datei, 3 werden importiert/); assert.equal(await p.locator("[data-import]").count(), 3);
+  assert.ok(await p.locator(".badge", { hasText: /^verknüpft: Aniq$/i }).count()); assert.ok(await p.locator(".badge", { hasText: /^nicht verknüpft$/i }).count()); assert.equal((await scn(p)).length, 0, "Vorschau speichert noch nichts");
+  await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  const s = (await scn(p)).sort((a, b) => a.position - b.position); assert.deepEqual(s.map(x => x.title), ["Treffen im Hafen", "Elysium", "Rückweg"]); assert.deepEqual(s.map(x => x.position), [1, 2, 3]);
+  assert.equal(s[0].mood, "Neblig und angespannt"); assert.equal(s[0].details, "Weitere Infos zur Szene"); assert.deepEqual(s[0].outcomes, ["Erfolg: a", "Fehlschlag: b"]); assert.deepEqual(s[0].threads, ["Faden A"]);
+  const n = await db(p, "scene_npcs"); const by = x => n.find(r => r.name === x); assert.equal(by("Aniq").notion_id, "a1"); assert.equal(by("Aniq").motivation, "Will die Loyalität der Gruppe prüfen"); assert.equal(by("Unbekannter Händler").notion_id, ""); assert.equal(by("Mara").notion_id, "a2");
+  assert.equal(await p.locator("[data-scene]").count(), 3); return p;
+});
+T("U212", "Szenenkarten", "Zweiter Import ersetzt nichts: doppelte Titel sind abgewählt, vorhandene Szenen bleiben", async () => {
+  const p = await stSession(); await importFile(p, SAMPLE); await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  await importFile(p, SAMPLE); assert.match(await p.locator("[role=status]").first().innerText(), /0 werden importiert/); assert.equal(await p.locator(".badge", { hasText: /Titel gibt es schon/i }).count(), 3);
+  assert.equal(await p.getByRole("button", { name: "0 Szenen importieren" }).isDisabled(), true); assert.equal((await scn(p)).length, 3, "nichts doppelt, nichts ersetzt");
+  await p.getByLabel("Szene importieren: Elysium").check(); await p.getByRole("button", { name: "1 Szene importieren" }).click(); await waitToast(p, /1 Szene importiert/); await p.waitForTimeout(500);
+  const s = await scn(p); assert.equal(s.length, 4); assert.equal(Math.max(...s.map(x => x.position)), 4, "neue Szene wird hinten angehängt"); return p;
+});
+T("U213", "Szenenkarten", "Fehlerhafte Dateien: verständliche Fehlerliste, es wird nichts gespeichert", async () => {
+  const p = await stSession();
+  const cases = [["{kaputt", /kein gültiges JSON/], [{ format: "x", session: 1, szenen: [{ titel: "a" }] }, /Unbekanntes Format/], [{ format: "kbn-scenes/1", session: 0, szenen: [{ titel: "a" }] }, /"session" muss/],
+    [{ format: "kbn-scenes/1", session: 1, szenen: [] }, /mindestens einer Szene/], [{ format: "kbn-scenes/1", session: 1, szenen: [{ ort: "x" }, { titel: "b", npcs: "x" }, { titel: "c", ausgaenge: [1] }] }, /Szene 1: "titel" fehlt[\s\S]*"npcs" muss eine Liste[\s\S]*"ausgaenge" muss eine Liste/]];
+  for (const [c, re] of cases) { await importFile(p, c); assert.match(await p.locator(".notice.bad").first().innerText(), re); assert.match(await p.locator(".notice.bad").first().innerText(), /nichts gespeichert/); assert.equal((await scn(p)).length, 0); }
+  return p;
+});
+T("U214", "Szenenkarten", "Status ändern, Reihenfolge tauschen, Szene löschen (mit Rückfrage)", async () => {
+  const p = await stSession(); await importFile(p, SAMPLE); await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  const card = t => p.locator("[data-scene]", { hasText: t });
+  await card("Elysium").locator("summary").click(); await card("Elysium").getByRole("button", { name: "Gespielt", exact: true }).click(); await p.waitForTimeout(500);
+  assert.equal((await scn(p)).find(s => s.title === "Elysium").status, "played"); assert.match(await card("Elysium").locator("summary").innerText(), /gespielt/i);
+  if (!(await card("Elysium").evaluate(e => e.open))) await card("Elysium").locator("summary").click();
+  await card("Elysium").getByRole("button", { name: "Szene nach oben" }).click(); await p.waitForTimeout(600);
+  const o = (await scn(p)).sort((a, b) => a.position - b.position).map(s => s.title); assert.deepEqual(o, ["Elysium", "Treffen im Hafen", "Rückweg"]);
+  await card("Rückweg").locator("summary").click(); await card("Rückweg").getByRole("button", { name: "Löschen", exact: true }).click(); await card("Rückweg").getByRole("button", { name: "Ja, löschen" }).click(); await waitToast(p, /Gelöscht/); await p.waitForTimeout(400);
+  assert.equal((await scn(p)).length, 2); return p;
+});
+T("U215", "Szenenkarten", "ST-Karte: Knoten zeigt 'Kommt vor in' mit der Motivation aus der Szene; Klick auf den NPC in der Szene springt zum Knoten", async () => {
+  const p = await stSession(); await importFile(p, SAMPLE); await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  await p.locator("[data-scene]", { hasText: "Treffen im Hafen" }).locator(":scope > summary").click(); await p.locator("[data-scene] button.chip", { hasText: "Aniq" }).click(); await p.waitForTimeout(2800);
+  assert.match(await p.locator(".map-panel").innerText(), /Aniq/); assert.match(await p.locator(".map-panel").innerText(), /kommt vor in \(1\)/i); assert.match(await p.locator(".map-panel").innerText(), /Will die Loyalität der Gruppe prüfen/);
+  assert.ok(await p.locator(".map-panel h3", { hasText: "Aniq" }).count(), "Knoten ist ausgewählt");
+  await p.locator(".map-panel").getByRole("button", { name: /Session 1 · Treffen im Hafen/ }).click(); await p.waitForTimeout(700); assert.equal(await p.locator(".article h2").innerText(), "Session 1"); return p;
+});
+T("U216", "Szenenkarten", "Spieler: kein Szenenblock und keine Import-Knöpfe", async () => {
+  const p = await openApp("player", "sessions"); assert.equal(await p.getByText("Szenenkarten").count(), 0); assert.equal(await p.getByRole("button", { name: "Szenen importieren" }).count(), 0); return p;
+});
+
+// =====================================================================
 // J · Handy, Barrierefreiheit, Kontrast, Konsole
 // =====================================================================
-const VIEWS = { st: ["start", "chars", "sessions", "map", "wiki", "docs", "st"], player: ["start", "chars", "sessions", "map", "wiki", "docs", "private"] };
+const VIEWS = { st: ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "st"], player: ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "private"] };
 for (const role of ["st", "player"]) {
   T("U150" + (role === "st" ? "a" : "b"), "Handy 390 px", `${role}: kein horizontales Scrollen in allen Bereichen`, async () => {
     const p = await openApp(role, "start", { viewport: { width: 390, height: 800 } }); const bad = [];
