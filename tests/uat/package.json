@@ -1,0 +1,17 @@
+{
+  "name": "kbn-uat",
+  "private": true,
+  "type": "module",
+  "description": "Kiel by Night: UAT (Rechte, Edge Function, Browser)",
+  "scripts": {
+    "rls": "node run_rls.mjs",
+    "function": "node fn_uat.mjs",
+    "ui": "node ui_uat.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@supabase/supabase-js": "2.45.4",
+    "cytoscape": "3.33.1",
+    "playwright": "1.56.1"
+  }
+}
