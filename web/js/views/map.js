@@ -321,17 +321,21 @@ export function MapView(root, src) {
     const cur = normType(d.type);
     const types = ["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", ...[...nodes.values()].map(n => normType(n.type)), cur].filter((v, i, a) => v && a.indexOf(v) === i);
     const label = h("input", { type: "text", id: "nf-label", value: d.label || ""});
-    const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)));
+    const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)), h("option", { value: "__new__" }, "＋ Neuer Typ …"));
+    const newType = h("input", { type: "text", id: "nf-type-new", placeholder: "Neuen Typ eingeben", hidden: true, "aria-label": "Neuer Typ" });
+    type.addEventListener("change", () => { newType.hidden = type.value !== "__new__"; if (!newType.hidden) newType.focus(); });
     const tags = h("input", { type: "text", id: "nf-tags", value: (d.tags || []).join(", "), placeholder: "durch Komma getrennt" }), desc = h("textarea", { id: "nf-desc" }, d.description || "");
     return h("div", { class: "panel stack" }, h("h3", {}, d.id ? "Knoten bearbeiten" : "Neuer Knoten"),
       h("div", { class: "field" }, h("label", { for: "nf-label" }, "Name"), label),
-      h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type),
+      h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type, newType),
       h("div", { class: "field" }, h("label", { for: "nf-tags" }, "Tags"), tags),
       h("div", { class: "field" }, h("label", { for: "nf-desc" }, "Was wir wissen"), desc),
       h("div", { class: "row" },
         h("button", { class: "btn primary", type: "button", onclick: async () => {
           if (!label.value.trim()) { toast("Bitte einen Namen eintragen.", true); return; }
-          const body = { label: label.value.trim(), type: normType(type.value.trim()), tags: splitTags(tags.value), description: desc.value };
+          const typeVal = type.value === "__new__" ? newType.value.trim() : type.value;
+          if (type.value === "__new__" && !typeVal) { toast("Bitte einen neuen Typ eintragen.", true); return; }
+          const body = { label: label.value.trim(), type: normType(typeVal), tags: splitTags(tags.value), description: desc.value };
           if (d.id) await src.updateNode(d.id, body); else { const id = await src.addNode(body); if (id) sel = { kind: "node", id }; }
           await afterWrite();
         } }, "Speichern"),
