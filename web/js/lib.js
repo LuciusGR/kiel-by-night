@@ -2,6 +2,12 @@
 
 import { SUPABASE_URL } from "./config.js";
 
+// Leere Kinder (null, undefined, false) überspringen: replaceChildren/append/prepend schrieben sonst den Text "null" in die Seite.
+for (const m of ["append", "prepend", "replaceChildren"]) {
+  const orig = Element.prototype[m];
+  Element.prototype[m] = function (...kids) { return orig.apply(this, kids.filter(k => k != null && k !== false)); };
+}
+
 export function h(tag, props, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) {
