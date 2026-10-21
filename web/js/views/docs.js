@@ -9,7 +9,7 @@ const TYPES = { pdf: "application/pdf", md: "text/markdown", txt: "text/plain", 
 const safeName = n => n.normalize("NFKD").replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(-80) || "datei";
 
 registerView("docs", async m => {
-  let docs = [];
+  let docs = [], editing = null;
   m.append(head("Dokumente", "Handouts, Karten, Bilder und Recherchen. Alle laden hoch, gelöscht wird nur, was man selbst hochgeladen hat."));
 
   const f = h("input", { type: "file", id: "up-file", accept: Object.values(TYPES).join(",") });
@@ -62,15 +62,32 @@ registerView("docs", async m => {
     if (w) { w.opener = null; w.location.href = data.signedUrl; } else location.href = data.signedUrl;
   }
 
+  // Titel und Beschreibung nachträglich ändern (Uploader und ST; die Datei selbst bleibt unverändert)
+  function editForm(x) {
+    const t = h("input", { type: "text", id: "doc-title", value: x.title }), d = h("textarea", { id: "doc-desc", style: "min-height:70px" }, x.description || "");
+    return h("div", { class: "doc" }, h("div", { class: "meta stack" },
+      h("div", { class: "field" }, h("label", { for: "doc-title" }, "Titel"), t),
+      h("div", { class: "field" }, h("label", { for: "doc-desc" }, "Beschreibung"), d),
+      h("div", { class: "actions" },
+        h("button", { class: "btn small primary", type: "button", onclick: async () => {
+          const title = t.value.trim(); if (!title) { toast("Bitte einen Titel eintragen.", true); return; }
+          await guard(sb.from("documents").update({ title, description: d.value.trim() }).eq("id", x.id), "Gespeichert.");
+          editing = null; await load(); draw();
+        } }, "Speichern"),
+        h("button", { class: "btn small", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen"))));
+  }
+
   function card(x) {
     const img = x.content_type.startsWith("image/"), ext = (x.file_name.split(".").pop() || "Datei").toUpperCase();
     const mineOrSt = S.isST || x.uploader_id === S.user.id;
+    if (editing === x.id) return editForm(x);
     return h("div", { class: "doc" },
       h("div", { class: "thumb" }, img && x._thumb ? h("img", { src: x._thumb, alt: x.title, loading: "lazy" }) : h("span", { class: "ext" }, ext)),
       h("div", { class: "meta" }, h("strong", {}, x.title), x.description ? h("span", { class: "muted", style: "font-size:.9rem" }, x.description) : null,
         h("span", { class: "muted", style: "font-size:.82rem" }, fmtDate(x.created_at) + " · " + authorName(x.uploader_id) + (x.size_bytes ? " · " + Math.max(1, Math.round(x.size_bytes / 1024)) + " KB" : "")),
         h("div", { class: "actions" },
           h("button", { class: "btn small", type: "button", onclick: () => open(x) }, "Öffnen"),
+          mineOrSt && (S.isST || !x.draft) ? h("button", { class: "btn small", type: "button", onclick: () => { editing = x.id; draw(); } }, "Bearbeiten") : null,
           x.draft && S.isST ? h("button", { class: "btn small primary", type: "button", onclick: async () => { await guard(sb.from("documents").update({ draft: false }).eq("id", x.id), "Für Spieler freigegeben."); await load(); draw(); } }, "Freigeben") : null,
           mineOrSt ? confirmBtn("Löschen", async () => {
             await guard(sb.from("documents").delete().eq("id", x.id), "Gelöscht.");
