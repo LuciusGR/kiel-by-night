@@ -86,7 +86,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
 | `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend) und private Spielernotizen |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]` |
-| `docs.js` | Dokumente | Upload und Öffnen über signierte URLs |
+| `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`) |
 
 ### 4.3 Charakterbogen
 - JSON-Felder: `attr` (9 Attribute 1–5), `skills` (je `{v, spec}`), `disc` (`[{name, lvl, powers}]`), `health` und `wp` (Arrays 0/1/2 = leer/oberflächlich/schwer), `hunger`, `humanity`, `stains`, `bp`, `xpTotal`, `xpSpent` und Textfelder (concept, ambition, desire, predator, sire, generation, resonance, touchstones, advantages, notes). Health = Stamina + 3, Willpower = Composure + Resolve. `normSheet()` ergänzt fehlende Felder.
@@ -153,6 +153,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `20261022120000_chronicles_v1_4.sql` | Chroniken, Kapitel, Session-Infos, Szenenkarten mit Rechten |
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 | `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
+| `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
 
@@ -169,7 +170,7 @@ Grundsatz: `anon` darf nichts außer `ping()`. `authenticated` bekommt Tabellenr
 | `private_notes` | Besitzer und ST | Besitzer; ST alle |
 | `wiki_categories` | Mitglieder (`st_only` nur ST) | Mitglieder legen an (nicht `st_only`); umbenennen und löschen nur ST |
 | `wiki_pages` | je Kategorie sichtbar | in sichtbaren Kategorien anlegen und ändern; löschen Ersteller und ST |
-| `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); ändern (freigeben) ST; löschen Uploader und ST |
+| `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); Titel und Beschreibung ändern Uploader (nur eigene, veröffentlichte) und ST; Entwurf/Freigabe ST; löschen Uploader und ST. Das Spalten-GRANT erlaubt UPDATE nur auf `title`, `description`, `draft` |
 | `player_map_*` | Mitglieder | Mitglieder (auch Löschen von Spielercharakter-Knoten) |
 | `map_positions` | `player`: Mitglieder, `st`: ST | wie Lesen |
 | `chronicles` | Mitglieder (Entwürfe nur ST) | ST |
@@ -221,7 +222,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 230 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 158 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 237 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 159 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -239,6 +240,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
 - **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Szenen-Vorrat (`scenepool.js`, `sceneBoard()`), Migration `20261022120200` (`session_number` nullable), Zuordnen und Verschieben (`relocate()`), Suche, `session` im Szenenformat optional (Version 1.1), „Kommt vor in“ zeigt Vorrat. Tests U220 bis U225, R231 und R268 bis R272.
 - **22.10.2026 (Version 1.5.3):** `lib.js` überspringt leere Kinder (`null`, `undefined`, `false`) bei `append`, `prepend` und `replaceChildren` (vorher erschien der Text „null“). Handy-Regeln in `theme.css` (`.toggle.wrap`, flachere `.session-item`, kleinere Innenabstände unter 600 px). Tests U217, U163.
