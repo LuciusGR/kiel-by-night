@@ -622,10 +622,10 @@ T("U135", "ST-Karte", "Notion-Fehler: verständliche Meldung mit Hinweis auf Fun
 T("U136", "ST-Karte", "Warnung der Function (z. B. Cache nicht gespeichert) erscheint als Hinweis", async () => {
   const p = await openApp("st", "st", { wait: 2000, notion: "warn" }); await waitToast(p, /Hinweis Notion: Cache nicht gespeichert/); return p;
 });
-T("U137", "ST-Karte", "'Auf Spielerkarte': nur Name und Typ ohne Beschreibung/Tags; zweiter Klick legt kein Duplikat an", async () => {
+T("U137", "ST-Karte", "'Auf Spielerkarte': nur der Name, Typ leer (tragen die Spieler selbst ein), ohne Beschreibung/Tags; zweiter Klick legt kein Duplikat an", async () => {
   const p = await openApp("st", "st", { wait: 2500 }); await cyEval(p, cy => cy.nodes().filter(n => n.data("label") === "Aniq")[0].emit("tap"));
   await p.locator(".map-panel").getByRole("button", { name: "Auf Spielerkarte" }).click(); await waitToast(p, /steht auf der Spielerkarte/); await p.waitForTimeout(2800); await p.locator(".map-panel").getByRole("button", { name: "Auf Spielerkarte" }).click(); await p.waitForTimeout(500);
-  const rows = (await db(p, "player_map_nodes")).filter(n => n.label === "Aniq"); assert.equal(rows.length, 1); assert.equal(rows[0].description, ""); assert.deepEqual(rows[0].tags, []); return p;
+  const rows = (await db(p, "player_map_nodes")).filter(n => n.label === "Aniq"); assert.equal(rows.length, 1); assert.equal(rows[0].type, "", "Typ wird nicht übertragen"); assert.equal(rows[0].description, ""); assert.deepEqual(rows[0].tags, []); return p;
 });
 T("U138", "ST-Karte", "'Auf Spielerkarte' für Verbindung: ohne Beschriftung und Beschreibung, kein Duplikat", async () => {
   const p = await openApp("st", "st", { wait: 2500 }); await p.evaluate(() => { window.__db.player_map_edges.length = 0; }); await cyEval(p, cy => cy.edges()[0].emit("tap")); await p.locator(".map-panel").getByRole("button", { name: "Auf Spielerkarte" }).click(); await waitToast(p, /geschoben/);
