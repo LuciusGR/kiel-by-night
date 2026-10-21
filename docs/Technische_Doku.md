@@ -79,6 +79,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `characters.js` | Charaktere | V5-Bogen als ein JSON-Dokument (`characters.sheet`). **Modi Ansicht (Standard) und Bearbeitung**. Autospeichern 800 ms nach der letzten Eingabe, beim Zurückschalten oder Verlassen sofort |
 | `sessions.js` | Sessions | Liste aufklappbarer Zeilen (`details.session-item`), je Session eine. Höchstens eine ist offen, ihr Inhalt (Notizen, `infoBlock()`, Szenenblock) wird erst beim Aufklappen aufgebaut. Beim Start ist die neueste offen, `S.arg.session` öffnet eine bestimmte und scrollt dorthin. Jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
 | `chronicles.js` | Chroniken | Liste und Zeitleiste (Chronik → Kapitel → Sessions). Der ST legt an, bearbeitet, verwaltet Kapitel und ordnet Sessions zu. Lädt `chronicles`, `chapters`, `session_info`, `sessions`, `session_notes` |
+| `scenepool.js` | Szenen (nur ST) | Tab „Szenen“ (`#scenes`): Vorrat, Zugeordnet, Alle, Suche. Nutzt `sceneBoard()` aus `scenes.js`. Spieler bekommen nur einen Hinweis |
 | `scenes.js` | Szenenkarten (nur ST) | Block in der Session-Ansicht: Karten, Status, Reihenfolge, Bearbeiten, Import (`parseScenes`, Vorschau, NPC-Abgleich `matchNpc`), `sceneMentions` für die ST-Karte |
 | `private.js` | Privat | Private Notizen (Spieler); der ST liest sie im Storyteller-Bereich |
 | `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten |
@@ -111,6 +112,10 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 
 Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()` prüft die Datei vollständig (Fehlerliste, nichts wird gespeichert) und normalisiert sie. NPC-Namen werden gegen die NPC-Liste der Edge Function `notion-proxy` abgeglichen (`loadNotionNpcs()`, Antwort aus dem Cache, `refresh: false`). Bei Treffer wird die **Notion-ID** in `scene_npcs.notion_id` gespeichert. Der Import hängt neue Szenen hinten an und wählt gleichnamige Szenen der Session ab, er ersetzt nie von allein. Schreibt die Datenbank mittendrin nicht mehr, bleiben schon angelegte Szenen bestehen (kein Rollback, der Aufruf läuft über einzelne API-Anfragen). Die ST-Karte öffnet mit `go("st", { focus: notionId })` direkt einen Knoten (`MapView`: `src.focus`).
 
+### 4.8 Szenen-Vorrat
+
+Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ session, mode })` in `scenes.js` zeigt je nach Aufruf die Szenen einer Session (`sceneBlock(n)`, `mode` leer) oder im Tab Szenen die Ansichten `pool`, `assigned` und `all`. `relocate()` ordnet zu, verschiebt und legt zurück in den Vorrat (setzt `session_number` und hängt die Position hinten an, `maxPosition()`). Die Auswahl der Sessions kommt aus `sessions`, `session_info`, `session_notes` und `scenes` (`loadSessionNumbers()`), dazu „Session N+1 (neu)“. Der Import im Tab Szenen legt immer im Vorrat an, in einer Session-Ansicht in dieser Session. `session` in der Datei ist optional (`parseScenes()`). Die Suche filtert im Browser (`setQuery()`), die Pfeile für die Reihenfolge sind bei Suche und in den Ansichten „Zugeordnet“ und „Alle“ ausgeblendet.
+
 ## 5. Datenbank (Supabase Postgres)
 
 | Tabelle | Inhalt |
@@ -129,7 +134,7 @@ Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()
 | `chronicles` | `title`, `description`, `status` (`draft`, `running`, `done`), `started_on`, `sort` |
 | `chapters` | `chronicle_id`, `number` (je Chronik eindeutig), `title` |
 | `session_info` | `session_number` (Schlüssel), `chronicle_id`, `chapter_id` (beide `on delete set null`), `ingame_date`, `summary`. Nur der ST schreibt |
-| `scenes` | `session_number`, `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
+| `scenes` | `session_number` (null = Vorrat), `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
 | `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
@@ -147,6 +152,7 @@ Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()
 | `20261021120000_st_admin_v1_1.sql` | Storyteller als Administrator |
 | `20261022120000_chronicles_v1_4.sql` | Chroniken, Kapitel, Session-Infos, Szenenkarten mit Rechten |
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
+| `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
 
@@ -215,7 +221,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 224 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 152 Fälle, Stand 22.10.2026: 151 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 230 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 158 Fälle, Stand 22.10.2026: 157 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -233,6 +239,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.6.0):** Tab Szenen mit Szenen-Vorrat (`scenepool.js`, `sceneBoard()`), Migration `20261022120200` (`session_number` nullable), Zuordnen und Verschieben (`relocate()`), Suche, `session` im Szenenformat optional (Version 1.1), „Kommt vor in“ zeigt Vorrat. Tests U220 bis U225, R231 und R268 bis R272.
 - **22.10.2026 (Version 1.5.3):** `lib.js` überspringt leere Kinder (`null`, `undefined`, `false`) bei `append`, `prepend` und `replaceChildren` (vorher erschien der Text „null“). Handy-Regeln in `theme.css` (`.toggle.wrap`, flachere `.session-item`, kleinere Innenabstände unter 600 px). Tests U217, U163.
 - **22.10.2026 (Version 1.5.2):** Sessions-Ansicht als Akkordeon (`item()`, `sessionBody()` in `sessions.js`, Inhalt lazy), statt Liste links und Inhalt rechts. Neue UAT-Fälle U61, U62.
 - **22.10.2026 (Version 1.5.1):** Anmeldung unterscheidet Netzfehler-Ursachen (`diagnoseNetwork()` in `lib.js`).
