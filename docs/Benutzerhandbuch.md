@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 21.10.2026 · gilt für Website-Version 1.3.0
+Stand: 21.10.2026 · gilt für Website-Version 1.8.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -84,8 +84,9 @@ Bedienung:
 - **Knoten antippen:** zeigt rechts Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen. Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
 - **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
 - **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein.
-- **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
+- **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
+- **Dokumente am Knoten:** Im Detailfeld steht „Dokumente (n)“ mit den verknüpften Dokumenten. Ein Klick auf den Titel springt zum Dokument. Im Modus **Bearbeitung** wählst du ein Dokument aus der Liste und klickst „Verknüpfen“. Mit „×“ löst du die Verknüpfung (das Dokument bleibt erhalten).
 - **Löschen** fragt nach. Beim Löschen eines Knotens verschwinden auch seine Verbindungen. Vorsicht bei Spielercharakteren: Jeder in der Gruppe darf jeden Knoten löschen.
 
 ## 8. Wiki
@@ -106,7 +107,8 @@ Handouts, Karten, Bilder, Recherchen.
 - **Hochladen:** Datei wählen (PDF, PNG, JPG, WEBP, GIF, TXT, MD; höchstens 20 MB), Titel und Beschreibung eintragen, „Hochladen“.
 - **Öffnen:** öffnet die Datei in einem neuen Tab. Bilder zeigen eine Vorschau.
 - **Bearbeiten:** Titel und Beschreibung lassen sich nach dem Hochladen ändern („Bearbeiten“ auf der Karte, dann „Speichern“). Das darfst du bei eigenen Dokumenten, der ST bei allen. Die Datei selbst bleibt unverändert, dafür neu hochladen.
-- **Löschen:** nur eigene Dokumente (der ST alle).
+- **Verknüpfen mit Karten:** Jedes Dokument kann mit Personen, Orten und anderen Elementen der Spielerkarte verknüpft sein. Die Verknüpfung legst du im Detailfeld des Knotens an (Abschnitt 7). Am Dokument stehen die verknüpften Elemente als Marken. Ein Klick auf eine Marke springt zum Knoten auf der Karte, das „×“ löst die Verknüpfung. Beim Rücksprung vom Knoten wird das Dokument hervorgehoben. Der ST verknüpft zusätzlich Elemente der Storytellerkarte (Marke „ST: Name“, Detailfeld des NPC). Diese Verknüpfungen sehen Spieler nicht.
+- **Löschen:** nur eigene Dokumente (der ST alle). Verknüpfungen des Dokuments verschwinden mit. Löscht jemand einen Knoten der Spielerkarte, verschwinden seine Verknüpfungen ebenfalls.
 - **ST-Entwürfe:** Der ST kann Dokumente „Als ST-Entwurf“ hochladen. Sie sind für Spieler unsichtbar, bis der ST „Freigeben“ klickt.
 
 ## 10. Für den Storyteller
@@ -154,7 +156,7 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | Spielerkarte | alle bearbeiten | alle bearbeiten |
 | Beziehungskarte (Notion) | kein Zugriff | sehen und anordnen |
 | Wiki | lesen, schreiben, eigene Seiten löschen | alles, Kategorien verwalten, ST-Notizen |
-| Dokumente | hochladen, eigene umbenennen und löschen | alles, Entwürfe, freigeben, umbenennen |
+| Dokumente | hochladen, eigene umbenennen und löschen, mit Elementen der Spielerkarte verknüpfen | alles, Entwürfe, freigeben, umbenennen, zusätzlich mit Elementen der Storytellerkarte verknüpfen |
 | Chroniken, Kapitel, Zusammenfassungen | lesen (Entwürfe nicht) | alles anlegen, ändern, löschen |
 | Szenenkarten | kein Zugriff | alles |
 | Profile, Rollen | eigenen Anzeigenamen | alle verwalten (Datenbank) |
@@ -188,6 +190,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
 - **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
