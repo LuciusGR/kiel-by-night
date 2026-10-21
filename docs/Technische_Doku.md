@@ -221,7 +221,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 230 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 158 Fälle, Stand 22.10.2026: 157 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 230 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 158 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -239,6 +239,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Szenen-Vorrat (`scenepool.js`, `sceneBoard()`), Migration `20261022120200` (`session_number` nullable), Zuordnen und Verschieben (`relocate()`), Suche, `session` im Szenenformat optional (Version 1.1), „Kommt vor in“ zeigt Vorrat. Tests U220 bis U225, R231 und R268 bis R272.
 - **22.10.2026 (Version 1.5.3):** `lib.js` überspringt leere Kinder (`null`, `undefined`, `false`) bei `append`, `prepend` und `replaceChildren` (vorher erschien der Text „null“). Handy-Regeln in `theme.css` (`.toggle.wrap`, flachere `.session-item`, kleinere Innenabstände unter 600 px). Tests U217, U163.
 - **22.10.2026 (Version 1.5.2):** Sessions-Ansicht als Akkordeon (`item()`, `sessionBody()` in `sessions.js`, Inhalt lazy), statt Liste links und Inhalt rechts. Neue UAT-Fälle U61, U62.
