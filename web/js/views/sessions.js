@@ -6,16 +6,18 @@ import { sceneBlock, resetNpcCache } from "./scenes.js";
 registerView("sessions", async m => {
   let mine = !!(S.arg && S.arg.mine);
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
+  const jump = cur != null;
+  let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
   let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [];
   resetNpcCache();
   const me = S.user.id;
 
-  const left = h("div", { class: "stack" }), right = h("div", {});
+  const box = h("div", { class: "stack sessions-list" });
   const bAll = h("button", { type: "button", onclick: () => { mine = false; draw(); } }, "Alle");
   const bMine = h("button", { type: "button", onclick: () => { mine = true; draw(); } }, "Nur meine");
   const tg = h("div", { class: "toggle", role: "group", "aria-label": "Ansicht" }, bAll, bMine);
-  m.append(head("Sessions", "Eine Seite pro Session. Jede Person schreibt ihren eigenen Abschnitt, alle können mitlesen.", tg,
-    h("button", { class: "btn primary", type: "button", onclick: () => newNote() }, "Neue Notiz")), h("div", { class: "split" }, left, right));
+  m.append(head("Sessions", "Eine Zeile je Session zum Aufklappen. Jede Person schreibt ihren eigenen Abschnitt, alle können mitlesen.", tg,
+    h("button", { class: "btn primary", type: "button", onclick: () => newNote() }, "Neue Notiz")), box);
 
   async function load() {
     const [n, s, i, c, k] = await Promise.all([
@@ -29,8 +31,8 @@ registerView("sessions", async m => {
     info = {}; for (const x of (i.error ? [] : i.data)) info[x.session_number] = x;
     chrons = c.error ? [] : c.data; chaps = k.error ? [] : k.data;
   }
-  const sessionsList = () => { const set = new Set(notes.map(n => n.session_number)); Object.keys(meta).forEach(k => set.add(Number(k))); return [...set].sort((a, b) => b - a); };
-  function newNote() { const l = sessionsList(); const next = cur ?? (l[0] || 1); editing = { id: null, session_number: next, body: "" }; mine = false; cur = next; draw(); }
+  const sessionsList = () => { const set = new Set(notes.map(n => n.session_number)); Object.keys(meta).forEach(k => set.add(Number(k))); Object.keys(info).forEach(k => set.add(Number(k))); return [...set].sort((a, b) => b - a); };
+  function newNote() { const l = sessionsList(); const next = cur ?? (l[0] || 1); editing = { id: null, session_number: next, body: "" }; mine = false; cur = next; auto = false; draw(); }
 
   function noteEditor(n) {
     const ta = h("textarea", { id: "note-body", placeholder: "Was ist passiert? Wer war dabei? Was ist offen?" }, n.body || "");
@@ -54,7 +56,7 @@ registerView("sessions", async m => {
     const md = meta[num] || {};
     const title = h("input", { type: "text", id: "sess-title", value: md.title || "", placeholder: "Titel der Session" });
     const date = h("input", { type: "date", id: "sess-date", value: md.play_date || "" });
-    return h("details", {}, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — bearbeiten"),
+    return h("details", { "data-meta": "1" }, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — bearbeiten"),
       h("div", { class: "row", style: "margin-top:8px" },
         h("div", { class: "field" }, h("label", { for: "sess-title" }, "Titel"), title),
         h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "sess-date" }, "Spieldatum"), date),
@@ -93,44 +95,64 @@ registerView("sessions", async m => {
   function entry(n) {
     return h("div", { class: "entry" },
       h("div", { class: "by" }, h("strong", {}, authorName(n.author_id)), h("span", { class: "muted" }, personName(n.author_id) + " · " + fmtDate(n.updated_at)),
-        n.author_id === me ? h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; draw(); } }, "Bearbeiten") : null),
+        n.author_id === me ? h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, "Bearbeiten") : null),
       h("div", { class: "pre", style: "margin-top:6px" }, n.body));
+  }
+
+  // Inhalt einer aufgeklappten Session
+  function sessionBody(num) {
+    const art = h("div", { class: "article" }, h("span", { class: "eyebrow" }, "Session"), h("h2", {}, "Session " + num), metaEditor(num), infoBlock(num));
+    // eigene Abschnitte zuerst, dann die anderen in Reihenfolge des Anlegens
+    const these = notes.filter(x => x.session_number === num).sort((a, b) => (a.author_id === me ? 0 : 1) - (b.author_id === me ? 0 : 1) || Date.parse(a.created_at) - Date.parse(b.created_at));
+    for (const n of these) art.append(editing && editing.id === n.id ? noteEditor(editing) : entry(n));
+    if (!these.length) art.append(h("p", { class: "muted", style: "margin-top:12px" }, "Zu dieser Session gibt es noch keine Notizen."));
+    if (editing && !editing.id) art.append(noteEditor(editing));
+    else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: num, body: "" }; draw(); } }, "Eigenen Abschnitt schreiben")));
+    return [art, S.isST ? h("div", { style: "margin-top:16px" }, sceneBlock(num)) : null];
+  }
+
+  // Eine Zeile je Session. Aufgeklappt ist höchstens eine, ihr Inhalt wird erst beim Aufklappen aufgebaut.
+  function item(num) {
+    const c = notes.filter(x => x.session_number === num).length, md = meta[num] || {}, i = info[num] || {};
+    const det = h("details", { class: "panel session-item", "data-session": String(num), open: num === cur ? true : null });
+    const body = h("div", { style: "margin-top:12px" });
+    det.append(h("summary", { style: "cursor:pointer;display:flex;gap:4px 12px;flex-wrap:wrap;align-items:baseline" },
+      h("strong", {}, "Session " + num + (md.title ? " · " + md.title : "")),
+      h("span", { class: "muted" }, [md.play_date ? fmtDate(md.play_date) : "", i.summary ? "mit Zusammenfassung" : ""].filter(Boolean).join(" · ")),
+      h("span", { class: "muted mono", style: "margin-left:auto" }, c + (c === 1 ? " Notiz" : " Notizen"))), body);
+    if (num === cur) body.append(...sessionBody(num).filter(Boolean));
+    det.addEventListener("toggle", () => {
+      if (det.open) {
+        if (cur === num && body.firstChild) return;
+        auto = false; cur = num; editing = null;
+        for (const d of box.querySelectorAll("details.session-item[open]")) if (d !== det) d.open = false;
+        body.replaceChildren(...sessionBody(num).filter(Boolean));
+      } else { body.replaceChildren(); if (cur === num) { cur = null; editing = null; } }
+    });
+    return det;
   }
 
   function draw() {
     bAll.setAttribute("aria-pressed", String(!mine)); bMine.setAttribute("aria-pressed", String(mine));
     const list = sessionsList();
-    if (cur == null && list.length) cur = list[0];
-    left.replaceChildren(list.length ? h("div", { class: "list" }, ...list.map(n => {
-      const c = notes.filter(x => x.session_number === n).length;
-      return h("button", { type: "button", "aria-current": String(!mine && n === cur), onclick: () => { mine = false; cur = n; editing = null; draw(); } },
-        h("span", {}, "Session " + n + (meta[n]?.title ? " · " + meta[n].title : "")), h("span", { class: "muted mono" }, String(c)));
-    })) : h("div", { class: "empty" }, "Noch keine Sessions."));
-
     if (mine) {
       const my = notes.filter(n => n.author_id === me).sort((a, b) => (b.session_number - a.session_number) || (Date.parse(b.updated_at) - Date.parse(a.updated_at)));
-      right.replaceChildren(h("div", { class: "article" }, h("h3", {}, "Meine Notizen"),
+      box.replaceChildren(h("div", { class: "article" }, h("h3", {}, "Meine Notizen"),
         my.length ? my.map(n => h("div", { class: "entry" }, h("div", { class: "by" }, h("strong", {}, "Session " + n.session_number), h("span", { class: "muted" }, fmtDate(n.updated_at)),
-          h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; draw(); } }, "Bearbeiten")), h("div", { class: "pre", style: "margin-top:6px" }, n.body)))
+          h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, "Bearbeiten")), h("div", { class: "pre", style: "margin-top:6px" }, n.body)))
           : h("p", { class: "muted", style: "margin-top:10px" }, "Du hast noch keine Notizen geschrieben.")));
       return;
     }
-    if (cur == null) {
-      right.replaceChildren(h("div", { class: "empty" }, "Lege mit „Neue Notiz“ die erste Session an."));
-      if (editing) right.append(noteEditor(editing));
+    if (cur == null && auto && list.length) cur = list[0];
+    if (!list.length) {
+      box.replaceChildren(h("div", { class: "empty" }, "Noch keine Sessions. Lege mit „Neue Notiz“ die erste an."), editing ? noteEditor(editing) : null);
       return;
     }
-    const art = h("div", { class: "article" }, h("span", { class: "eyebrow" }, "Session"), h("h2", {}, "Session " + cur), metaEditor(cur), infoBlock(cur));
-    // eigene Abschnitte zuerst, dann die anderen in Reihenfolge des Anlegens
-    const these = notes.filter(x => x.session_number === cur).sort((a, b) => (a.author_id === me ? 0 : 1) - (b.author_id === me ? 0 : 1) || Date.parse(a.created_at) - Date.parse(b.created_at));
-    for (const n of these) art.append(editing && editing.id === n.id ? noteEditor(editing) : entry(n));
-    if (!these.length) art.append(h("p", { class: "muted", style: "margin-top:12px" }, "Zu dieser Session gibt es noch keine Notizen."));
-    if (editing && !editing.id) art.append(noteEditor(editing));
-    else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: cur, body: "" }; draw(); } }, "Eigenen Abschnitt schreiben")));
-    right.replaceChildren(art);
-    if (S.isST) right.append(h("div", { style: "margin-top:16px" }, sceneBlock(cur)));
+    box.replaceChildren(...list.map(item));
+    if (editing && !editing.id && !list.includes(editing.session_number)) box.prepend(noteEditor(editing));
   }
 
   await load();
   draw();
+  if (jump) { const d = box.querySelector("details[open]"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "start" }); }
 });
