@@ -317,13 +317,13 @@ T("U43", "Charaktere", "Bogen eines gelöschten/unbekannten Eintrags zeigt Hinwe
 // D · Sessions
 // =====================================================================
 T("U50", "Sessions", "Session 1 mit Titel, Datum und Notiz der Spielerin wird angezeigt", async () => {
-  const p = await openApp("player", "sessions"); assert.match(await p.locator(".list").innerText(), /Session 1 · Auftakt/);
+  const p = await openApp("player", "sessions"); assert.match(await p.locator(".sessions-list").innerText(), /Session 1 · Auftakt/);
   assert.match(await p.locator(".entry").innerText(), /Wir trafen \[\[Prinz\]\]\./); assert.match(await p.locator(".entry .by").innerText(), /Feller/); return p;
 });
 T("U51", "Sessions", "Neue Notiz anlegen (Session 2) erscheint in der Liste", async () => {
   const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Neue Notiz" }).click(); assert.equal(await p.inputValue("#note-session"), "1");
   await p.fill("#note-session", "2"); await p.fill("#note-body", "Zweite Nacht"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Notiz angelegt\./);
-  assert.match(await p.locator(".list").innerText(), /Session 2/); assert.match(await p.locator(".article").innerText(), /Zweite Nacht/); return p;
+  assert.match(await p.locator(".sessions-list").innerText(), /Session 2/); assert.match(await p.locator(".article").innerText(), /Zweite Nacht/); return p;
 });
 T("U52", "Sessions", "Ungültige Session-Nummer wird abgewiesen", async () => {
   const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Neue Notiz" }).click();
@@ -340,9 +340,9 @@ T("U54", "Sessions", "'Nur meine' zeigt nur eigene Notizen, 'Alle' kehrt zurück
   await p.getByRole("button", { name: "Alle", exact: true }).click(); assert.ok(await p.locator("h2", { hasText: "Session 1" }).count()); return p;
 });
 T("U55", "Sessions", "Titel und Spieldatum der Session speichern", async () => {
-  const p = await openApp("player", "sessions"); await p.locator("summary").click(); await p.fill("#sess-title", "Neuer Titel"); await p.fill("#sess-date", "2026-10-05");
-  await p.locator("details").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
-  assert.match(await p.locator(".list").innerText(), /Session 1 · Neuer Titel/); assert.match(await p.locator("summary").innerText(), /05\.10\.2026/); return p;
+  const p = await openApp("player", "sessions"); await p.locator("details[data-meta] summary").click(); await p.fill("#sess-title", "Neuer Titel"); await p.fill("#sess-date", "2026-10-05");
+  await p.locator("details[data-meta]").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
+  assert.match(await p.locator(".sessions-list").innerText(), /Session 1 · Neuer Titel/); assert.match(await p.locator("details[data-meta] summary").innerText(), /05\.10\.2026/); return p;
 });
 T("U56", "Sessions", "Eigene Notiz bearbeiten und löschen (mit Rückfrage)", async () => {
   const p = await openApp("player", "sessions"); await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.fill("#note-body", "Geändert"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
@@ -362,6 +362,22 @@ T("U58", "Sessions", "Notiztext mit HTML/Script wird nur als Text dargestellt", 
 T("U59", "Sessions", "Bearbeiten-Abbrechen verwirft Änderungen", async () => {
   const p = await openApp("player", "sessions"); await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.fill("#note-body", "Verworfen"); await p.getByRole("button", { name: "Abbrechen" }).click();
   assert.equal((await db(p, "session_notes"))[0].body, "Wir trafen [[Prinz]]."); return p;
+});
+const manySessions = "(() => { const db = window.__db; for (const n of [2, 3, 4, 5]) { db.sessions.push({ number: n, title: 'Nacht ' + n, play_date: null }); db.session_notes.push({ id: crypto.randomUUID(), session_number: n, author_id: '11111111-1111-1111-1111-111111111111', body: 'Notiz zu ' + n, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }); } })()";
+const openItems = p => p.locator("details.session-item[open]");
+T("U61", "Sessions", "Sessions sind aufklappbar in der Liste: neueste offen, andere zu, höchstens eine offen, Zuklappen lässt alle zu", async () => {
+  const p = await openApp("player", "sessions", { init: "" }); await p.evaluate(manySessions); await nav(p, "Charaktere", 300); await nav(p, "Sessions", 700);
+  assert.equal(await p.locator("details.session-item").count(), 5); assert.equal(await openItems(p).count(), 1); assert.equal(await p.locator("details.session-item").first().evaluate(e => e.open), true, "neueste Session ist offen");
+  assert.equal(await p.locator("details.session-item .article").count(), 1, "nur die offene Session baut ihren Inhalt auf");
+  await p.locator('details[data-session="2"] > summary').click(); await p.waitForTimeout(300);
+  assert.equal(await openItems(p).count(), 1); assert.equal(await p.locator('details[data-session="2"]').evaluate(e => e.open), true); assert.match(await p.locator(".article").innerText(), /Notiz zu 2/);
+  await p.locator('details[data-session="2"] > summary').click(); await p.waitForTimeout(300); assert.equal(await openItems(p).count(), 0); assert.equal(await p.locator(".article").count(), 0); return p;
+});
+T("U62", "Sessions", "Die Liste bleibt kurz: aufgeklappter Inhalt steht in der Zeile der Session, nicht am Seitenende", async () => {
+  const p = await openApp("player", "sessions", { init: "" }); await p.evaluate(manySessions); await nav(p, "Charaktere", 300); await nav(p, "Sessions", 700);
+  await p.locator('details[data-session="2"] > summary').click(); await p.waitForTimeout(300);
+  const order = await p.evaluate(() => [...document.querySelectorAll("details.session-item")].map(d => d.dataset.session + ":" + !!d.querySelector(".article")));
+  assert.deepEqual(order, ["5:false", "4:false", "3:false", "2:true", "1:false"], "Inhalt steckt in der Zeile der Session 2"); return p;
 });
 T("U60", "Sessions", "Mehrere Notizen: eigener Abschnitt steht zuerst", async () => {
   const p = await openApp("player", "sessions"); await p.evaluate(() => window.__db.session_notes.push({ id: crypto.randomUUID(), session_number: 1, author_id: "11111111-1111-1111-1111-111111111111", body: "ST-Notiz", created_at: "2020-01-01T00:00:00Z", updated_at: "2020-01-01T00:00:00Z" }));
