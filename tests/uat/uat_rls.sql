@@ -28,6 +28,7 @@ declare
   ch1 uuid; ch2 uuid; ch3 uuid; nA uuid; nB uuid; eAB uuid;
   nchars int; nprof int; nnodes int; ncatpub int;
   chr_run uuid; chr_draft uuid; chap_run uuid; chap_draft uuid; sc1 uuid;
+  d_pub uuid; d_p1 uuid; d_hid uuid;
   rep text;
 begin
   -- ---------- Fixtures (als postgres, werden zurückgerollt) ----------
@@ -53,7 +54,11 @@ begin
   insert into public.documents(title, storage_path, draft, uploader_id) values
     ('UAT draft', st::text || '/draft.pdf', true, st),
     ('UAT pub', st::text || '/pub.pdf', false, st),
-    ('UAT p1doc', p1::text || '/own.pdf', false, p1);
+    ('UAT p1doc', p1::text || '/own.pdf', false, p1),
+    ('UAT hidden', st::text || '/hid.pdf', true, st);
+  select id into d_pub from public.documents where title = 'UAT pub';
+  select id into d_p1 from public.documents where title = 'UAT p1doc';
+  select id into d_hid from public.documents where title = 'UAT hidden';
   insert into storage.objects(bucket_id, name) values
     ('documents', st::text || '/draft.pdf'), ('documents', st::text || '/pub.pdf'),
     ('documents', p1::text || '/own.pdf'), ('documents', p2::text || '/p2.pdf');
@@ -61,6 +66,8 @@ begin
   insert into public.player_map_nodes(label) values ('UAT B') returning id into nB;
   insert into public.player_map_edges(from_node, to_node) values (nA, nB) returning id into eAB;
   insert into public.map_positions(scope, node_key, x, y) values ('player', 'uat-k', 1, 1), ('st', 'uat-s', 1, 1);
+  insert into public.document_links(document_id, scope, node_key, label, created_by) values
+    (d_pub, 'player', nA::text, 'UAT A', st), (d_pub, 'st', 'abc', 'UAT NPC', st), (d_hid, 'player', nB::text, 'UAT B', st), (d_p1, 'player', nB::text, 'UAT B', st);
   select count(*) into nchars from public.characters;
   select count(*) into nprof from public.profiles;
   select count(*) into nnodes from public.player_map_nodes;
@@ -218,7 +225,7 @@ begin
   perform pg_temp.q('R157', 'ST: löscht Kategorie', st, 'authenticated', $x$delete from public.wiki_categories where name = 'UAT Kat2'$x$, 'rows=1');
   perform pg_temp.q('R158', 'ST: legt ST-Kategorie an', st, 'authenticated', $x$insert into public.wiki_categories(name, st_only) values ('UAT st2', true)$x$, 'rows=1');
   perform pg_temp.q('R159', 'ST: Kategorie mit Seiten löschen (restrict)', st, 'authenticated', format('delete from public.wiki_categories where id = %L', catpub), 'err');
-  perform pg_temp.q('R160', 'ST: sieht Entwürfe', st, 'authenticated', $x$select count(*) from public.documents where title like 'UAT%'$x$, 'n=3');
+  perform pg_temp.q('R160', 'ST: sieht Entwürfe', st, 'authenticated', $x$select count(*) from public.documents where title like 'UAT%'$x$, 'n=4');
   perform pg_temp.q('R161', 'ST: gibt Entwurf frei', st, 'authenticated', $x$update public.documents set draft = false where title = 'UAT draft'$x$, 'rows=1');
   perform pg_temp.q('R162', 'ST: lädt Entwurf hoch', st, 'authenticated', format($x$insert into public.documents(title, storage_path, draft) values ('UAT d2', %L, true)$x$, st::text || '/d2.pdf'), 'rows=1');
   perform pg_temp.q('R164', 'ST: Titel eines fremden Dokuments ändern', st, 'authenticated', $x$update public.documents set title = 'UAT pub', description = 'vom ST' where title = 'UAT pub'$x$, 'rows=1');
@@ -311,6 +318,28 @@ begin
   perform pg_temp.q('R270', 'ST: Szene aus einer Session in den Vorrat legen', st, 'authenticated', $x$update public.scenes set session_number = null where title = 'UAT Szene 3'$x$, 'rows=1');
   perform pg_temp.q('R271', 'ST: Szene aus dem Vorrat einer Session zuordnen', st, 'authenticated', $x$update public.scenes set session_number = 9201 where title = 'UAT Vorrat neu'$x$, 'rows=1');
   perform pg_temp.q('R272', 'ST: sieht die Vorrat-Szenen', st, 'authenticated', $x$select count(*) from public.scenes where session_number is null and title like 'UAT%'$x$, 'n=2');
+  perform pg_temp.q('R300', 'anon liest document_links', null, 'anon', $x$select count(*) from public.document_links$x$, 'err');
+  perform pg_temp.q('R301', 'ohne Profil: document_links', nop, 'authenticated', $x$select count(*) from public.document_links$x$, 'n=0');
+  perform pg_temp.q('R302', 'ohne Profil: Verknüpfung anlegen', nop, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', 'nx', 'x')$x$, d_pub), 'err');
+  perform pg_temp.q('R303', 'Spieler: sieht Spielerkarten-Verknüpfungen zu sichtbaren Dokumenten', p1, 'authenticated', $x$select count(*) from public.document_links where label like 'UAT%'$x$, 'n=1');
+  perform pg_temp.q('R304', 'Spieler: Verknüpfungen der Storytellerkarte unsichtbar', p1, 'authenticated', $x$select count(*) from public.document_links where scope = 'st'$x$, 'n=0');
+  perform pg_temp.q('R305', 'Spieler: Verknüpfung zur Spielerkarte anlegen', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', 'neu1', 'x')$x$, d_pub), 'rows=1');
+  perform pg_temp.q('R306', 'Spieler: Verknüpfung mit einem Entwurf', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', 'neu2', 'x')$x$, d_hid), 'err');
+  perform pg_temp.q('R307', 'Spieler: Verknüpfung der Storytellerkarte anlegen', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'st', 'neu3', 'x')$x$, d_pub), 'err');
+  perform pg_temp.q('R308', 'Spieler: doppelte Verknüpfung', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', 'neu1', 'x')$x$, d_pub), 'err');
+  perform pg_temp.q('R309', 'Spieler: Verknüpfung im Namen eines anderen', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, created_by) values (%L, 'player', 'neu4', %L)$x$, d_pub, p2), 'err');
+  perform pg_temp.q('R310', 'Spieler: ungültiger Bereich', p1, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key) values (%L, 'x', 'neu5')$x$, d_pub), 'err');
+  perform pg_temp.q('R311', 'Spieler: Verknüpfung ändern', p1, 'authenticated', $x$update public.document_links set node_key = 'zz' where node_key = 'neu1'$x$, 'err');
+  perform pg_temp.q('R312', 'Spieler: Verknüpfung der Storytellerkarte löschen', p1, 'authenticated', $x$delete from public.document_links where scope = 'st'$x$, 'rows=0');
+  perform pg_temp.q('R313', 'Spieler: Spielerkarten-Verknüpfung löschen', p1, 'authenticated', $x$delete from public.document_links where node_key = 'neu1'$x$, 'rows=1');
+  perform pg_temp.q('R320', 'ST: sieht alle Verknüpfungen', st, 'authenticated', $x$select count(*) from public.document_links where label like 'UAT%'$x$, 'n=3');
+  perform pg_temp.q('R321', 'Verknüpfung am gelöschten Dokument ist weg', st, 'authenticated', format($x$select count(*) from public.document_links where document_id = %L$x$, d_p1), 'n=0');
+  perform pg_temp.q('R322', 'ST: Verknüpfung zur Storytellerkarte anlegen', st, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'st', 'neu-st', 'x')$x$, d_pub), 'rows=1');
+  perform pg_temp.q('R323', 'ST: Verknüpfung mit Entwurf anlegen', st, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'st', 'neu-st2', 'x')$x$, d_hid), 'rows=1');
+  perform pg_temp.q('R324', 'ST: Verknüpfung der Storytellerkarte löschen', st, 'authenticated', $x$delete from public.document_links where node_key = 'neu-st'$x$, 'rows=1');
+  perform pg_temp.q('R325', 'ST: Knoten der Spielerkarte löschen räumt Verknüpfungen auf', st, 'authenticated', $x$delete from public.player_map_nodes where label = 'UAT A'$x$, 'rows=1');
+  perform pg_temp.q('R326', 'Verknüpfungen des gelöschten Knotens sind weg', st, 'authenticated', $x$select count(*) from public.document_links where label = 'UAT A'$x$, 'n=0');
+  perform pg_temp.q('R327', 'ST: Verknüpfung mit leerem Schlüssel', st, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', '', 'x')$x$, d_pub), 'err');
 
   -- ---------- E: Konfiguration der Datenbank ----------
   perform pg_temp.q('R190', 'service_role darf notion_cache schreiben', null, 'postgres', $x$select count(*) from (select 1 where has_table_privilege('service_role','public.notion_cache','INSERT') and has_table_privilege('service_role','public.notion_cache','UPDATE')) s$x$, 'n=1');
@@ -318,7 +347,7 @@ begin
   perform pg_temp.q('R192', 'authenticated ohne TRUNCATE/REFERENCES/TRIGGER', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')$x$, 'n=0');
   perform pg_temp.q('R193', 'Funktionsrechte nur wie vorgesehen (ping 2x, is_st, is_member, wiki_category_visible)', null, 'postgres', $x$select count(*) from information_schema.role_routine_grants where grantee in ('anon','authenticated') and routine_schema = 'public'$x$, 'n=5');
   perform pg_temp.q('R194', 'RLS auf allen public-Tabellen', null, 'postgres', $x$select count(*) from pg_tables where schemaname = 'public' and not rowsecurity$x$, 'n=0');
-  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=64');
+  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=67');
   perform pg_temp.q('R196', 'security definer Funktionen mit festem search_path', null, 'postgres', $x$select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'))$x$, 'n=0');
   perform pg_temp.q('R197', 'Bucket documents ist privat, Limit 20 MB', null, 'postgres', $x$select count(*) from storage.buckets where id = 'documents' and not public and file_size_limit = 20971520$x$, 'n=1');
   perform pg_temp.q('R198', 'profiles.role akzeptiert nur st/player', null, 'postgres', format($x$insert into public.profiles(id, role) values (%L, 'admin')$x$, nop), 'err');
