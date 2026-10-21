@@ -3,6 +3,7 @@ import { h, toast, head, fmtDate, fmtDateTime } from "../lib.js";
 import { sb, S, go, registerView, personName, charOf } from "../core.js";
 import { MapView, shapeForSekte, normType } from "./map.js";
 import { savePositions, loadPositions } from "./playermap.js";
+import { sceneMentions } from "./scenes.js";
 
 registerView("st", async m => {
   if (!S.isST) { m.append(h("div", { class: "notice bad" }, "Dieser Bereich ist nur für den Storyteller.")); return; }
@@ -12,7 +13,7 @@ registerView("st", async m => {
   const body = h("div", {});
   m.append(head("Storyteller", "Nur für dich sichtbar. Die Karte liest aus Notion (NPCs, Beziehungen) und wird zwischengespeichert; „Aus Notion neu laden“ holt den aktuellen Stand.", tg), body);
   if (tab === "private") return stPrivate(body);
-  MapView(body, notionSource());
+  MapView(body, notionSource(S.arg && S.arg.focus));
 });
 
 async function stPrivate(root) {
@@ -67,7 +68,7 @@ export function buildGraph(payload) {
   return { nodes, edges };
 }
 
-function notionSource() {
+function notionSource(focus) {
   let force = false, meta = null;
   async function fetchNotion() {
     const { data, error } = await sb.functions.invoke("notion-proxy", { body: { refresh: force } });
@@ -82,7 +83,7 @@ function notionSource() {
     return data;
   }
   return {
-    editable: false, legend: true,
+    editable: false, legend: true, focus: focus || null,
     reloadLabel: "Aus Notion neu laden",
     reload: async () => { force = true; },
     statusText: () => meta ? "Stand " + fmtDateTime(meta.fetched_at) + (meta.source === "cache" ? " (Cache)" : " (frisch)") : "",
@@ -96,6 +97,7 @@ function notionSource() {
       return [["Clan", r.clan], ["Sekte", r.sekte || r.clanSekte], ["Status", r.status], ["Kategorie", r.kategorie], ["Rang", r.rank], ["Fraktion", r.fraktion && r.fraktion !== "-" ? r.fraktion : ""], ["Map-Label", r.label]].filter(([, v]) => v);
     },
     nodeExtras: (n) => [
+      n.raw && n.raw.id ? mentionsBox(n.raw.id) : null,
       n.raw && /^https:\/\//.test(n.raw.url || "") ? h("a", { class: "btn small", href: n.raw.url, target: "_blank", rel: "noopener" }, "In Notion öffnen") : null,
       h("button", { class: "btn small", type: "button", onclick: async () => {
         try { await ensurePlayerNode(n); toast("„" + n.label + "“ steht auf der Spielerkarte."); } catch (e) { toast("Fehler: " + (e.message || e), true); }
@@ -114,6 +116,19 @@ function notionSource() {
       } catch (err) { toast("Fehler: " + (err.message || err), true); }
     } }, "Auf Spielerkarte")],
   };
+}
+
+// "Kommt vor in": Szenen, in denen dieser NPC verknüpft ist (mit Motivation der jeweiligen Szene)
+function mentionsBox(notionId) {
+  const box = h("div", { class: "stack", style: "width:100%", "data-mentions": "1" });
+  sceneMentions(notionId).then(list => {
+    if (!list.length) return;
+    box.append(h("h4", { class: "eyebrow", style: "margin:0" }, "Kommt vor in (" + list.length + ")"),
+      ...list.map(x => h("div", { class: "conn" }, h("div", { class: "c" },
+        h("button", { class: "linkbtn", type: "button", onclick: () => go("sessions", { session: x.scene.session_number }) }, "Session " + x.scene.session_number + " · " + x.scene.title),
+        x.npc.motivation ? h("div", { class: "muted" }, x.npc.motivation) : null))));
+  }).catch(() => {});
+  return box;
 }
 
 // Nur der Name. Typ (Kindred, Sterblicher, …) bleibt leer: Die Spieler tragen ihn selbst ein, weil er nicht immer offensichtlich ist. Keine Beschreibung, keine Notion-Tags.
