@@ -52,7 +52,7 @@ Wichtig: Ändern zwei Personen gleichzeitig denselben Bogen, gilt der **letzte**
 
 ## 5. Sessions
 
-- Links stehen die Sessions, rechts die Notizen der gewählten Session. **Jede Person schreibt ihren eigenen Abschnitt**, alle können mitlesen. Der eigene Abschnitt steht oben.
+- Jede Session ist eine **aufklappbare Zeile** in der Liste (neueste oben). Ein Klick auf die Zeile zeigt ihren Inhalt direkt darunter, ein zweiter Klick schließt sie. Es ist immer höchstens eine Session offen, die Liste bleibt also auch bei vielen Sessions kurz. Beim Öffnen der Seite ist die neueste Session aufgeklappt. In der Zeile stehen Titel, Spieldatum, ob eine Zusammenfassung vorliegt und die Zahl der Notizen. **Jede Person schreibt ihren eigenen Abschnitt**, alle können mitlesen. Der eigene Abschnitt steht oben.
 - **Neue Notiz:** Session-Nummer und Text eingeben, „Speichern“. Mit „Eigenen Abschnitt schreiben“ legst du einen Abschnitt in der geöffneten Session an.
 - Eigene Notizen: „Bearbeiten“, dann ändern oder „Löschen“ (mit Rückfrage „Wirklich?“).
 - **Nur meine** zeigt alle eigenen Notizen, **Alle** kehrt zurück.
@@ -176,6 +176,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
 - **22.10.2026 (Version 1.5.1):** Hilfe bei Netzfehlern in der Anmeldung (Abschnitt 12).
 - **22.10.2026 (Version 1.5):** Chroniken, Kapitel, Zusammenfassungen und Szenenkarten (Abschnitte 5, 5a, 10 und 11).
 - **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7). „Auf Spielerkarte“ überträgt keinen Typ mehr (Abschnitt 10).
