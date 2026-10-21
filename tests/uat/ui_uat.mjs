@@ -120,9 +120,9 @@ T("U03", "Anmeldung", "Konto ohne Profil: klare Meldung, kein Zugriff auf Inhalt
   assert.match(t, /kein Profil/); assert.equal(await p.locator("#nav button").count(), 0);
   return p;
 });
-T("U04", "Navigation", "ST sieht 7 Bereiche plus Storyteller, aber nicht Privat", async () => {
+T("U04", "Navigation", "ST sieht 8 Bereiche plus Storyteller, aber nicht Privat", async () => {
   const p = await openApp("st"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Storyteller"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Storyteller"]); return p;
 });
 T("U05", "Navigation", "Spieler sieht 7 Bereiche plus Privat, aber nicht Storyteller", async () => {
   const p = await openApp("player"); const l = await p.locator("#nav button").allInnerTexts();
@@ -810,6 +810,54 @@ T("U163", "Handy 390 px", "Session aufgeklappt mit Szenenkarte: Status-Knöpfe u
   const r = await p.evaluate(() => { const w = innerWidth; const bad = [...document.querySelectorAll(".toggle.wrap button, [data-scene] .btn, .session-item")].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > w + 1 || b.left < -1); }).map(e => e.textContent.trim().slice(0, 20)); return { bad, scroll: document.documentElement.scrollWidth <= w }; });
   assert.deepEqual(r.bad, []); assert.equal(r.scroll, true); return p;
 });
+const POOL = { format: "kbn-scenes/1", szenen: [
+  { titel: "Verfolgung am Hafen", ort: "Hafen", stimmung: "Hektisch", npcs: [{ name: "Aniq", motivation: "Will entkommen" }] },
+  { titel: "Gespräch im Elysium", ort: "Elysium", npcs: ["Mara"], faeden: ["Faden B"] }] };
+const poolTab = () => openApp("st", "scenes", { wait: 1000 });
+T("U220", "Szenen-Tab", "ST hat den Tab Szenen mit Vorrat; Spieler hat ihn nicht und bekommt auf #scenes nur einen Hinweis", async () => {
+  const a = await poolTab(); assert.ok((await a.locator("#nav button").allInnerTexts()).includes("Szenen")); assert.match(await a.locator("main h2").first().innerText(), /Szenen/); assert.match(await a.locator("section[aria-labelledby=scenes-h]").innerText(), /Der Vorrat ist leer/); await a.close();
+  const b = await openApp("player", "scenes"); assert.equal((await b.locator("#nav button").allInnerTexts()).includes("Szenen"), false); assert.match(await b.locator("main .notice.bad").innerText(), /nur für den Storyteller/); assert.equal(await b.getByRole("button", { name: "Szenen importieren" }).count(), 0); return b;
+});
+T("U221", "Szenen-Tab", "Import ohne Session-Angabe landet im Vorrat (keine Session), Datei mit Session-Nummer ebenfalls, mit Hinweis", async () => {
+  const p = await poolTab(); await importFile(p, POOL); assert.match(await p.locator("[role=status]").first().innerText(), /2 werden importiert/); await p.getByRole("button", { name: "2 Szenen importieren" }).click(); await waitToast(p, /2 Szenen importiert/); await p.waitForTimeout(500);
+  let s = await scn(p); assert.equal(s.length, 2); assert.ok(s.every(x => x.session_number == null), "ohne Session"); assert.deepEqual(s.map(x => x.position).sort(), [1, 2]); assert.equal(await p.locator("[data-scene]").count(), 2);
+  await importFile(p, { ...POOL, session: 7, szenen: [{ titel: "Dritte Szene" }] }); assert.match(await p.locator("[role=status]").first().innerText(), /Die Datei nennt Session 7, die Szenen kommen trotzdem in den Vorrat/);
+  await p.getByRole("button", { name: "1 Szene importieren" }).click(); await waitToast(p, /1 Szene importiert/); await p.waitForTimeout(500); s = await scn(p); assert.equal(s.length, 3); assert.ok(s.every(x => x.session_number == null)); return p;
+});
+T("U222", "Szenen-Tab", "Szene aus dem Vorrat einer Session zuordnen: sie verlässt den Vorrat und steht in der Session; neue Session über 'Session N (neu)'", async () => {
+  const p = await poolTab(); await importFile(p, POOL); await p.getByRole("button", { name: "2 Szenen importieren" }).click(); await waitToast(p, /2 Szenen importiert/); await p.waitForTimeout(500);
+  const card = t => p.locator("[data-scene]", { hasText: t });
+  await card("Verfolgung am Hafen").locator(":scope > summary").click(); await card("Verfolgung am Hafen").getByRole("button", { name: "Zuordnen" }).click(); await waitToast(p, /Bitte eine Session wählen/);
+  await card("Verfolgung am Hafen").getByLabel("Session zuordnen").selectOption("1"); await card("Verfolgung am Hafen").getByRole("button", { name: "Zuordnen" }).click(); await waitToast(p, /Session 1 zugeordnet/); await p.waitForTimeout(500);
+  assert.equal((await scn(p)).find(x => x.title === "Verfolgung am Hafen").session_number, 1); assert.equal(await p.locator("[data-scene]").count(), 1, "Vorrat zeigt nur noch die andere Szene");
+  if (!(await card("Gespräch im Elysium").evaluate(e => e.open))) await card("Gespräch im Elysium").locator(":scope > summary").click(); await card("Gespräch im Elysium").getByLabel("Session zuordnen").selectOption("new"); await card("Gespräch im Elysium").getByRole("button", { name: "Zuordnen" }).click(); await waitToast(p, /Session 2 zugeordnet/); await p.waitForTimeout(400);
+  assert.equal((await scn(p)).find(x => x.title === "Gespräch im Elysium").session_number, 2); assert.match(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /Der Vorrat ist leer/);
+  await nav(p, "Sessions", 800); if (!(await p.locator('details[data-session="1"]').evaluate(e => e.open))) await p.locator('details[data-session="1"] > summary').click(); await p.waitForTimeout(600); assert.ok(await p.locator("[data-scene]", { hasText: "Verfolgung am Hafen" }).count(), "Szene steht in Session 1"); return p;
+});
+T("U223", "Szenen-Tab", "Szene aus einer Session zurück in den Vorrat legen und zwischen Sessions verschieben; Position wird hinten angehängt", async () => {
+  const p = await stSession(); await importFile(p, SAMPLE); await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  const c = t => p.locator("[data-scene]", { hasText: t });
+  await c("Elysium").locator(":scope > summary").click(); await c("Elysium").getByLabel("Verschieben nach").selectOption("pool"); await c("Elysium").getByRole("button", { name: "Verschieben" }).click(); await waitToast(p, /In den Vorrat gelegt/); await p.waitForTimeout(500);
+  assert.equal((await scn(p)).find(x => x.title === "Elysium").session_number, null); assert.equal(await p.locator("[data-scene]").count(), 2, "Session zeigt nur noch zwei Szenen");
+  await c("Rückweg").locator(":scope > summary").click(); await c("Rückweg").getByLabel("Verschieben nach").selectOption("new"); await c("Rückweg").getByRole("button", { name: "Verschieben" }).click(); await waitToast(p, /Session 2 zugeordnet/); await p.waitForTimeout(500);
+  assert.equal((await scn(p)).find(x => x.title === "Rückweg").session_number, 2); await c("Treffen im Hafen").locator(":scope > summary").click().catch(() => {}); return p;
+});
+T("U224", "Szenen-Tab", "Ansichten Vorrat, Zugeordnet, Alle und die Suche über Titel, Ort und NPCs", async () => {
+  const p = await poolTab(); await importFile(p, POOL); await p.getByRole("button", { name: "2 Szenen importieren" }).click(); await waitToast(p, /2 Szenen importiert/); await p.waitForTimeout(500);
+  await p.evaluate(() => { window.__db.scenes[0].session_number = 1; });
+  await p.getByRole("button", { name: "Vorrat", exact: true }).click(); await p.waitForTimeout(700); assert.equal(await p.locator("[data-scene]").count(), 1);
+  await p.getByRole("button", { name: "Zugeordnet", exact: true }).click(); await p.waitForTimeout(700); assert.equal(await p.locator("[data-scene]").count(), 1); assert.ok(await p.locator("[data-scene] .badge", { hasText: "Session 1" }).count());
+  await p.getByRole("button", { name: "Alle", exact: true }).click(); await p.waitForTimeout(700); assert.equal(await p.locator("[data-scene]").count(), 2);
+  await p.fill("#scene-search", "mara"); await p.waitForTimeout(300); assert.equal(await p.locator("[data-scene]").count(), 1); assert.ok(await p.locator("[data-scene]", { hasText: "Elysium" }).count());
+  await p.fill("#scene-search", "hafen"); await p.waitForTimeout(300); assert.equal(await p.locator("[data-scene]").count(), 1);
+  await p.fill("#scene-search", "zzz"); await p.waitForTimeout(300); assert.match(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /Keine Szene passt zur Suche/); return p;
+});
+T("U225", "Szenen-Tab", "ST-Karte: NPC aus einer Vorrat-Szene zeigt 'Vorrat' unter 'Kommt vor in' und springt in den Tab Szenen", async () => {
+  const p = await poolTab(); await importFile(p, POOL); await p.getByRole("button", { name: "2 Szenen importieren" }).click(); await waitToast(p, /2 Szenen importiert/); await p.waitForTimeout(500);
+  await p.locator("[data-scene]", { hasText: "Verfolgung am Hafen" }).locator(":scope > summary").click(); await p.locator("[data-scene] button.chip", { hasText: "Aniq" }).click(); await p.waitForTimeout(2800);
+  assert.match(await p.locator(".map-panel").innerText(), /Will entkommen/); const b = p.locator(".map-panel").getByRole("button", { name: /Vorrat · Verfolgung am Hafen/ }); assert.equal(await b.count(), 1);
+  await b.click(); await p.waitForTimeout(700); assert.match(await p.locator("main h2").first().innerText(), /Szenen/); return p;
+});
 T("U216", "Szenenkarten", "Spieler: kein Szenenblock und keine Import-Knöpfe", async () => {
   const p = await openApp("player", "sessions"); assert.equal(await p.getByText("Szenenkarten").count(), 0); assert.equal(await p.getByRole("button", { name: "Szenen importieren" }).count(), 0); return p;
 });
@@ -817,7 +865,7 @@ T("U216", "Szenenkarten", "Spieler: kein Szenenblock und keine Import-Knöpfe", 
 // =====================================================================
 // J · Handy, Barrierefreiheit, Kontrast, Konsole
 // =====================================================================
-const VIEWS = { st: ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "st"], player: ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "private"] };
+const VIEWS = { st: ["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "st"], player: ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "private"] };
 for (const role of ["st", "player"]) {
   T("U150" + (role === "st" ? "a" : "b"), "Handy 390 px", `${role}: kein horizontales Scrollen in allen Bereichen`, async () => {
     const p = await openApp(role, "start", { viewport: { width: 390, height: 800 } }); const bad = [];
