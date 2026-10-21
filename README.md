@@ -12,12 +12,18 @@ web/                      Frontend ohne Build-Schritt (ES-Module, supabase-js + 
 supabase/migrations/      Schema, RLS, Storage, Startdaten (in dieser Reihenfolge)
 supabase/functions/notion-proxy/   liest Notion (nur ST), cached in notion_cache
 .github/workflows/        pages.yml (Deploy), keepalive.yml (Ping gegen die 7-Tage-Pause)
-docs/                     Setup-Anleitung, Review (versioniert)
+docs/                     Technische Doku, Benutzerhandbuch (lebend), Setup-Anleitung, Review (versioniert)
 tests/                    RLS-, Edge-Function- und Browser-Tests
 ```
 
 ## Einrichtung
 Siehe `docs/Setup_Anleitung_v1_1.md`.
+
+## Dokumentation
+- [`docs/Technische_Doku.md`](docs/Technische_Doku.md): Architektur, Datenbank, Rechte, Edge Function, Betrieb.
+- [`docs/Benutzerhandbuch.md`](docs/Benutzerhandbuch.md): Bedienung für Spieler und Storyteller.
+
+**Pflege:** Beide Dokumente sind lebend. Bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb werden sie im selben Zug angepasst, die Änderung steht in der Änderungsliste am Ende des Dokuments und im `CHANGELOG.md`.
 
 ## Tests (lokal)
 - `tests/run_tests.sh`: wendet alle Migrationen auf ein lokales Postgres 16 mit nachgebautem Supabase-Kern an und prüft die Rechte. Das braucht `postgresql-16`.
