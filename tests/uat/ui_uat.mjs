@@ -508,6 +508,18 @@ T("U107", "Dokumente", "Dokumenttitel mit HTML wird nur als Text angezeigt", asy
   const p = await openApp("player", "docs"); await upl(p, "m.pdf", "application/pdf"); await p.fill("#up-title", '<img src=x onerror="window.__xss=1">'); await p.fill("#up-desc", "<script>window.__xss=2</script>");
   await p.getByRole("button", { name: "Hochladen" }).click(); await waitToast(p, /Hochgeladen/); assert.equal(await p.evaluate(() => window.__xss), undefined); assert.equal(await p.locator(".docs img[src='x']").count(), 0); return p;
 });
+T("U109", "Dokumente", "Titel und Beschreibung ändern: Uploader bei eigenen Dokumenten, ST bei allen; fremde Dokumente haben für Spieler keinen Bearbeiten-Knopf; leerer Titel wird abgewiesen", async () => {
+  const p = await openApp("player", "docs"); await p.evaluate(() => window.__db.documents.push({ id: crypto.randomUUID(), title: "Fremd", description: "", storage_path: "x/y.pdf", file_name: "y.pdf", content_type: "application/pdf", size_bytes: 1, draft: false, uploader_id: "11111111-1111-1111-1111-111111111111", created_at: new Date().toISOString() }));
+  await upl(p, "m.pdf", "application/pdf"); await p.fill("#up-title", "Meins"); await p.fill("#up-desc", "alt"); await p.getByRole("button", { name: "Hochladen" }).click(); await waitToast(p, /Hochgeladen/);
+  assert.equal(await p.locator(".doc", { hasText: "Fremd" }).getByRole("button", { name: "Bearbeiten" }).count(), 0); const mine = p.locator(".doc", { hasText: "Meins" });
+  await mine.getByRole("button", { name: "Bearbeiten" }).click(); await p.fill("#doc-title", "  "); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Titel/);
+  await p.fill("#doc-title", "Umbenannt <b>x</b>"); await p.fill("#doc-desc", "Neue Beschreibung"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert/); await p.waitForTimeout(300);
+  const r = (await db(p, "documents")).find(d => d.description === "Neue Beschreibung"); assert.equal(r.title, "Umbenannt <b>x</b>"); assert.equal(r.storage_path.startsWith("22222222"), true, "Speicherpfad bleibt"); assert.equal(await p.locator(".doc b").count(), 0, "Titel erscheint als Text");
+  assert.match(await p.locator(".docs").innerText(), /Neue Beschreibung/);
+  await p.locator(".doc", { hasText: "Umbenannt" }).getByRole("button", { name: "Bearbeiten" }).click(); await p.getByRole("button", { name: "Abbrechen" }).click(); assert.equal(await p.locator("#doc-title").count(), 0); await p.close();
+  const st = await openApp("st", "docs"); await st.locator(".doc", { hasText: "Annales" }).getByRole("button", { name: "Bearbeiten" }).click(); await st.fill("#doc-title", "Annales (neu)"); await st.getByRole("button", { name: "Speichern" }).click(); await waitToast(st, /Gespeichert/); await st.waitForTimeout(300);
+  assert.ok((await db(st, "documents")).some(d => d.title === "Annales (neu)")); return st;
+});
 T("U108", "Dokumente", "Bild-Dokument zeigt Vorschau mit Alternativtext", async () => {
   const p = await openApp("player", "docs"); await upl(p, "b.png", "image/png"); await p.fill("#up-title", "Karte Kiel"); await p.getByRole("button", { name: "Hochladen" }).click(); await waitToast(p, /Hochgeladen/);
   assert.equal(await p.locator('.doc img[alt="Karte Kiel"]').count(), 1); return p;
