@@ -83,7 +83,7 @@ for (const role of ["st", "player"]) {
   await page.goto("https://kbn.test/");
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}/login-mobile.png` });
-  const hasForm = await page.locator("#login-email").count();
+  const hasForm = await page.locator("#login-user").count();
   console.log("[login]", hasForm ? "ok" : "FEHLER: kein Formular"); if (!hasForm) failures++;
   await page.close();
 }
