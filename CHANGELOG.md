@@ -3,6 +3,14 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.6.0 – 22.10.2026
+- **Szenen-Vorrat:** Neuer Tab „Szenen“ (nur Storyteller). Szenenkarten lassen sich sammeln, ohne sie vorab einer Session zuzuordnen. Ansichten Vorrat, Zugeordnet, Alle, dazu eine Suche über Titel, Ort, Stimmung, Ziel, Gegenspieler, Ablauf, Fäden und NPC-Namen.
+- **Zuordnen und Verschieben:** Eine Szene aus dem Vorrat ordnest du einer Session zu (auch „Session N (neu)“), verschiebst sie in eine andere oder legst sie in den Vorrat zurück.
+- **Import:** `session` im Szenenformat ist optional (Szenenformat 1.1). Im Tab Szenen landet jeder Import im Vorrat, in einer Session-Ansicht in dieser Session.
+- **Beziehungskarte:** „Kommt vor in“ zeigt auch Szenen aus dem Vorrat.
+- **Datenbank:** Migration `20261022120200_scenes_pool_v1_5.sql` (`scenes.session_number` darf null sein).
+- **Tests:** Rechte 230 Fälle (R231, R268 bis R272), Browser 158 Fälle (U220 bis U225).
+
 ## 1.5.3 – 22.10.2026
 - **Fehler behoben:** In den Szenenkarten und in der Chroniken-Verwaltung erschien an leeren Stellen der Text „null“ (zum Beispiel „nullnull“ unter den Knöpfen). Leere Bausteine werden jetzt überall übersprungen (`lib.js`).
 - **Handy:** Die Status-Knöpfe der Szenenkarten (Offen, Gespielt, Übersprungen, Verschoben) sind am Handy ein 2×2-Raster statt abgeschnitten. Verschachtelte Rahmen in aufgeklappten Sessions sind flacher, Innenabstände am Handy kleiner, mehr Platz für den Inhalt.
