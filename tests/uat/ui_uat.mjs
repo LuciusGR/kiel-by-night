@@ -18,7 +18,7 @@ let fake = fs.readFileSync(BR + "/fake-supabase.js", "utf8");
 const rep = (a, b) => { if (!fake.includes(a)) throw new Error("Fake-Patch nicht gefunden: " + a.slice(0, 40)); fake = fake.replace(a, b); };
 rep('const me = ROLE === "st" ? ST : P1;', 'const me = ROLE === "st" ? ST : ROLE === "noprofile" ? "99999999-9999-9999-9999-999999999999" : P1;');
 rep("upload: async () => ({ error: null })", "upload: async (p, f, o) => { (window.__uploads = window.__uploads || []).push({ path: p, type: o && o.contentType, size: f && f.size }); return window.__UPLOAD_ERROR ? { error: { message: 'boom' } } : { error: null }; }");
-rep("signInWithPassword: async () => ({ error: { message: \"Invalid login credentials\" } }),", "signInWithPassword: async (a) => { (window.__signins = window.__signins || []).push(a); return { error: { message: 'Invalid login credentials' } }; },");
+rep("signInWithPassword: async () => ({ error: { message: \"Invalid login credentials\" } }),", "signInWithPassword: async (a) => { (window.__signins = window.__signins || []).push(a); return window.__SIGNIN_NET ? { error: { message: 'Failed to fetch' } } : { error: { message: 'Invalid login credentials' } }; },");
 rep("signOut: async () => ({}), updateUser: async () => ({ error: null })", "signOut: async () => { window.__log && window.__log('signOut'); return {}; }, updateUser: async (a) => { window.__log && window.__log('updateUser'); return { error: null }; }");
 rep("functions: { invoke: async () => ({ data: { ...NOTION, fetched_at: now(), source: \"cache\" }, error: null }) }",
   "functions: { invoke: async (n, o) => { (window.__invokes = window.__invokes || []).push({ n, o }); const m = window.__NOTION_MODE || 'ok'; if (m === 'error') return { data: null, error: { context: { json: async () => ({ error: 'notion_failed', message: 'Notion 401: unauthorized' }) } } }; return { data: { ...NOTION, fetched_at: now(), source: m === 'fresh' || (o && o.body && o.body.refresh) ? 'notion' : 'cache', warning: m === 'warn' ? 'Cache nicht gespeichert' : undefined }, error: null }; } }");
@@ -47,6 +47,7 @@ async function openApp(role, hash = "start", o = {}) {
     }
     if (u.href.includes("supabase-js")) return route.fulfill({ contentType: "text/javascript", body: fake });
     if (u.href.includes("cytoscape")) return route.fulfill({ contentType: "text/javascript", body: cyto });
+    if (o.blockApi && u.hostname.endsWith(".supabase.co")) return route.abort();
     return route.fulfill({ status: 204, body: "" });
   });
   await page.goto("https://kbn.test/#" + hash);
@@ -81,6 +82,20 @@ T("U02", "Anmeldung", "Falsches Passwort: verständliche Meldung, Button wieder 
   return p;
 });
 const signin = async (p, u, pw = "geheim-geheim") => { await p.fill("#login-user", u); await p.fill("#login-pw", pw); await p.click("button[type=submit]"); await p.waitForTimeout(250); return p.evaluate(() => window.__signins || []); };
+const netLogin = async (o, offline) => {
+  const p = await openApp("st", "", { loggedOut: true, init: "window.__SIGNIN_NET = true", ...o }); if (offline) await p.context().setOffline(true);
+  await p.fill("#login-user", "anna"); await p.fill("#login-pw", "geheim-geheim"); await p.click("button[type=submit]"); await p.waitForTimeout(1500); return p;
+};
+T("U02f", "Anmeldung", "Netzfehler beim Anmelden, Server von diesem Gerät nicht erreichbar: Hinweis auf Werbeblocker, VPN, privates DNS und anderes Netz", async () => {
+  const p = await netLogin({ blockApi: true }); const t = await waitToast(p, /supabase\.co/); assert.match(t, /Werbeblocker/); assert.match(t, /VPN/); assert.match(t, /privates DNS/); assert.match(t, /anderes Netz/);
+  assert.equal(await p.locator("button[type=submit]").isEnabled(), true); return p;
+});
+T("U02g", "Anmeldung", "Netzfehler, Server aber erreichbar: kein Hinweis auf Werbeblocker, sondern Neuladen und Melden", async () => {
+  const p = await netLogin({}); const t = await waitToast(p, /Server ist erreichbar/); assert.match(t, /neu laden/); assert.doesNotMatch(t, /Werbeblocker|VPN/); return p;
+});
+T("U02h", "Anmeldung", "Netzfehler ohne Internet: Hinweis 'Kein Internet', kein Hinweis auf Werbeblocker", async () => {
+  const p = await netLogin({}, true); const t = await waitToast(p, /Kein Internet/); assert.doesNotMatch(t, /Werbeblocker|VPN/); return p;
+});
 T("U02a", "Anmeldung", "Benutzername wird intern zu name@kbn.invalid (Kleinbuchstaben, ohne Leerzeichen am Rand)", async () => {
   const p = await openApp("st", "", { loggedOut: true }); const s = await signin(p, "  Anna.K-2_x  "); assert.equal(s.length, 1); assert.deepEqual(s[0], { email: "anna.k-2_x@kbn.invalid", password: "geheim-geheim" }); return p;
 });
