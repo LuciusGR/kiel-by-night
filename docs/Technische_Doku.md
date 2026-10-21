@@ -93,7 +93,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 
 ### 4.4 Karten (`map.js`)
 - `MapView(root, src)` bekommt eine Quelle `src` (Laden, Speichern der Positionen, optional Schreibfunktionen und Realtime). Die **Spielerkarte** ist bearbeitbar, die **ST-Karte** schreibgeschützt (Daten aus Notion).
-- **Modi Ansicht (Standard) und Bearbeitung** nur bei bearbeitbaren Karten. In der Ansicht sind Anlegen, Bearbeiten, Löschen, Verschieben (`autoungrabify`) und „Neu anordnen“ gesperrt. Suche, Filter und Auswählen bleiben.
+- **Modi Ansicht (Standard) und Bearbeitung** nur bei bearbeitbaren Karten. In der Ansicht sind Anlegen, Bearbeiten, Löschen, Verschieben (`autoungrabify`) und „Neu anordnen“ gesperrt. Suche, Filter und Auswählen bleiben. Die Suche zeigt alle Treffer als Liste aus `<details>`-Einträgen im Seitenfeld, zugeklappt bei mehr als einem Treffer, offen bei genau einem (`resultsView()`).
 - Cytoscape wird mit `layout: preset` gestartet. Sonst legt die Bibliothek ein Raster über die gespeicherten Positionen. Fehlende Positionen werden zufällig im sichtbaren Bereich gesetzt, die Erstanordnung (Cose-Layout) wird gespeichert.
 - Positionen: Tabelle `map_positions` (scope `player` oder `st`, Schlüssel = Knoten-ID bzw. Notion-ID ohne Bindestriche oder `lbl:<Text>`). Schreiben gebündelt 700 ms nach dem Ziehen, Rest beim Verlassen der Ansicht. Andere sehen Positionsänderungen erst nach Neuladen.
 - ST-Karte: Form je Sekte (Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis), Farbe je Wesen, Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur Name und Typ an (keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
@@ -198,7 +198,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT (151+ Rechte-Fälle, 24 Function-Fälle, 120+ Browser-Fälle) liegt im Skill `kiel-by-night-website` und im UAT-Bericht, nicht im Repo.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 167 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 131 Fälle, Stand 21.10.2026: 130 grün, bekannt U155b). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -216,4 +216,5 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **21.10.2026 (Version 1.4):** Kartensuche in `map.js`: `searchIds()` liefert alle Treffer (Label, Alias), `applySearch()` markiert sie, `resultsView()` zeigt je Treffer ein `<details>`, offen nur bei genau einem Treffer. Zustand `resultsOn`, endet beim Antippen eines Knotens. UAT-Skripte liegen jetzt in `tests/uat`.
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung, Kartenfix, ST als Administrator.
