@@ -36,7 +36,7 @@ Stand 22.10.2026. Dieses Format beschreibt Szenenkarten für **eine Session** al
 |---|---|---|---|
 | `format` | ja | Text | immer `kbn-scenes/1` |
 | `chronik` | nein | Text | nur zur Information, die Session-Nummer entscheidet |
-| `session` | ja | ganze Zahl ab 1 | Session, in die importiert wird |
+| `session` | nein | ganze Zahl ab 1 | Session, zu der die Datei gehört. Ohne Angabe ist die Datei für den Vorrat gedacht. Beim Import im Tab Szenen kommen die Szenen immer in den Vorrat, in der Ansicht einer Session immer in diese Session |
 | `szenen` | ja | Liste, 1 bis 100 Einträge | die Szenenkarten |
 | `titel` | ja | Text | Name der Szene |
 | `reihenfolge` | nein | ganze Zahl | Sortierung innerhalb der Datei. Ohne Angabe gilt die Reihenfolge in der Liste |
@@ -65,11 +65,12 @@ Texte dürfen höchstens 20 000 Zeichen lang sein, Listen höchstens 50 Einträg
 - Die Datei wird zuerst **vollständig geprüft**. Bei Fehlern erscheint eine Liste, es wird nichts gespeichert.
 - Danach zeigt die Vorschau jede Szene mit ihren NPC-Treffern. Einzelne Szenen lassen sich abwählen.
 - **Vorhandene Szenen bleiben unverändert.** Neue Szenen werden hinten angehängt. Szenen, deren Titel in der Session schon vorkommt, sind in der Vorschau abgewählt (Hinweis „Titel gibt es schon“). Ein zweiter Import ersetzt also nichts von allein.
+- **Vorrat:** Im Tab Szenen landet jeder Import im Vorrat, also bei Szenen ohne Session. Von dort ordnest du sie einer Session zu, sobald du weißt, wann du sie spielst. Eine in der Datei genannte Session wird in der Vorschau nur erwähnt.
 - Die Szenen sind nur für den Storyteller sichtbar (Rechte in der Datenbank, nicht nur in der Anzeige).
 
 ## Hinweise für die Vorbereitung durch Claude
 
-1. Eine Datei je Session, `session` und `format` immer setzen.
+1. Eine Datei je Session (dann `session` setzen) oder eine Datei für den Vorrat (ohne `session`), wenn die Szenen noch keiner Session zugeordnet sind. `format` immer setzen.
 2. NPC-Namen so schreiben wie in der ST-Karte (Notion), damit die Verknüpfung klappt. Bei Zweifel das Map-Label verwenden.
 3. Motivation kurz und aus Sicht des NPC formulieren („Will …“, „Fürchtet …“).
 4. Nichts erfinden: Fehlende Angaben weglassen statt füllen. Alle Felder außer `titel` sind optional.
@@ -77,4 +78,5 @@ Texte dürfen höchstens 20 000 Zeichen lang sein, Listen höchstens 50 Einträg
 
 ## Änderungen
 
+- **22.10.2026 (Version 1.1):** `session` ist optional, Import in den Vorrat.
 - **22.10.2026 (Version 1):** Erste Fassung.
