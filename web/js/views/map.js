@@ -99,10 +99,23 @@ export function MapView(root, src) {
   const status = h("span", { class: "muted", style: "font-size:.86rem" });
   root.append(...[actions, src.legend ? shapeLegend() : null, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas), panel)].filter(Boolean));
 
-  if (src.editable) actions.append(
-    h("button", { class: "btn primary", type: "button", onclick: () => { editing = { kind: "node" }; drawPanel(); } }, "Person/Ort hinzufügen"),
-    h("button", { class: "btn", type: "button", onclick: () => { editing = { kind: "edge" }; drawPanel(); } }, "Verbindung hinzufügen"));
-  actions.append(h("button", { class: "btn", type: "button", onclick: () => relayout(true, true) }, "Neu anordnen"));
+  // Zwei Modi für bearbeitbare Karten: Ansicht (Standard) sperrt Anlegen, Bearbeiten, Löschen, Verschieben und Neu anordnen.
+  let mode = "view";
+  const bView = h("button", { type: "button", onclick: () => setMode("view") }, "Ansicht"), bEdit = h("button", { type: "button", onclick: () => setMode("edit") }, "Bearbeitung");
+  const addNodeBtn = h("button", { class: "btn primary", type: "button", onclick: () => { editing = { kind: "node" }; drawPanel(); } }, "Person/Ort hinzufügen");
+  const addEdgeBtn = h("button", { class: "btn", type: "button", onclick: () => { editing = { kind: "edge" }; drawPanel(); } }, "Verbindung hinzufügen");
+  const relayoutBtn = h("button", { class: "btn", type: "button", onclick: () => relayout(true, true) }, "Neu anordnen");
+  if (src.editable) actions.append(h("div", { class: "toggle", role: "group", "aria-label": "Modus" }, bView, bEdit), addNodeBtn, addEdgeBtn);
+  actions.append(relayoutBtn);
+  function paintMode() {
+    if (!src.editable) return;
+    const e = mode === "edit";
+    bView.setAttribute("aria-pressed", String(!e)); bEdit.setAttribute("aria-pressed", String(e));
+    for (const b of [addNodeBtn, addEdgeBtn, relayoutBtn]) b.style.display = e ? "" : "none";
+    if (cy) cy.autoungrabify(!e);
+  }
+  function setMode(next) { if (next === mode) return; mode = next; if (mode === "view") { editing = null; flushPositions(); } paintMode(); drawPanel(); }
+  paintMode();
   if (src.reload) actions.append(h("button", { class: "btn", type: "button", onclick: async () => { await src.reload(); await refresh(); } }, src.reloadLabel || "Neu laden"));
   actions.append(status);
 
@@ -151,7 +164,7 @@ export function MapView(root, src) {
     if (typeof cytoscape === "undefined") { canvas.replaceChildren(h("div", { class: "state" }, "Die Karten-Bibliothek konnte nicht geladen werden. Seite neu laden.")); return; }
     if (!nodes.size) {
       if (cy) { cy.destroy(); cy = null; }
-      canvas.replaceChildren(h("div", { class: "state" }, src.editable ? "Die Karte ist leer. Mit „Person/Ort hinzufügen“ beginnen." : "Keine Einträge gefunden."));
+      canvas.replaceChildren(h("div", { class: "state" }, src.editable ? "Die Karte ist leer. Oben auf „Bearbeitung“ umschalten und „Person/Ort hinzufügen“ wählen." : "Keine Einträge gefunden."));
       drawChips(); drawPanel(); status.textContent = ""; return;
     }
     if (!cy) {
@@ -159,6 +172,7 @@ export function MapView(root, src) {
       // A1: Standard-Zoomgeschwindigkeit (v1 hatte 0.25 = viermal langsamer)
       // layout "preset": sonst legt Cytoscape nach dem Start ein Raster über die gespeicherten Positionen
       cy = cytoscape({ container: canvas, elements: elementsFor(), style: cyStyle(), layout: { name: "preset" }, minZoom: .1, maxZoom: 3 });
+      paintMode();
       const placed = cy.nodes().filter(n => !!positions[n.id()]).length;
       if (placed < cy.nodes().length * 0.6) relayout(false, true);      // Erstanordnung wird gespeichert
       else { const fresh = placeMissing(); cy.fit(undefined, 30); capZoom(); if (fresh.length) queuePos(fresh); }
@@ -241,7 +255,7 @@ export function MapView(root, src) {
         return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null);
       }))));
       const btns = h("div", { class: "row" });
-      if (src.editable) btns.append(
+      if (src.editable && mode === "edit") btns.append(
         h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "node", data: { id, ...n } }; drawPanel(); } }, "Bearbeiten"),
         confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); }));
       if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes));
@@ -253,7 +267,7 @@ export function MapView(root, src) {
       if (e.label) p.append(h("p", {}, e.label));
       if (e.description) p.append(h("div", { class: "pre muted" }, e.description));
       const btns = h("div", { class: "row" });
-      if (src.editable) btns.append(
+      if (src.editable && mode === "edit") btns.append(
         h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "edge", data: { id, ...e } }; drawPanel(); } }, "Bearbeiten"),
         confirmBtn("Löschen", async () => { await src.deleteEdge(id); sel = null; await afterWrite(); }));
       if (src.edgeExtras) btns.append(...src.edgeExtras(e, id, nodes));
