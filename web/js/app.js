@@ -14,6 +14,16 @@ import "./views/storyteller.js";
 const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"]];
 const VALID = new Set(["start", "chars", "sessions", "map", "wiki", "docs", "private", "st"]);
 
+// Supabase Auth braucht eine E-Mail als Kennung. Die Gruppe meldet sich mit einem Benutzernamen an, intern wird
+// daraus name@kbn.invalid (".invalid" kann nie eine echte Adresse sein, es werden keine Mails verschickt).
+// Eine eingetippte Adresse mit @ geht unverändert durch, so bleiben bestehende Konten nutzbar.
+const LOGIN_DOMAIN = "kbn.invalid";
+export function toLoginEmail(input) {
+  const v = String(input || "").trim().toLowerCase();
+  if (v.includes("@")) return /^[^\s@]+@[^\s@]+$/.test(v) ? v : null;
+  return /^[a-z0-9._-]{2,32}$/.test(v) ? v + "@" + LOGIN_DOMAIN : null;
+}
+
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.replaceChildren();
@@ -71,26 +81,28 @@ function passwordDialog() {
 // ---------- Login ----------
 function renderLogin(msg) {
   const main = document.getElementById("main");
-  const email = h("input", { type: "email", id: "login-email", autocomplete: "username", required: true });
+  const user = h("input", { type: "text", id: "login-user", autocomplete: "username", autocapitalize: "none", autocorrect: "off", spellcheck: "false", required: true });
   const pw = h("input", { type: "password", id: "login-pw", autocomplete: "current-password", required: true });
   const btn = h("button", { class: "btn primary", type: "submit" }, "Anmelden");
   const form = h("form", { class: "panel stack login" },
     h("h2", {}, "Anmelden"),
     h("p", { class: "muted" }, "Zugang nur für die Chronik-Gruppe. Konten vergibt der Storyteller."),
     msg ? h("div", { class: "notice bad" }, msg) : null,
-    h("div", { class: "field" }, h("label", { for: "login-email" }, "E-Mail"), email),
+    h("div", { class: "field" }, h("label", { for: "login-user" }, "Benutzername"), user),
     h("div", { class: "field" }, h("label", { for: "login-pw" }, "Passwort"), pw),
     h("div", {}, btn));
   form.addEventListener("submit", async ev => {
     ev.preventDefault();
+    const loginEmail = toLoginEmail(user.value);
+    if (!loginEmail) { toast("Benutzername: 2 bis 32 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus und Unterstrich.", true); return; }
     btn.disabled = true; btn.textContent = "Prüfe …";
-    const { error } = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pw.value });
+    const { error } = await sb.auth.signInWithPassword({ email: loginEmail, password: pw.value });
     btn.disabled = false; btn.textContent = "Anmelden";
-    if (error) { toast(/invalid/i.test(error.message) ? "E-Mail oder Passwort falsch." : errMsg(error), true); return; }
+    if (error) { toast(/invalid/i.test(error.message) ? "Benutzername oder Passwort falsch." : errMsg(error), true); return; }
     // weiter geht es über onAuthStateChange
   });
   main.replaceChildren(form);
-  email.focus();
+  user.focus();
 }
 
 // ---------- Start ----------
