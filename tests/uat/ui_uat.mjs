@@ -520,6 +520,38 @@ T("U109", "Dokumente", "Titel und Beschreibung ändern: Uploader bei eigenen Dok
   const st = await openApp("st", "docs"); await st.locator(".doc", { hasText: "Annales" }).getByRole("button", { name: "Bearbeiten" }).click(); await st.fill("#doc-title", "Annales (neu)"); await st.getByRole("button", { name: "Speichern" }).click(); await waitToast(st, /Gespeichert/); await st.waitForTimeout(300);
   assert.ok((await db(st, "documents")).some(d => d.title === "Annales (neu)")); return st;
 });
+const addDoc = (p, title = "Handout") => p.evaluate(t => { const id = crypto.randomUUID(); window.__db.documents.push({ id, title: t, description: "", storage_path: "x/" + id + ".pdf", file_name: "h.pdf", content_type: "application/pdf", size_bytes: 1, draft: false, uploader_id: "11111111-1111-1111-1111-111111111111", created_at: new Date().toISOString() }); return id; }, title);
+const tapNode = (p, label) => cyEval(p, (cy, l) => cy.nodes().filter(n => n.data("label") === l)[0].emit("tap"), label);
+T("U230", "Dokument-Verknüpfung", "Spielerkarte: Dokumente am Knoten verknüpfen nur im Modus Bearbeitung; Verknüpfung erscheint am Dokument; Klick am Dokument springt zum Knoten; Lösen von beiden Seiten", async () => {
+  const p = await openApp("player", "map", { wait: 1800 }); await addDoc(p, "Handout");
+  await tapNode(p, "Prinz Aniq"); await p.waitForTimeout(400); assert.equal(await p.getByLabel("Dokument verknüpfen").count(), 0, "in Ansicht kein Verknüpfen");
+  await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.waitForTimeout(500); await tapNode(p, "Prinz Aniq"); await p.waitForTimeout(500);
+  await p.getByRole("button", { name: "Verknüpfen", exact: true }).click(); await waitToast(p, /Bitte ein Dokument wählen/);
+  await p.getByLabel("Dokument verknüpfen").selectOption({ label: "Handout" }); await p.getByRole("button", { name: "Verknüpfen", exact: true }).click(); await waitToast(p, /Verknüpft\./); await p.waitForTimeout(400);
+  const l = (await db(p, "document_links"))[0]; assert.equal(l.scope, "player"); assert.equal(l.label, "Prinz Aniq"); assert.ok(l.node_key && l.document_id);
+  assert.match(await p.locator("[data-doclinks=player]").innerText(), /Handout/); assert.equal(await p.locator("[data-doclinks=player] .linkbtn", { hasText: "Handout" }).count(), 1);
+  await nav(p, "Dokumente", 700); const chip = p.locator(".doc", { hasText: "Handout" }).locator("[data-doc-links] .chip"); assert.equal(await chip.count(), 1); assert.match(await chip.innerText(), /Prinz Aniq/);
+  await chip.locator(".linkbtn").first().click(); await p.waitForTimeout(2200); assert.ok(await p.locator(".map-panel h3", { hasText: "Prinz Aniq" }).count(), "Sprung zum Knoten");
+  await p.locator("[data-doclinks=player] .linkbtn", { hasText: "Handout" }).click(); await p.waitForTimeout(700); assert.match(await p.locator("main h2").first().innerText(), /Dokumente/); assert.ok((await p.locator('.doc[data-doc]', { hasText: "Handout" }).getAttribute("style") || "").includes("outline"), "Dokument ist hervorgehoben");
+  await p.locator(".doc", { hasText: "Handout" }).getByRole("button", { name: /Verknüpfung lösen/ }).click(); await waitToast(p, /Verknüpfung gelöst/); await p.waitForTimeout(300); assert.equal((await db(p, "document_links")).length, 0); return p;
+});
+T("U231", "Dokument-Verknüpfung", "Spielerkarte: Verknüpfung im Detailfeld lösen (Bearbeitung); Knoten ohne Dokumente zeigt in Ansicht nichts", async () => {
+  const p = await openApp("player", "map", { wait: 1800 }); const id = await addDoc(p, "Karte der Stadt");
+  const nodeId = await cyEval(p, cy => cy.nodes().filter(n => n.data("label") === "Prinz Aniq")[0].id()); await p.evaluate(([d, k]) => window.__db.document_links.push({ id: crypto.randomUUID(), document_id: d, scope: "player", node_key: k, label: "Prinz Aniq" }), [id, nodeId]);
+  await tapNode(p, "Prinz Aniq"); await p.waitForTimeout(500); assert.match(await p.locator("[data-doclinks=player]").innerText(), /Karte der Stadt/); assert.equal(await p.getByRole("button", { name: /Verknüpfung lösen/ }).count(), 0, "in Ansicht kein Lösen");
+  await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.waitForTimeout(500); await tapNode(p, "Prinz Aniq"); await p.waitForTimeout(500);
+  await p.getByRole("button", { name: "Verknüpfung lösen: Karte der Stadt" }).click(); await waitToast(p, /Verknüpfung gelöst/); await p.waitForTimeout(300); assert.equal((await db(p, "document_links")).length, 0);
+  await tapNode(p, "Johana Talschmidt"); await p.waitForTimeout(400); assert.equal(await p.getByLabel("Dokument verknüpfen").count(), 1, "Bearbeitung bietet das Verknüpfen an"); return p;
+});
+T("U232", "Dokument-Verknüpfung", "Storytellerkarte: NPC mit Dokument verknüpfen, am Dokument sichtbar (nur ST), Klick springt zum NPC; Spieler sehen keine Verknüpfungen der Storytellerkarte", async () => {
+  const p = await openApp("st", "st", { wait: 2500 }); await addDoc(p, "Dossier"); await tapNode(p, "Aniq"); await p.waitForTimeout(500);
+  await p.getByLabel("Dokument verknüpfen").selectOption({ label: "Dossier" }); await p.getByRole("button", { name: "Verknüpfen", exact: true }).click(); await waitToast(p, /Verknüpft\./); await p.waitForTimeout(400);
+  const l = (await db(p, "document_links"))[0]; assert.equal(l.scope, "st"); assert.equal(l.node_key, "a1"); assert.equal(l.label, "Aniq");
+  await nav(p, "Dokumente", 700); const chip = p.locator(".doc", { hasText: "Dossier" }).locator("[data-doc-links] .chip"); assert.match(await chip.innerText(), /ST: Aniq/);
+  await chip.locator(".linkbtn").first().click(); await p.waitForTimeout(3000); assert.ok(await p.locator(".map-panel h3", { hasText: "Aniq" }).count(), "Sprung zum NPC auf der Storytellerkarte"); assert.match(await p.locator("[data-doclinks=st]").innerText(), /Dossier/);
+  const q = await openApp("player", "docs"); await addDoc(q, "Dossier"); await q.evaluate(() => { const d = window.__db.documents.find(x => x.title === "Dossier"); window.__db.document_links.push({ id: crypto.randomUUID(), document_id: d.id, scope: "st", node_key: "a1", label: "Aniq" }); });
+  await nav(q, "Charaktere", 300); await nav(q, "Dokumente", 700); assert.equal(await q.locator("[data-doc-links]").count(), 0, "Spieler sehen keine ST-Verknüpfungen"); return q;
+});
 T("U108", "Dokumente", "Bild-Dokument zeigt Vorschau mit Alternativtext", async () => {
   const p = await openApp("player", "docs"); await upl(p, "b.png", "image/png"); await p.fill("#up-title", "Karte Kiel"); await p.getByRole("button", { name: "Hochladen" }).click(); await waitToast(p, /Hochgeladen/);
   assert.equal(await p.locator('.doc img[alt="Karte Kiel"]').count(), 1); return p;
@@ -591,8 +623,16 @@ T("U110e", "Spielerkarte", "Modus bleibt beim Wechsel der Ansicht nicht stehen: 
 });
 T("U112", "Spielerkarte", "Neuen Knoten anlegen (Name Pflicht, Tags bereinigt) und auswählen", async () => {
   const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.getByRole("button", { name: "Person/Ort hinzufügen" }).click(); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Namen/);
-  await p.fill("#nf-label", "Hafenmeister"); await p.fill("#nf-type", "Sterblicher"); await p.fill("#nf-tags", "#hafen, ,Zoll"); await p.fill("#nf-desc", "Kennt jeden."); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Hinzugefügt/);
+  await p.fill("#nf-label", "Hafenmeister"); await p.selectOption("#nf-type", "Sterblicher"); await p.fill("#nf-tags", "#hafen, ,Zoll"); await p.fill("#nf-desc", "Kennt jeden."); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Hinzugefügt/);
   assert.equal(await cyEval(p, cy => cy.nodes().length), 4); const row = (await db(p, "player_map_nodes")).find(n => n.label === "Hafenmeister"); assert.deepEqual(row.tags, ["hafen", "Zoll"]); return p;
+});
+T("U112b", "Spielerkarte", "Typ ist eine Auswahl: ohne Typ möglich, eigener Typ über 'Neuer Typ …', leerer neuer Typ wird abgewiesen", async () => {
+  const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.getByRole("button", { name: "Person/Ort hinzufügen" }).click();
+  assert.equal(await p.locator("select#nf-type").count(), 1); assert.equal(await p.locator("#nf-type-new").isHidden(), true); const opts = await p.locator("#nf-type option").allInnerTexts(); assert.ok(opts.includes("Kindred") && opts.includes("Sterblicher") && opts.includes("— ohne Typ —"));
+  await p.fill("#nf-label", "Namenlos"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Hinzugefügt/); await p.waitForTimeout(300); assert.equal((await db(p, "player_map_nodes")).find(n => n.label === "Namenlos").type, "");
+  await p.getByRole("button", { name: "Person/Ort hinzufügen" }).click(); await p.fill("#nf-label", "Seltsam"); await p.selectOption("#nf-type", "__new__"); assert.equal(await p.locator("#nf-type-new").isVisible(), true);
+  await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /neuen Typ/); await p.fill("#nf-type-new", "Wechselbalg"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Hinzugefügt/); await p.waitForTimeout(300);
+  assert.equal((await db(p, "player_map_nodes")).find(n => n.label === "Seltsam").type, "Wechselbalg"); return p;
 });
 T("U113", "Spielerkarte", "Verbindung anlegen: gleiche Knoten werden abgewiesen, gültige gespeichert", async () => {
   const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.getByRole("button", { name: "Verbindung hinzufügen" }).click(); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /zwei verschiedene/);
