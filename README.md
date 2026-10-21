@@ -28,9 +28,12 @@ Siehe `docs/Setup_Anleitung_v1_1.md`.
 | Bereich | Lesen | Schreiben |
 |---|---|---|
 | Charakterbögen | alle | Besitzer + ST |
-| Session-Notizen | alle | eigener Abschnitt |
-| Private Notizen | Besitzer + ST | Besitzer |
+| Session-Notizen | alle | eigener Abschnitt; ST: alle ändern, löschen, im Namen anderer anlegen |
+| Private Notizen | Besitzer + ST | Besitzer; ST: alle ändern, löschen, anlegen |
 | Spielerkarte | alle | alle |
-| ST-Karte, Notion-Cache, ST-Positionen | ST | ST (Cache nur über die Function) |
+| ST-Karte, Notion-Cache, ST-Positionen | ST | ST (Cache auch direkt änderbar und löschbar) |
 | Wiki | alle (ST-Notizen nur ST) | alle; Kategorien umbenennen oder löschen nur ST; Seiten löschen: Ersteller + ST |
 | Dokumente | alle (Entwürfe nur ST) | alle hochladen; löschen: Uploader + ST; freigeben: ST |
+| Profile und Rollen | alle (Profile) | Anzeigename: jede Person selbst; Rollen ändern, Profile anlegen und löschen: nur ST (nicht die eigene Rolle, nicht das eigene Profil) |
+
+Der Storyteller darf alles sehen, ändern und löschen (Migration `20261021120000_st_admin_v1_1.sql`). Ausnahmen zum Schutz vor Aussperren: die eigene Rolle und das eigene Profil.
