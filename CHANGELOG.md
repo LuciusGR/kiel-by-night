@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.5.3 – 22.10.2026
+- **Fehler behoben:** In den Szenenkarten und in der Chroniken-Verwaltung erschien an leeren Stellen der Text „null“ (zum Beispiel „nullnull“ unter den Knöpfen). Leere Bausteine werden jetzt überall übersprungen (`lib.js`).
+- **Handy:** Die Status-Knöpfe der Szenenkarten (Offen, Gespielt, Übersprungen, Verschoben) sind am Handy ein 2×2-Raster statt abgeschnitten. Verschachtelte Rahmen in aufgeklappten Sessions sind flacher, Innenabstände am Handy kleiner, mehr Platz für den Inhalt.
+- **Tests:** U217 (kein „null“) und U163 (Szenenkarten passen auf 390 px Breite), 152 Browser-Fälle.
+
 ## 1.5.2 – 22.10.2026
 - **Sessions:** Jede Session ist eine aufklappbare Zeile in der Liste. Der Inhalt steht direkt unter der Zeile statt am Seitenende, es ist höchstens eine Session offen und die neueste öffnet beim Start. Das Scrollen bleibt auch bei vielen Sessions kurz.
 - **Tests:** U61 und U62 neu, Auswahl in U50, U51 und U55 angepasst, 150 Browser-Fälle.
