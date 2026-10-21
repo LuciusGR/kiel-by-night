@@ -129,6 +129,17 @@ In jeder Session steht unter den Notizen der Block **Szenenkarten** (nur für di
 - Auf jeder Karte: Status (offen, gespielt, übersprungen, verschoben), Reihenfolge per Pfeil, Bearbeiten, Löschen. Ein NPC-Name springt zum Knoten auf der Beziehungskarte.
 - Auf der **Beziehungskarte** zeigt ein Knoten unter „Kommt vor in“ alle Szenen, in denen der NPC verknüpft ist, mit der jeweiligen Motivation.
 
+### Tab Szenen (Vorrat)
+
+Du musst Szenen nicht vorab einer Session zuordnen. Der Tab **Szenen** (nur für dich, zwischen Sessions und Spielerkarte) sammelt Szenenkarten in einem **Vorrat**. Aus dem Vorrat ordnest du eine Szene einer Session zu, sobald du weißt, wann du sie spielst.
+
+- **Ansichten:** „Vorrat“ (Szenen ohne Session), „Zugeordnet“ (Szenen, die schon in einer Session liegen) und „Alle“. Das Suchfeld durchsucht Titel, Ort, Stimmung, Ziel, Gegenspieler, Ablauf, Fäden und NPC-Namen.
+- **Neue Szene** und **Szenen importieren** legen Karten im Vorrat an. Die Importdatei braucht keine Session-Nummer (siehe `docs/Szenenformat_v1.md`). Nennt sie eine, wird sie in der Vorschau nur erwähnt.
+- **Zuordnen:** Auf der Karte unter „Session wählen …“ eine Session aussuchen oder „Session N (neu)“ wählen, dann „Zuordnen“. Die Karte verschwindet aus dem Vorrat und steht in der Session.
+- **Verschieben:** Jede Karte hat „Verschieben nach“ mit allen Sessions und „Vorrat (keine Session)“. So legst du eine Szene, die du nicht gespielt hast, in den Vorrat zurück oder in eine spätere Session.
+- Status, Reihenfolge, Bearbeiten und Löschen funktionieren wie in der Session. Die Pfeile für die Reihenfolge gibt es im Vorrat, solange nicht gesucht wird.
+- Auf der **Beziehungskarte** zeigt „Kommt vor in“ auch Szenen aus dem Vorrat (Vorrat · Titel).
+
 ### Konten und Spieler verwalten
 Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“). Danach fehlt noch das Profil und die Zuordnung zum Charakter. Das Vorgehen steht in der Technischen Dokumentation (Abschnitt 3). Jeder Spieler ändert sein Passwort selbst.
 
@@ -176,6 +187,8 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
+- **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
 - **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
 - **22.10.2026 (Version 1.5.1):** Hilfe bei Netzfehlern in der Anmeldung (Abschnitt 12).
 - **22.10.2026 (Version 1.5):** Chroniken, Kapitel, Zusammenfassungen und Szenenkarten (Abschnitte 5, 5a, 10 und 11).
