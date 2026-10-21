@@ -1,5 +1,5 @@
 // Kiel by Night · Start, Anmeldung, Navigation
-import { h, toast, errMsg, store } from "./lib.js";
+import { h, toast, errMsg, store, diagnoseNetwork } from "./lib.js";
 import { sb, S, go, loadProfiles, loadChars, setNavRenderer, personName } from "./core.js";
 import { SUPABASE_URL, APP_VERSION } from "./config.js";
 import "./views/overview.js";
@@ -98,8 +98,12 @@ function renderLogin(msg) {
     if (!loginEmail) { toast("Benutzername: 2 bis 32 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus und Unterstrich.", true); return; }
     btn.disabled = true; btn.textContent = "Prüfe …";
     const { error } = await sb.auth.signInWithPassword({ email: loginEmail, password: pw.value });
+    if (error) {
+      let msg = /invalid/i.test(error.message) ? "Benutzername oder Passwort falsch." : errMsg(error);
+      if (/Failed to fetch|NetworkError|Load failed/i.test(error.message)) { btn.textContent = "Prüfe Verbindung …"; msg = await diagnoseNetwork(); }
+      btn.disabled = false; btn.textContent = "Anmelden"; toast(msg, true); return;
+    }
     btn.disabled = false; btn.textContent = "Anmelden";
-    if (error) { toast(/invalid/i.test(error.message) ? "Benutzername oder Passwort falsch." : errMsg(error), true); return; }
     // weiter geht es über onAuthStateChange
   });
   main.replaceChildren(form);
