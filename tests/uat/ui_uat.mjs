@@ -798,6 +798,18 @@ T("U215", "Szenenkarten", "ST-Karte: Knoten zeigt 'Kommt vor in' mit der Motivat
   assert.ok(await p.locator(".map-panel h3", { hasText: "Aniq" }).count(), "Knoten ist ausgewählt");
   await p.locator(".map-panel").getByRole("button", { name: /Session 1 · Treffen im Hafen/ }).click(); await p.waitForTimeout(700); assert.equal(await p.locator(".article h2").innerText(), "Session 1"); return p;
 });
+T("U217", "Szenenkarten", "Szenenblock und Chroniken zeigen nie den Text 'null' (leere Bausteine werden übersprungen)", async () => {
+  const p = await stSession(); assert.doesNotMatch(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /null/);
+  await importFile(p, SAMPLE); assert.doesNotMatch(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /null/);
+  await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500); assert.doesNotMatch(await p.locator("section[aria-labelledby=scenes-h]").innerText(), /null/);
+  await nav(p, "Chroniken", 600); assert.doesNotMatch(await p.locator("main").innerText(), /null/); await p.locator(".linkbtn", { hasText: "Kiel by Night" }).click(); await p.waitForTimeout(300); assert.doesNotMatch(await p.locator("main").innerText(), /null/); return p;
+});
+T("U163", "Handy 390 px", "Session aufgeklappt mit Szenenkarte: Status-Knöpfe und Inhalt passen in die Breite, kein horizontales Scrollen", async () => {
+  const p = await openApp("st", "sessions", { viewport: { width: 390, height: 800 }, wait: 1000 }); await importFile(p, SAMPLE); await p.getByRole("button", { name: "3 Szenen importieren" }).click(); await waitToast(p, /3 Szenen importiert/); await p.waitForTimeout(500);
+  await p.locator("[data-scene]").first().locator(":scope > summary").click(); await p.waitForTimeout(300);
+  const r = await p.evaluate(() => { const w = innerWidth; const bad = [...document.querySelectorAll(".toggle.wrap button, [data-scene] .btn, .session-item")].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > w + 1 || b.left < -1); }).map(e => e.textContent.trim().slice(0, 20)); return { bad, scroll: document.documentElement.scrollWidth <= w }; });
+  assert.deepEqual(r.bad, []); assert.equal(r.scroll, true); return p;
+});
 T("U216", "Szenenkarten", "Spieler: kein Szenenblock und keine Import-Knöpfe", async () => {
   const p = await openApp("player", "sessions"); assert.equal(await p.getByText("Szenenkarten").count(), 0); assert.equal(await p.getByRole("button", { name: "Szenen importieren" }).count(), 0); return p;
 });
