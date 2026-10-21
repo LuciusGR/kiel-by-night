@@ -3,6 +3,10 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.5.1 – 22.10.2026
+- **Anmeldung:** Bei einem Netzfehler prüft die Seite die Ursache und sagt sie: kein Internet, Server (supabase.co) von diesem Gerät aus nicht erreichbar (dann Hinweis auf Werbeblocker, VPN, privates DNS, Filter im WLAN) oder Server erreichbar (Seite neu laden, sonst melden). Der Hinweis zu Werbeblocker und Co. erscheint nur, wenn der Server tatsächlich nicht erreichbar ist.
+- **Tests:** 3 neue Browser-Fälle (U02f, U02g, U02h), 148 gesamt.
+
 ## 1.5.0 – 22.10.2026
 - **Chroniken:** Neuer Bereich „Chroniken“. Eine Chronik gliedert sich in Kapitel und Sessions und zeigt eine Zeitleiste. Der Storyteller legt Chroniken und Kapitel an, ordnet Sessions zu und sieht Lücken. Entwürfe sieht nur der Storyteller.
 - **Sessions:** Zusammenfassung, Chronik, Kapitel und Ingame-Datum je Session (alle lesen, der Storyteller schreibt).
