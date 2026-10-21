@@ -5,6 +5,7 @@ Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`)
 
 ## 1.4.0 – 21.10.2026
 - **Karten:** Die Suche zeigt alle Treffer als Liste im Seitenfeld (Spielerkarte und Beziehungskarte). Mehrere Treffer sind zugeklappt, genau ein Treffer ist aufgeklappt. Alle Treffer werden auf der Karte hervorgehoben.
+- **Storyteller:** „Auf Spielerkarte“ überträgt den Typ (Kindred, Sterblicher, …) nicht mehr. Die Spieler tragen ihn selbst ein, weil er nicht immer offensichtlich ist. Bereits übertragene Knoten behalten ihren Typ.
 - **Tests:** Die UAT-Skripte liegen jetzt im Repo unter `tests/uat` (Rechte, Edge Function, Browser). Neue Browser-Fälle für die Suche.
 - **Doku:** Benutzerhandbuch und Technische Doku auf Version 1.4.
 
