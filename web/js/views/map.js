@@ -176,9 +176,9 @@ export function MapView(root, src) {
       const placed = cy.nodes().filter(n => !!positions[n.id()]).length;
       if (placed < cy.nodes().length * 0.6) relayout(false, true);      // Erstanordnung wird gespeichert
       else { const fresh = placeMissing(); cy.fit(undefined, 30); capZoom(); if (fresh.length) queuePos(fresh); }
-      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; highlight(); drawPanel(); });
-      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; highlight(); drawPanel(); });
-      cy.on("tap", ev => { if (ev.target === cy) { sel = null; highlight(); drawPanel(); } });
+      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
+      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
+      cy.on("tap", ev => { if (ev.target === cy) { sel = null; resultsOn = false; highlight(); drawPanel(); } });
       cy.on("dragfree", "node", ev => { const n = ev.target; queuePos([[n.id(), n.position("x"), n.position("y")]]); });
     } else {
       const els = elementsFor();
@@ -229,37 +229,78 @@ export function MapView(root, src) {
       ...types.map(t => h("button", { type: "button", class: "chip", "aria-pressed": String(!hidden.has(t)), onclick: () => { hidden.has(t) ? hidden.delete(t) : hidden.add(t); applyFilter(); drawChips(); } }, h("span", { class: "dot", style: "background:" + typeColor(t) }), t || "ohne Typ")),
       ...cats.map(c => h("button", { type: "button", class: "chip", "aria-pressed": String(!hiddenCat.has(c)), onclick: () => { hiddenCat.has(c) ? hiddenCat.delete(c) : hiddenCat.add(c); applyFilter(); drawChips(); } }, c)));
   }
-  let hits = [], hi = 0;
-  search.addEventListener("input", () => { const q = search.value.trim().toLowerCase(); hits = q ? [...nodes].filter(([, n]) => (n.label || "").toLowerCase().includes(q) || (n.alt || "").toLowerCase().includes(q)).map(([id]) => id) : []; hi = 0; jump(); });
-  search.addEventListener("keydown", e => { if (e.key === "Enter" && hits.length) { hi = (hi + 1) % hits.length; jump(); } });
-  function jump() { if (!cy || !hits.length) return; const n = cy.getElementById(hits[hi]); if (n.empty()) return; sel = { kind: "node", id: hits[hi] }; cy.$(":selected").unselect(); n.select(); highlight(); drawPanel(); cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 }); }
+  // Suche: zeigt alle Treffer als Liste im Detailfeld. Mehrere Treffer = zugeklappt, genau ein Treffer = aufgeklappt.
+  let resultsOn = false;
+  const searchIds = () => { const q = search.value.trim().toLowerCase(); return q ? [...nodes].filter(([, n]) => (n.label || "").toLowerCase().includes(q) || (n.alt || "").toLowerCase().includes(q)).map(([id]) => id) : []; };
+  function applySearch() {
+    resultsOn = !!search.value.trim();
+    if (!cy) { drawPanel(); return; }
+    const ids = searchIds();
+    cy.$(":selected").unselect();
+    if (!resultsOn) { sel = null; highlight(); drawPanel(); return; }
+    if (ids.length === 1) {
+      sel = { kind: "node", id: ids[0] }; highlight(); drawPanel();
+      const n = cy.getElementById(ids[0]); if (!n.empty()) { n.select(); cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 250 }); }
+      return;
+    }
+    sel = null; cy.elements().removeClass("faded hl");
+    if (ids.length) {
+      const hit = cy.nodes().filter(n => ids.includes(n.id()));
+      cy.elements().addClass("faded"); hit.removeClass("faded"); hit.select();
+      cy.animate({ fit: { eles: hit, padding: 80 } }, { duration: 250, complete: capZoom });
+    }
+    drawPanel();
+  }
+  function focusNode(id) { if (!cy) return; const n = cy.getElementById(id); if (!n.empty()) cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 }); }
+  search.addEventListener("input", applySearch);
+  search.addEventListener("keydown", e => { if (e.key === "Enter") applySearch(); }); // Enter: Ansicht erneut auf die Treffer einpassen
 
   const nodeLabel = id => { const n = nodes.get(id); return n ? n.label : "?"; };
   const afterWrite = async () => { editing = null; await refresh(); };
 
+  // Inhalt eines Knotens: für die Einzelansicht (mit Titel) und für die Trefferliste (Titel steht in der Kopfzeile des Eintrags)
+  function nodeBody(id, n, withTitle) {
+    const conn = [...edges.values()].filter(e => e.from === id || e.to === id);
+    const out = [withTitle ? h("div", {}, h("span", { class: "eyebrow" }, normType(n.type) || "ohne Typ"), h("h3", {}, n.label)) : h("span", { class: "eyebrow" }, normType(n.type) || "ohne Typ")];
+    const rows = src.metaRows ? src.metaRows(n) : []; if (n.tags && n.tags.length) rows.push(["Tags", n.tags.join(", ")]);
+    if (rows.length) out.push(h("dl", { class: "kv" }, ...rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])));
+    if (n.description) out.push(h("div", { class: "pre", style: "font-size:.94rem" }, n.description));
+    if (conn.length) out.push(h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "Verbindungen (" + conn.length + ")"), h("div", { class: "conn" }, ...conn.map(e => {
+      const other = e.from === id ? e.to : e.from;
+      const arrow = e.direction === "undirected" ? "—" : (e.direction === "mutual" ? "↔" : (e.from === id ? "→" : "←"));
+      return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { resultsOn = false; sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null);
+    }))));
+    const btns = h("div", { class: "row" });
+    if (src.editable && mode === "edit") btns.append(
+      h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "node", data: { id, ...n } }; drawPanel(); } }, "Bearbeiten"),
+      confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); }));
+    if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes));
+    out.push(btns);
+    return out;
+  }
+  // Trefferliste der Suche: mehrere Treffer zugeklappt, genau ein Treffer aufgeklappt
+  function resultsView() {
+    const ids = searchIds();
+    const box = h("div", { class: "stack" }, h("span", { class: "eyebrow", role: "status" }, ids.length ? ids.length + " Treffer" : "Keine Treffer"));
+    for (const id of ids) {
+      const n = nodes.get(id);
+      const det = h("details", { class: "panel hit", open: ids.length === 1 ? true : null },
+        h("summary", { style: "cursor:pointer" }, h("strong", {}, n.label || "?"), " ", h("span", { class: "muted" }, normType(n.type) || "ohne Typ")),
+        h("div", { class: "stack", style: "margin-top:8px" }, ...nodeBody(id, n, false)));
+      det.addEventListener("toggle", () => { if (det.open) focusNode(id); });
+      box.append(det);
+    }
+    return box;
+  }
+
   function drawPanel() {
     panel.replaceChildren();
     if (editing) { panel.append(editing.kind === "node" ? nodeForm(editing.data) : edgeForm(editing.data)); return; }
-    if (!sel) { panel.append(h("div", { class: "panel" }, h("p", { class: "muted" }, "Knoten oder Verbindung antippen, um Details zu sehen. Suche mit Enter springt zum nächsten Treffer."))); return; }
+    if (resultsOn && search.value.trim()) { panel.append(resultsView()); return; }
+    if (!sel) { panel.append(h("div", { class: "panel" }, h("p", { class: "muted" }, "Knoten oder Verbindung antippen, um Details zu sehen. Die Suche zeigt alle Treffer als Liste."))); return; }
     if (sel.kind === "node") {
       const n = nodes.get(sel.id); if (!n) return;
-      const id = sel.id;
-      const conn = [...edges.values()].filter(e => e.from === id || e.to === id);
-      const p = h("div", { class: "panel stack" }, h("div", {}, h("span", { class: "eyebrow" }, normType(n.type) || "ohne Typ"), h("h3", {}, n.label)));
-      const rows = src.metaRows ? src.metaRows(n) : []; if (n.tags && n.tags.length) rows.push(["Tags", n.tags.join(", ")]);
-      if (rows.length) p.append(h("dl", { class: "kv" }, ...rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])));
-      if (n.description) p.append(h("div", { class: "pre", style: "font-size:.94rem" }, n.description));
-      if (conn.length) p.append(h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "Verbindungen (" + conn.length + ")"), h("div", { class: "conn" }, ...conn.map(e => {
-        const other = e.from === id ? e.to : e.from;
-        const arrow = e.direction === "undirected" ? "—" : (e.direction === "mutual" ? "↔" : (e.from === id ? "→" : "←"));
-        return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null);
-      }))));
-      const btns = h("div", { class: "row" });
-      if (src.editable && mode === "edit") btns.append(
-        h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "node", data: { id, ...n } }; drawPanel(); } }, "Bearbeiten"),
-        confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); }));
-      if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes));
-      p.append(btns); panel.append(p);
+      panel.append(h("div", { class: "panel stack" }, ...nodeBody(sel.id, n, true)));
     } else {
       const e = edges.get(sel.id); if (!e) return;
       const id = sel.id;
