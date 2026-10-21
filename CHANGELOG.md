@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.7.0 – 22.10.2026
+- **Dokumente:** Titel und Beschreibung lassen sich nach dem Hochladen ändern („Bearbeiten“ auf der Karte). Das darf der Uploader bei eigenen, veröffentlichten Dokumenten und der Storyteller bei allen. Die Datei selbst bleibt unverändert.
+- **Rechte:** Neue Migration `20261022120300_documents_edit_v1_6.sql`. UPDATE auf `documents` ist per Spalten-GRANT auf `title`, `description` und `draft` beschränkt (Speicherpfad, Uploader, Dateiname und Größe bleiben gesperrt). Neue Policy `documents_update_own`. Spieler können eigene Dokumente nicht zum Entwurf machen.
+- **Tests:** Rechte 237 Fälle, Browser 159 Fälle (U109).
+
 ## 1.6.1 – 22.10.2026
 - **Kontrast:** Im Dunkelmodus ist der Rotton für Text (`--blood`) heller (`#df7482` statt `#d76675`). Rote Badges („Nur Storyteller“, „versteckt“) erreichen 5,2:1 statt 4,48:1 und erfüllen damit WCAG AA. Der Test U155b ist grün.
 
