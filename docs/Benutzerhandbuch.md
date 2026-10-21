@@ -160,6 +160,13 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | „Notion konnte nicht gelesen werden“ (ST) | Notion-Token oder Freigabe prüfen (Technische Dokumentation, Abschnitt 8). Der letzte Stand bleibt als Cache erhalten. |
 | Eine Änderung fehlt nach dem Schließen des Tabs | Nach dem Tippen kurz warten, bis „Gespeichert“ steht. |
 
+### Anmeldung: Meldung zur Verbindung
+
+Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es liegt, und sagt es:
+- **„Kein Internet“:** WLAN oder mobile Daten prüfen.
+- **„Diese Seite erreicht den Server (supabase.co) von diesem Gerät aus nicht“:** Andere Seiten gehen, der Server nicht. Meist blockiert ein Werbeblocker, ein VPN, privates DNS (Android) oder ein Filter im WLAN die Adresse. Ausschalten oder einen anderen Browser oder ein anderes Netz nehmen. Zum Testen im Browser `https://ueiqslwzpjzfpexiwtbb.supabase.co/auth/v1/health` öffnen: Erscheint Text mit „GoTrue“, geht die Verbindung.
+- **„Der Server ist erreichbar, die Anfrage ist trotzdem fehlgeschlagen“:** Seite neu laden und noch einmal versuchen. Bleibt es, dem Storyteller melden.
+
 ## 13. Datenschutz
 
 - Es werden **keine E-Mail-Adressen** gespeichert. Benutzernamen sind Pseudo-Adressen.
@@ -169,6 +176,7 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 
 ## 14. Änderungen an diesem Handbuch
 
+- **22.10.2026 (Version 1.5.1):** Hilfe bei Netzfehlern in der Anmeldung (Abschnitt 12).
 - **22.10.2026 (Version 1.5):** Chroniken, Kapitel, Zusammenfassungen und Szenenkarten (Abschnitte 5, 5a, 10 und 11).
 - **21.10.2026 (Version 1.4):** Suche auf den Karten zeigt alle Treffer als aufklappbare Liste (Abschnitt 7). „Auf Spielerkarte“ überträgt keinen Typ mehr (Abschnitt 10).
 - **21.10.2026 (Version 1.3):** Erste Fassung. Stand: Login mit Benutzernamen, Modi Ansicht und Bearbeitung für Bögen und Spielerkarte, ST als Administrator.
