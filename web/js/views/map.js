@@ -66,12 +66,14 @@ function cyStyle() {
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
     { selector: "node[?pc]", style: { "border-width": 4, "border-style": "double", "border-color": ink } }, // SC-Ring, nicht verwechselbar mit Ghoul-Messing
     { selector: "node[?dead]", style: { "opacity": .5, "border-width": 1.5, "border-style": "dashed", "border-color": muted, "background-opacity": .35 } },
-    { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8 } },
+    { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8,
+      "label": "data(label)", "font-size": 8, "color": muted, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .85, "text-background-padding": 1.5,
+      "text-wrap": "ellipsis", "text-max-width": 110, "min-zoomed-font-size": 7 } },
     { selector: "edge[dir = 'undirected']", style: { "target-arrow-shape": "none" } },
     { selector: "edge[dir = 'mutual']", style: { "source-arrow-shape": "triangle", "source-arrow-color": line } },
     { selector: ".faded", style: { "opacity": .1 } },
     { selector: "edge.hl", style: { "label": "data(label)", "font-size": 9, "color": ink, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .9, "text-background-padding": 2,
-      "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160 } },
+      "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160, "min-zoomed-font-size": 0 } },
     { selector: "node:selected", style: { "border-width": 3, "border-color": sea } },
     { selector: ".hide", style: { "display": "none" } },
   ];
@@ -280,7 +282,7 @@ export function MapView(root, src) {
     if (conn.length) out.push(h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "Verbindungen (" + conn.length + ")"), h("div", { class: "conn" }, ...conn.map(e => {
       const other = e.from === id ? e.to : e.from;
       const arrow = e.direction === "undirected" ? "—" : (e.direction === "mutual" ? "↔" : (e.from === id ? "→" : "←"));
-      return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { resultsOn = false; sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null);
+      return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { resultsOn = false; sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null, e.description ? h("div", { class: "pre muted", style: "font-size:.88rem;margin-top:2px" }, e.description) : null);
     }))));
     const btns = h("div", { class: "row" });
     if (src.editable && mode === "edit") btns.append(

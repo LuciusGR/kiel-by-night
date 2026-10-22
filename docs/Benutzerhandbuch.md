@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 22.10.2026 · gilt für Website-Version 1.9.0
+Stand: 23.10.2026 · gilt für Website-Version 1.9.1
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -81,7 +81,7 @@ Die gemeinsame Karte der Coterie: **Was ihr über Kiels Nächte wisst.** Alle be
 - **Bearbeitung:** zusätzlich „Person/Ort hinzufügen“, „Verbindung hinzufügen“, „Neu anordnen“, Knoten ziehen sowie „Bearbeiten“ und „Löschen“ im Detailfeld.
 
 Bedienung:
-- **Knoten antippen:** zeigt rechts Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen. Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
+- **Knoten antippen:** zeigt rechts Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen mit Beschriftung und Details. Die Beschriftung steht auch auf der Linie in der Karte (beim Hineinzoomen). Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
 - **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
 - **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein.
 - **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
@@ -197,6 +197,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
+- **23.10.2026 (Version 1.9.1):** Auf beiden Karten steht die Beschriftung der Verbindungen auf der Linie (beim Hineinzoomen), und die Infokarte zeigt bei den Verbindungen auch deren Details (Abschnitt 7).
 - **22.10.2026 (Version 1.9.0):** Spielerkarte und Storytellerkarte lassen sich als Excel oder CSV herunterladen (Abschnitt 7). Szenen lassen sich einer Chronik zuordnen (Editor, Import-Vorschau, Filter im Tab Szenen). Claude kann Szenen automatisch einspielen (Abschnitt 10).
 - **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
 - **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
