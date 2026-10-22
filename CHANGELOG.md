@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.9.1 – 23.10.2026
+- **Karten:** Auf der Spielerkarte und der Storytellerkarte (gemeinsamer Code `MapView`) steht die Beschriftung einer Verbindung jetzt dauerhaft auf der Linie, sobald man weit genug hineinzoomt (Cytoscape `min-zoomed-font-size`). Bisher erschien sie nur bei markierten Verbindungen.
+- **Infokarte:** Bei jedem Knoten zeigt die Liste „Verbindungen“ neben der Beschriftung jetzt auch die Details (Beschreibung) der Verbindung, auf beiden Karten.
+- Hinweis: Verbindungen, die der ST per „Auf Spielerkarte“ von der Storytellerkarte überträgt, kommen weiterhin ohne Beschriftung und Beschreibung an (Entscheidung aus der Übergabe, Notion-Texte können ST-Geheimnisse enthalten).
+
 ## 1.9.0 – 22.10.2026
 - **Szenen gehören zu einer Chronik:** Jede Szenenkarte kann einer Chronik zugeordnet werden (auch im Vorrat ohne Session). Im Szenen-Editor gibt es die Auswahl „Chronik“, auf den Karten steht die Chronik als Schild, im Tab Szenen filtert eine Auswahl nach Chronik („Alle Chroniken“, „Ohne Chronik“, je Chronik). Neue Szenen in einer Session übernehmen deren Chronik, im Tab Szenen den gewählten Filter.
 - **Import:** Das Feld `chronik` der Szenendatei (Szenenformat 1.2) ordnet die Szenen zu. In der Vorschau wählst du die Chronik für alle importierten Szenen, sie ist mit dem Titel aus der Datei vorbelegt. Gleiche Titel zählen je Chronik, dieselbe Szene darf also in zwei Chroniken vorkommen.

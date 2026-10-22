@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 22.10.2026 · gilt für Website-Version 1.9.0 (siehe `CHANGELOG.md`)
+Stand: 23.10.2026 · gilt für Website-Version 1.9.1 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -264,6 +264,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **23.10.2026 (Version 1.9.1):** `MapView`: Kantenbeschriftung dauerhaft sichtbar (`min-zoomed-font-size`), Verbindungsdetails in der Infokarte (`nodeBody()`).
 - **22.10.2026 (Version 1.9.0):** Karten als CSV oder Excel herunterladen (Abschnitt 4.10, `export.js`). Szenen gehören zu einer Chronik (`scenes.chronicle_id`, Migration `20261022120500`, Auswahl im Editor, Filter im Tab Szenen, Auswahl in der Import-Vorschau). Edge Function `scene-import` und `tools/import-scenes.mjs` für den automatischen Import (Abschnitt 4.9). Szenenformat 1.2.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
