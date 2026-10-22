@@ -275,7 +275,7 @@ export function MapView(root, src) {
     if (src.editable && mode === "edit") btns.append(
       h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "node", data: { id, ...n } }; drawPanel(); } }, "Bearbeiten"),
       confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); }));
-    if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes));
+    if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes, { edit: !!src.editable && mode === "edit" }));
     out.push(btns);
     return out;
   }

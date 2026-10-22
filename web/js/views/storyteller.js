@@ -4,6 +4,7 @@ import { sb, S, go, registerView, personName, charOf } from "../core.js";
 import { MapView, shapeForSekte, normType } from "./map.js";
 import { savePositions, loadPositions } from "./playermap.js";
 import { sceneMentions } from "./scenes.js";
+import { docLinksBox } from "./doclinks.js";
 
 registerView("st", async m => {
   if (!S.isST) { m.append(h("div", { class: "notice bad" }, "Dieser Bereich ist nur für den Storyteller.")); return; }
@@ -98,6 +99,7 @@ function notionSource(focus) {
     },
     nodeExtras: (n) => [
       n.raw && n.raw.id ? mentionsBox(n.raw.id) : null,
+      n.raw && n.raw.id ? docLinksBox("st", n.raw.id, n.label, true) : null,
       n.raw && /^https:\/\//.test(n.raw.url || "") ? h("a", { class: "btn small", href: n.raw.url, target: "_blank", rel: "noopener" }, "In Notion öffnen") : null,
       h("button", { class: "btn small", type: "button", onclick: async () => {
         try { await ensurePlayerNode(n); toast("„" + n.label + "“ steht auf der Spielerkarte."); } catch (e) { toast("Fehler: " + (e.message || e), true); }

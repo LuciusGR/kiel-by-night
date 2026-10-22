@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.8.0 – 22.10.2026
+- **Dokumente und Karten verknüpfen:** Dokumente lassen sich mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen. Der Link gilt in beide Richtungen. Im Detailfeld eines Knotens stehen die verknüpften Dokumente (Klick springt zum Dokument). In der Dokumenten-Liste stehen an jedem Dokument die verknüpften Knoten (Klick springt zum Knoten, „×“ löst die Verknüpfung). Verknüpfen und Lösen geht auf der Spielerkarte nur im Modus Bearbeitung. Verknüpfungen mit Elementen der Storytellerkarte sieht nur der Storyteller.
+- **Rechte:** Neue Migration `20261022120400_document_links_v1_7.sql` mit Tabelle `document_links` (nur SELECT, INSERT, DELETE für `authenticated`, `anon` ohne Rechte), drei Policies (jetzt 67). Löscht man einen Spielerkarten-Knoten, entfernt ein Trigger dessen Verknüpfungen. Löscht man ein Dokument, verschwinden seine Verknüpfungen (Cascade).
+- **Spielerkarte:** Der Typ eines Knotens ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation, vorhandene Typen, „— ohne Typ —“, „＋ Neuer Typ …“). Das stammt aus Pull Request 1.
+- **Tests:** Rechte 259 Fälle (R300 bis R327), Browser 163 Fälle (U112b, U230 bis U232).
+
 ## 1.7.0 – 22.10.2026
 - **Dokumente:** Titel und Beschreibung lassen sich nach dem Hochladen ändern („Bearbeiten“ auf der Karte). Das darf der Uploader bei eigenen, veröffentlichten Dokumenten und der Storyteller bei allen. Die Datei selbst bleibt unverändert.
 - **Rechte:** Neue Migration `20261022120300_documents_edit_v1_6.sql`. UPDATE auf `documents` ist per Spalten-GRANT auf `title`, `description` und `draft` beschränkt (Speicherpfad, Uploader, Dateiname und Größe bleiben gesperrt). Neue Policy `documents_update_own`. Spieler können eigene Dokumente nicht zum Entwurf machen.

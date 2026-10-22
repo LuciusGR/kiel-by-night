@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 21.10.2026 · gilt für Website-Version 1.3.0 (siehe `CHANGELOG.md`)
+Stand: 21.10.2026 · gilt für Website-Version 1.8.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -82,11 +82,12 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `scenepool.js` | Szenen (nur ST) | Tab „Szenen“ (`#scenes`): Vorrat, Zugeordnet, Alle, Suche. Nutzt `sceneBoard()` aus `scenes.js`. Spieler bekommen nur einen Hinweis |
 | `scenes.js` | Szenenkarten (nur ST) | Block in der Session-Ansicht: Karten, Status, Reihenfolge, Bearbeiten, Import (`parseScenes`, Vorschau, NPC-Abgleich `matchNpc`), `sceneMentions` für die ST-Karte |
 | `private.js` | Privat | Private Notizen (Spieler); der ST liest sie im Storyteller-Bereich |
-| `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten |
+| `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten. Detailfeld zeigt verknüpfte Dokumente (`nodeExtras`), `S.arg.focus` wählt einen Knoten aus |
+| `doclinks.js` | Dokument-Verknüpfungen | `docLinksBox(scope, key, label, canEdit)`: Liste der verknüpften Dokumente im Detailfeld eines Knotens, Auswahl und „Verknüpfen“ nur bei `canEdit` (Spielerkarte: Modus Bearbeitung; Storytellerkarte: immer) |
 | `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
 | `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend) und private Spielernotizen |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]` |
-| `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`) |
+| `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
 
 ### 4.3 Charakterbogen
 - JSON-Felder: `attr` (9 Attribute 1–5), `skills` (je `{v, spec}`), `disc` (`[{name, lvl, powers}]`), `health` und `wp` (Arrays 0/1/2 = leer/oberflächlich/schwer), `hunger`, `humanity`, `stains`, `bp`, `xpTotal`, `xpSpent` und Textfelder (concept, ambition, desire, predator, sire, generation, resonance, touchstones, advantages, notes). Health = Stamina + 3, Willpower = Composure + Resolve. `normSheet()` ergänzt fehlende Felder.
@@ -101,8 +102,12 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - Positionen: Tabelle `map_positions` (scope `player` oder `st`, Schlüssel = Knoten-ID bzw. Notion-ID ohne Bindestriche oder `lbl:<Text>`). Schreiben gebündelt 700 ms nach dem Ziehen, Rest beim Verlassen der Ansicht. Andere sehen Positionsänderungen erst nach Neuladen.
 - ST-Karte: Form je Sekte (Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis), Farbe je Wesen, Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur den Namen an (`ensurePlayerNode()` in `storyteller.js`: `type` bleibt leer, die Spieler tragen ihn selbst ein; keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
 
+- Typ eines Knotens (Spielerkarte): `select#nf-type` mit Standardtypen, vorhandenen Typen, „— ohne Typ —“ und „＋ Neuer Typ …“ (`input#nf-type-new`, Pflicht bei dieser Wahl).
+- Detailfeld: `src.nodeExtras(n, id, nodes, { edit })` liefert zusätzliche Bausteine (Szenen-Vorkommen, Dokumente). `edit` ist wahr bei bearbeitbarer Karte im Modus Bearbeitung. `src.focus` wählt nach dem Laden einen Knoten aus (`selectNode()`).
+
 ### 4.5 Dokumente
 - Privater Bucket `documents`, Pfad `<uploader-uuid>/<zufall>-<bereinigter-name>`. Erlaubt: PDF, PNG, JPEG, WEBP, GIF, TXT, Markdown, höchstens 20 MB (Bucket-Limit und Prüfung im Browser). `documents` führt Titel, Beschreibung, Pfad, Größe, `draft` und Uploader. Öffnen über signierte URL (1 Stunde), Bildvorschau ebenso.
+- **Verknüpfungen mit Karten:** Tabelle `document_links` (`scope` `player` oder `st`, `node_key` = Knoten-ID der Spielerkarte bzw. Notion-ID des NPC, `label` = Name zum Zeitpunkt des Verknüpfens). Sprung von der Karte: `go("docs", { focus: <Dokument-ID> })`. Sprung vom Dokument: `go("map", { focus: <Knoten-ID> })` bzw. `go("st", { tab: "map", focus: <Notion-ID> })`. `docs.js` zeigt `st`-Verknüpfungen nur dem ST (zusätzlich zu RLS). Fehlt die Tabelle noch, bleibt die Liste leer.
 
 ### 4.6 Sonstiges
 - Theme hell/dunkel/automatisch (`data-theme`, gemerkt in `localStorage` `kbn-theme`).
@@ -128,6 +133,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `wiki_categories` | `name`, `sort`, `st_only`, `created_by` |
 | `wiki_pages` | `category_id`, `title`, `tags`, `body`, `created_by` (unveränderlich), `updated_by` |
 | `documents` | Metadaten zu Dateien im Bucket, `draft` |
+| `document_links` | `document_id` (Cascade), `scope` (`player`, `st`), `node_key`, `label`, `created_by`. Eindeutig je (`document_id`, `scope`, `node_key`) |
 | `player_map_nodes` | `label` (eindeutig ohne Groß/Klein), `type`, `tags`, `description`, `is_pc`, `character_id` |
 | `player_map_edges` | `from_node`, `to_node`, `label`, `direction` (directed, mutual, undirected), `description` |
 | `map_positions` | `scope`, `node_key`, `x`, `y` |
@@ -138,7 +144,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
-**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
+**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `player_node_links_cleanup` (entfernt Verknüpfungen eines gelöschten Spielerkarten-Knotens), `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
 
 ### Migrationen (in dieser Reihenfolge anwenden, nie ändern, Änderungen kommen als neue Datei)
 
@@ -154,6 +160,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 | `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
 | `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
+| `20261022120400_document_links_v1_7.sql` | Tabelle `document_links` mit Rechten (nur SELECT, INSERT, DELETE), drei Policies, Trigger `player_node_links_cleanup` |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
 
@@ -171,6 +178,7 @@ Grundsatz: `anon` darf nichts außer `ping()`. `authenticated` bekommt Tabellenr
 | `wiki_categories` | Mitglieder (`st_only` nur ST) | Mitglieder legen an (nicht `st_only`); umbenennen und löschen nur ST |
 | `wiki_pages` | je Kategorie sichtbar | in sichtbaren Kategorien anlegen und ändern; löschen Ersteller und ST |
 | `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); Titel und Beschreibung ändern Uploader (nur eigene, veröffentlichte) und ST; Entwurf/Freigabe ST; löschen Uploader und ST. Das Spalten-GRANT erlaubt UPDATE nur auf `title`, `description`, `draft` |
+| `document_links` | `player`: Mitglieder, `st`: ST (jeweils nur zu sichtbaren Dokumenten) | anlegen: `created_by` = eigene ID, `player` Mitglieder, `st` ST; löschen: `player` Mitglieder, `st` ST. Kein UPDATE |
 | `player_map_*` | Mitglieder | Mitglieder (auch Löschen von Spielercharakter-Knoten) |
 | `map_positions` | `player`: Mitglieder, `st`: ST | wie Lesen |
 | `chronicles` | Mitglieder (Entwürfe nur ST) | ST |
@@ -222,7 +230,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 237 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 159 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 163 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -240,6 +248,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
 - **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Szenen-Vorrat (`scenepool.js`, `sceneBoard()`), Migration `20261022120200` (`session_number` nullable), Zuordnen und Verschieben (`relocate()`), Suche, `session` im Szenenformat optional (Version 1.1), „Kommt vor in“ zeigt Vorrat. Tests U220 bis U225, R231 und R268 bis R272.
