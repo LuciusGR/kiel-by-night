@@ -117,7 +117,22 @@ registerView("sessions", async m => {
     if (!these.length) art.append(h("p", { class: "muted", style: "margin-top:12px" }, "Zu dieser Session gibt es noch keine Notizen."));
     if (editing && !editing.id) art.append(noteEditor(editing));
     else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: num, body: "" }; draw(); } }, "Eigenen Abschnitt schreiben")));
-    return [art, S.isST ? h("div", { style: "margin-top:16px" }, sceneBlock(num)) : null];
+    return [art, S.isST ? h("div", { style: "margin-top:16px" }, sceneBlock(num)) : null, S.isST ? deleteBlock(num) : null];
+  }
+
+  // Nur ST: Session samt Notizen und Zusatzangaben löschen, Szenenkarten wandern in den Vorrat
+  function deleteBlock(num) {
+    const c = notes.filter(x => x.session_number === num).length;
+    return h("div", { class: "panel", style: "margin-top:16px" },
+      h("p", { class: "muted" }, "Löscht Session " + num + " mit " + c + (c === 1 ? " Notiz" : " Notizen") + " und den Zusatzangaben (Titel, Datum, Chronik, Zusammenfassung). Szenenkarten bleiben erhalten und landen im Vorrat."),
+      confirmBtn("Session löschen", async () => {
+        await guard(sb.from("scenes").update({ session_number: null }).eq("session_number", num));
+        await guard(sb.from("session_notes").delete().eq("session_number", num));
+        await guard(sb.from("session_info").delete().eq("session_number", num));
+        await guard(sb.from("sessions").delete().eq("number", num), "Session " + num + " gelöscht.");
+        cur = null; auto = true; editing = null; fresh = null;
+        await load(); draw();
+      }));
   }
 
   // Eine Zeile je Session. Aufgeklappt ist höchstens eine, ihr Inhalt wird erst beim Aufklappen aufgebaut.
