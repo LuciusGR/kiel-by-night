@@ -3,6 +3,7 @@
 //                    A5 Form je Sekte (nur ST-Karte, sonst Kreis) · A7 unterscheidbare Farben
 import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
+import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
 // ---------- A7: Farben je Typ ----------
 const TYPE_TOK = {
@@ -117,7 +118,16 @@ export function MapView(root, src) {
   function setMode(next) { if (next === mode) return; mode = next; if (mode === "view") { editing = null; flushPositions(); } paintMode(); drawPanel(); }
   paintMode();
   if (src.reload) actions.append(h("button", { class: "btn", type: "button", onclick: async () => { await src.reload(); await refresh(); } }, src.reloadLabel || "Neu laden"));
-  actions.append(status);
+  // Herunterladen als CSV (Knoten, Verbindungen) oder Excel (beides als zwei Blätter), z. B. zur Auswertung durch Claude
+  const exportMenu = h("details", { class: "export-menu" }, h("summary", { class: "btn", "aria-label": "Karte herunterladen" }, "Herunterladen"),
+    h("div", { class: "row", style: "margin-top:6px" },
+      ...[["Excel (.xlsx)", "xlsx"], ["Knoten (.csv)", "nodes"], ["Verbindungen (.csv)", "edges"]].map(([label, kind]) => h("button", { class: "btn small", type: "button", onclick: () => {
+        const { nodeRows, edgeRows } = mapTables(nodes, edges), base = (src.exportName || "karte") + "_" + stamp();
+        if (kind === "xlsx") download(base + ".xlsx", toXlsx([["Knoten", nodeRows], ["Verbindungen", edgeRows]]), MIME.xlsx);
+        else download(base + (kind === "nodes" ? "_knoten" : "_verbindungen") + ".csv", toCsv(kind === "nodes" ? nodeRows : edgeRows), MIME.csv);
+        exportMenu.open = false;
+      } }, label))));
+  actions.append(exportMenu, status);
 
   const onTheme = () => { if (cy) cy.style(cyStyle()); drawChips(); };
   themeListeners.add(onTheme);

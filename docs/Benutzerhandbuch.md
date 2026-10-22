@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 21.10.2026 · gilt für Website-Version 1.8.0
+Stand: 22.10.2026 · gilt für Website-Version 1.9.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -87,6 +87,7 @@ Bedienung:
 - **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
 - **Dokumente am Knoten:** Im Detailfeld steht „Dokumente (n)“ mit den verknüpften Dokumenten. Ein Klick auf den Titel springt zum Dokument. Im Modus **Bearbeitung** wählst du ein Dokument aus der Liste und klickst „Verknüpfen“. Mit „×“ löst du die Verknüpfung (das Dokument bleibt erhalten).
+- **Herunterladen:** Über der Karte steht „Herunterladen“ mit **Excel (.xlsx)** (zwei Blätter: Knoten und Verbindungen), **Knoten (.csv)** und **Verbindungen (.csv)**. Die Verbindungen enthalten die Namen von und nach. So lässt sich die Karte auswerten, zum Beispiel indem du die Datei Claude gibst. Die CSV-Dateien öffnen sich im deutschen Excel direkt richtig (UTF-8, Semikolon). Auf der Storytellerkarte gibt es dasselbe (nur für dich).
 - **Löschen** fragt nach. Beim Löschen eines Knotens verschwinden auch seine Verbindungen. Vorsicht bei Spielercharakteren: Jeder in der Gruppe darf jeden Knoten löschen.
 
 ## 8. Wiki
@@ -128,6 +129,8 @@ In jeder Session steht unter den Notizen der Block **Szenenkarten** (nur für di
 
 - **Neue Szene** legt eine Karte von Hand an. NPC-Namen werden automatisch mit der Beziehungskarte verknüpft.
 - **Szenen importieren:** Datei im Format `kbn-scenes/1` wählen (siehe `docs/Szenenformat_v1.md`). Claude kann sie aus deinen Stichpunkten vorbereiten. Zuerst prüft die Seite die Datei und zeigt eine **Vorschau** mit den NPC-Treffern. Du kannst Szenen abwählen und die Verknüpfung je NPC ändern. Fehlerhafte Dateien werden komplett abgelehnt, es wird nichts gespeichert.
+- **Chronik:** Jede Szene kann zu einer Chronik gehören (Auswahl „Chronik“ im Editor, Schild auf der Karte). Beim Import wählst du in der Vorschau die Chronik für alle Szenen, sie ist mit dem Eintrag `chronik` der Datei vorbelegt. Neue Szenen in einer Session übernehmen deren Chronik.
+- **Automatischer Import:** Auf Wunsch baut Claude aus deiner Chronik-Datei (Markdown) die Szenen und spielt sie direkt ein, du musst nichts hochladen. Sie landen im Vorrat (oder in der Session, die Claude nennt) mit der richtigen Chronik. Das Hochladen hier bleibt daneben möglich.
 - **Ein zweiter Import ersetzt nichts.** Neue Szenen werden hinten angehängt, Szenen mit gleichem Titel sind abgewählt.
 - Auf jeder Karte: Status (offen, gespielt, übersprungen, verschoben), Reihenfolge per Pfeil, Bearbeiten, Löschen. Ein NPC-Name springt zum Knoten auf der Beziehungskarte.
 - Auf der **Beziehungskarte** zeigt ein Knoten unter „Kommt vor in“ alle Szenen, in denen der NPC verknüpft ist, mit der jeweiligen Motivation.
@@ -136,6 +139,7 @@ In jeder Session steht unter den Notizen der Block **Szenenkarten** (nur für di
 
 Du musst Szenen nicht vorab einer Session zuordnen. Der Tab **Szenen** (nur für dich, zwischen Sessions und Spielerkarte) sammelt Szenenkarten in einem **Vorrat**. Aus dem Vorrat ordnest du eine Szene einer Session zu, sobald du weißt, wann du sie spielst.
 
+- **Nach Chronik filtern:** Neben der Suche steht eine Auswahl „Alle Chroniken“, „Ohne Chronik“ und je Chronik. Neue Szenen bekommen die gewählte Chronik vorgeschlagen.
 - **Ansichten:** „Vorrat“ (Szenen ohne Session), „Zugeordnet“ (Szenen, die schon in einer Session liegen) und „Alle“. Das Suchfeld durchsucht Titel, Ort, Stimmung, Ziel, Gegenspieler, Ablauf, Fäden und NPC-Namen.
 - **Neue Szene** und **Szenen importieren** legen Karten im Vorrat an. Die Importdatei braucht keine Session-Nummer (siehe `docs/Szenenformat_v1.md`). Nennt sie eine, wird sie in der Vorschau nur erwähnt.
 - **Zuordnen:** Auf der Karte unter „Session wählen …“ eine Session aussuchen oder „Session N (neu)“ wählen, dann „Zuordnen“. Die Karte verschwindet aus dem Vorrat und steht in der Session.
@@ -193,6 +197,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
+- **22.10.2026 (Version 1.9.0):** Spielerkarte und Storytellerkarte lassen sich als Excel oder CSV herunterladen (Abschnitt 7). Szenen lassen sich einer Chronik zuordnen (Editor, Import-Vorschau, Filter im Tab Szenen). Claude kann Szenen automatisch einspielen (Abschnitt 10).
 - **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
 - **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
 - **22.10.2026 (Version 1.5.1):** Hilfe bei Netzfehlern in der Anmeldung (Abschnitt 12).

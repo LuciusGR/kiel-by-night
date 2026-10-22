@@ -102,6 +102,11 @@ async function loadSessionNumbers() {
   for (const [i, r] of rs.entries()) for (const x of (r.error ? [] : r.data)) { const v = i === 0 ? x.number : x.session_number; if (Number.isInteger(v)) set.add(v); }
   return [...set].sort((a, b) => b - a);
 }
+// Chroniken (id, Titel) und die Chronik je Session aus den Zusatzangaben
+async function loadChronicles() {
+  const [c, i] = await Promise.all([sb.from("chronicles").select("id, title, sort").order("sort"), sb.from("session_info").select("session_number, chronicle_id")]);
+  return { list: c.error ? [] : c.data, bySession: Object.fromEntries((i.error ? [] : i.data).filter(x => x.chronicle_id).map(x => [x.session_number, x.chronicle_id])) };
+}
 // höchste Position im Ziel (Session oder Vorrat), damit neue Karten hinten landen
 async function maxPosition(session) {
   const { data, error } = await sb.from("scenes").select("session_number, position");
@@ -110,7 +115,7 @@ async function maxPosition(session) {
 }
 async function insertScene(session, sc, position) {
   const row = await guard(sb.from("scenes").insert({
-    session_number: session, position, title: sc.title, place: sc.place, mood: sc.mood, goal: sc.goal, antagonist: sc.antagonist,
+    session_number: session, chronicle_id: sc.chronicle_id || null, position, title: sc.title, place: sc.place, mood: sc.mood, goal: sc.goal, antagonist: sc.antagonist,
     outcomes: sc.outcomes, threads: sc.threads, body: sc.body, details: sc.details,
   }).select("id").single());
   if (sc.npcs.length) await guard(sb.from("scene_npcs").insert(sc.npcs.map(n => ({ scene_id: row.id, notion_id: n.notion_id || "", name: n.name, motivation: n.motivation || "" }))));
@@ -132,17 +137,22 @@ export function sceneBoard(opts) {
   const home = opts.session ?? null;                 // Ziel für neue und importierte Szenen (null = Vorrat)
   const sessionView = home != null;
   const root = h("section", { class: "panel stack", "aria-labelledby": "scenes-h" });
-  let scenes = [], nums = [], editing = null, importing = null, busy = false, query = "";
+  let scenes = [], nums = [], chrons = [], chronBySession = {}, chronFilter = "", editing = null, importing = null, busy = false, query = "";
 
   async function reload() {
-    try { [scenes, nums] = await Promise.all([loadScenes({ session: home, mode: opts.mode }), loadSessionNumbers()]); }
+    try { let c; [scenes, nums, c] = await Promise.all([loadScenes({ session: home, mode: opts.mode }), loadSessionNumbers(), loadChronicles()]); chrons = c.list; chronBySession = c.bySession; }
     catch (e) { root.replaceChildren(h("div", { class: "notice bad" }, "Szenenkarten konnten nicht geladen werden.")); return false; }
     return true;
   }
   async function refresh() { if (await reload()) draw(); }
+  const chronTitle = id => (chrons.find(c => c.id === id) || {}).title || "";
+  // Vorbelegung für neue und importierte Szenen: Chronik der Session, sonst der aktive Filter
+  const defaultChron = () => (home != null && chronBySession[home]) || (chronFilter && chronFilter !== "none" ? chronFilter : "");
+  const chronSelect = (id, val) => h("select", { id }, h("option", { value: "" }, "— ohne Chronik —"), ...chrons.map(c => h("option", { value: c.id, selected: c.id === val ? true : null }, c.title)));
   const shown = () => {
-    if (!query) return scenes;
-    return scenes.filter(sc => [sc.title, sc.place, sc.mood, sc.goal, sc.antagonist, sc.body, sc.details, ...sc.threads, ...sc.npcs.map(n => n.name)].join(" ").toLowerCase().includes(query));
+    const byChron = chronFilter ? scenes.filter(sc => chronFilter === "none" ? !sc.chronicle_id : sc.chronicle_id === chronFilter) : scenes;
+    if (!query) return byChron;
+    return byChron.filter(sc => [sc.title, sc.place, sc.mood, sc.goal, sc.antagonist, sc.body, sc.details, ...sc.threads, ...sc.npcs.map(n => n.name)].join(" ").toLowerCase().includes(query));
   };
 
   async function setStatus(sc, status) { await guard(sb.from("scenes").update({ status }).eq("id", sc.id)); await refresh(); }
@@ -200,7 +210,7 @@ export function sceneBoard(opts) {
         confirmBtn("Löschen", async () => { await guard(sb.from("scenes").delete().eq("id", sc.id), "Gelöscht."); await refresh(); })));
     return h("details", { class: "panel", open: list.length === 1 ? true : null, "data-scene": sc.id },
       h("summary", { style: "cursor:pointer" }, h("strong", {}, (sessionView ? (i + 1) + ". " : "") + sc.title), " ", h("span", { class: sc.status === "open" ? "badge" : "badge st" }, STATUS[sc.status]),
-        !sessionView && sc.session_number != null ? h("span", { class: "badge" }, "Session " + sc.session_number) : null, sc.place ? h("span", { class: "muted" }, " · " + sc.place) : null), body);
+        !sessionView && sc.session_number != null ? h("span", { class: "badge" }, "Session " + sc.session_number) : null, sc.chronicle_id && chronTitle(sc.chronicle_id) ? h("span", { class: "badge st" }, chronTitle(sc.chronicle_id)) : null, sc.place ? h("span", { class: "muted" }, " · " + sc.place) : null), body);
   }
 
   // ---------- Bearbeiten / Neu ----------
@@ -217,7 +227,7 @@ export function sceneBoard(opts) {
     (sc.npcs || []).forEach(addRow);
     const get = id => document.getElementById(id).value;
     return h("div", { class: "panel stack" }, h("h3", {}, sc.id ? "Szene bearbeiten" : "Neue Szene"),
-      f("sc-title", "Titel", sc.title), f("sc-place", "Ort", sc.place), f("sc-mood", "Grundstimmung", sc.mood), f("sc-goal", "Ziel", sc.goal), f("sc-ant", "Gegenspieler", sc.antagonist),
+      f("sc-title", "Titel", sc.title), h("div", { class: "field" }, h("label", { for: "sc-chron" }, "Chronik"), chronSelect("sc-chron", sc.id ? sc.chronicle_id : defaultChron())), f("sc-place", "Ort", sc.place), f("sc-mood", "Grundstimmung", sc.mood), f("sc-goal", "Ziel", sc.goal), f("sc-ant", "Gegenspieler", sc.antagonist),
       h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"), npcRows, h("button", { class: "btn small", type: "button", style: "margin-top:8px", onclick: () => addRow() }, "NPC hinzufügen")),
       f("sc-out", "Mögliche Ausgänge (eine Zeile je Ausgang)", (sc.outcomes || []).join("\n"), "ta"), f("sc-thr", "Fäden (durch Komma getrennt)", (sc.threads || []).join(", ")),
       f("sc-body", "Ablauf", sc.body, "ta"), f("sc-det", "Weitere Details und Infos", sc.details, "ta"),
@@ -232,7 +242,7 @@ export function sceneBoard(opts) {
             return { name, motivation: r.mot.value.trim(), notion_id: id || "" };
           }).filter(Boolean);
           const lines = s => s.split("\n").map(x => x.trim()).filter(Boolean);
-          const fields = { title, place: get("sc-place").trim(), mood: get("sc-mood").trim(), goal: get("sc-goal").trim(), antagonist: get("sc-ant").trim(), outcomes: lines(get("sc-out")), threads: get("sc-thr").split(",").map(x => x.trim()).filter(Boolean), body: get("sc-body"), details: get("sc-det") };
+          const fields = { title, place: get("sc-place").trim(), mood: get("sc-mood").trim(), goal: get("sc-goal").trim(), antagonist: get("sc-ant").trim(), outcomes: lines(get("sc-out")), threads: get("sc-thr").split(",").map(x => x.trim()).filter(Boolean), body: get("sc-body"), details: get("sc-det"), chronicle_id: get("sc-chron") || null };
           if (sc.id) {
             await guard(sb.from("scenes").update(fields).eq("id", sc.id));
             await guard(sb.from("scene_npcs").delete().eq("scene_id", sc.id));
@@ -259,7 +269,9 @@ export function sceneBoard(opts) {
       const existing = new Set(same.map(s => s.title.trim().toLowerCase()));
       const items = data.scenes.map(sc => ({ sc, include: !existing.has(sc.title.toLowerCase()), dup: existing.has(sc.title.toLowerCase()),
         npcs: sc.npcs.map(n => { const m = matchNpc(n.name, npcs); return { ...n, notion_id: m ? m.id : "", matched: m ? m.name : "", exact: m ? m.exact : false }; }) }));
-      importing = { session: data.session, items };
+      const wanted = (data.chronicle || "").trim().toLowerCase();
+      const hit = wanted ? chrons.find(c => c.title.trim().toLowerCase() === wanted) : null;
+      importing = { session: data.session, items, chronicle_id: hit ? hit.id : defaultChron(), chronicleName: data.chronicle || "", chronicleMissing: !!wanted && !hit };
       renderPreview(out, npcs);
     });
     return h("div", { class: "panel stack" }, h("h3", {}, "Szenen importieren"),
@@ -275,6 +287,8 @@ export function sceneBoard(opts) {
       ? (importing.session != null && importing.session !== home ? " Achtung: Die Datei gehört zu Session " + importing.session + ", importiert wird in Session " + home + "." : "")
       : (importing.session != null ? " Die Datei nennt Session " + importing.session + ", die Szenen kommen trotzdem in den Vorrat und lassen sich dort zuordnen." : "");
     out.replaceChildren(
+      h("div", { class: "field" }, h("label", { for: "sc-imp-chron" }, "Chronik für alle importierten Szenen"), (() => { const sel = chronSelect("sc-imp-chron", importing.chronicle_id); sel.addEventListener("change", () => { importing.chronicle_id = sel.value; }); return sel; })()),
+      importing.chronicleMissing ? h("div", { class: "notice" }, "Die Datei nennt die Chronik „" + importing.chronicleName + "“. Eine Chronik mit diesem Titel gibt es nicht. Wähle oben eine Chronik oder importiere ohne.") : null,
       h("div", { role: "status", class: "notice" }, "Vorschau: " + items.length + " Szenen in der Datei, " + todo.length + " werden importiert." + where),
       ...items.map((it, k) => h("div", { class: "panel stack", "data-import": String(k) },
         h("label", { class: "row", style: "align-items:center;gap:8px" }, h("input", { type: "checkbox", checked: it.include ? true : null, style: "width:auto", "aria-label": "Szene importieren: " + it.sc.title, onchange: e => { it.include = e.target.checked; renderPreview(out, npcs); } }),
@@ -291,7 +305,7 @@ export function sceneBoard(opts) {
         busy = true; ev.target.disabled = true;
         try {
           let pos = await maxPosition(home);
-          for (const it of todo) await insertScene(home, { ...it.sc, npcs: it.npcs }, ++pos);
+          for (const it of todo) await insertScene(home, { ...it.sc, npcs: it.npcs, chronicle_id: importing.chronicle_id || null }, ++pos);
           toast(todo.length + (todo.length === 1 ? " Szene importiert." : " Szenen importiert."));
           importing = null; busy = false; await refresh();
         } catch (_) { busy = false; ev.target.disabled = false; toast("Import abgebrochen. Bereits angelegte Szenen bleiben bestehen.", true); await refresh(); }
@@ -309,6 +323,8 @@ export function sceneBoard(opts) {
       ...(list.length ? list.map((sc, i) => card(sc, i, list)) : [h("div", { class: "empty" }, query ? "Keine Szene passt zur Suche." : (opts.empty || "Noch keine Szenenkarten für diese Session."))]));
   }
 
+  root.setChronicle = v => { chronFilter = String(v || ""); draw(); };
+  root.chronicles = () => chrons;
   root.setQuery = q => { query = String(q || "").trim().toLowerCase(); draw(); };
   refresh();
   return root;

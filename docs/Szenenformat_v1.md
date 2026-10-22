@@ -1,6 +1,6 @@
 # Szenenformat `kbn-scenes/1`
 
-Stand 22.10.2026. Dieses Format beschreibt Szenenkarten für **eine Session** als JSON-Datei. Der Storyteller lädt sie in der Session-Ansicht über „Szenen importieren“ hoch. Claude kann die Datei aus Stichpunkten, Notion-Seiten oder Kapiteltexten vorbereiten (der Skill `kiel-by-night-website` enthält diese Regeln).
+Stand 22.10.2026 (Version 1.2). Dieses Format beschreibt Szenenkarten für **eine Session** als JSON-Datei. Der Storyteller lädt sie in der Session-Ansicht über „Szenen importieren“ hoch. Claude kann die Datei aus Stichpunkten, Notion-Seiten oder Kapiteltexten vorbereiten (der Skill `kiel-by-night-website` enthält diese Regeln).
 
 ## Aufbau
 
@@ -35,7 +35,7 @@ Stand 22.10.2026. Dieses Format beschreibt Szenenkarten für **eine Session** al
 | Feld | Pflicht | Typ | Bedeutung |
 |---|---|---|---|
 | `format` | ja | Text | immer `kbn-scenes/1` |
-| `chronik` | nein | Text | nur zur Information, die Session-Nummer entscheidet |
+| `chronik` | nein | Text | Titel der Chronik, der die Szenen zugeordnet werden (ohne Beachtung der Groß-/Kleinschreibung). Beim automatischen Import muss die Chronik existieren, sonst wird abgelehnt. Fehlt die Angabe, gilt die Chronik der Session (aus den Zusatzangaben), im Vorrat keine. Beim Import über die Seite wählst du die Chronik in der Vorschau |
 | `session` | nein | ganze Zahl ab 1 | Session, zu der die Datei gehört. Ohne Angabe ist die Datei für den Vorrat gedacht. Beim Import im Tab Szenen kommen die Szenen immer in den Vorrat, in der Ansicht einer Session immer in diese Session |
 | `szenen` | ja | Liste, 1 bis 100 Einträge | die Szenenkarten |
 | `titel` | ja | Text | Name der Szene |
@@ -68,6 +68,18 @@ Texte dürfen höchstens 20 000 Zeichen lang sein, Listen höchstens 50 Einträg
 - **Vorrat:** Im Tab Szenen landet jeder Import im Vorrat, also bei Szenen ohne Session. Von dort ordnest du sie einer Session zu, sobald du weißt, wann du sie spielst. Eine in der Datei genannte Session wird in der Vorschau nur erwähnt.
 - Die Szenen sind nur für den Storyteller sichtbar (Rechte in der Datenbank, nicht nur in der Anzeige).
 
+## Automatischer Import (ohne Hochladen)
+
+Claude kann aus einer Chronik-Datei (Markdown) Szenen bauen und direkt in die Seite schreiben, ohne dass du eine Datei hochlädst. Dafür ruft Claude die Edge Function `scene-import` mit einem Import-Schlüssel auf (`tools/import-scenes.mjs`). Die Regeln sind dieselben wie beim Hochladen (Prüfung der ganzen Datei, nichts wird überschrieben, gleichnamige Szenen werden übersprungen, NPC-Abgleich mit der ST-Karte). Mit `--dry-run` prüft Claude vorab, ohne zu schreiben. Das Hochladen in der Seite bleibt jederzeit möglich. Einrichtung: `docs/Technische_Doku.md`, Abschnitt Szenen-Import.
+
+## Aus einer Chronik-Datei Szenen bauen (Hinweise für Claude)
+
+1. Die Chronik-Datei vollständig lesen. Eine Szene ist ein spielbarer Moment mit Ort, Beteiligten und Ziel, nicht jede Überschrift. Mehrere Absätze desselben Moments gehören in eine Szene.
+2. Wörtlich übernehmen, was in der Datei steht (Titel, Orte, Namen, Zitate). Nichts erfinden: Was fehlt, bleibt weg.
+3. `chronik` auf den Titel der Chronik in der Seite setzen. Ist unklar, wie sie heißt, vorher den Trockenlauf machen: Die Antwort nennt bei unbekannter Chronik die vorhandenen Titel.
+4. `session` setzen, wenn die Datei Szenen einer bestimmten Session beschreibt, sonst weglassen (Vorrat).
+5. Reihenfolge der Szenen wie im Text. Lange Hintergründe, Regelhinweise und Handouts nach `details`, der Ablauf nach `text`.
+
 ## Hinweise für die Vorbereitung durch Claude
 
 1. Eine Datei je Session (dann `session` setzen) oder eine Datei für den Vorrat (ohne `session`), wenn die Szenen noch keiner Session zugeordnet sind. `format` immer setzen.
@@ -78,5 +90,6 @@ Texte dürfen höchstens 20 000 Zeichen lang sein, Listen höchstens 50 Einträg
 
 ## Änderungen
 
+- **22.10.2026 (Version 1.2):** `chronik` ordnet die Szenen einer Chronik zu (Tabelle `chronicles`). Automatischer Import über die Edge Function `scene-import`.
 - **22.10.2026 (Version 1.1):** `session` ist optional, Import in den Vorrat.
 - **22.10.2026 (Version 1):** Erste Fassung.

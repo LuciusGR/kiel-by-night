@@ -1,6 +1,6 @@
 // Kiel by Night · Tab Szenen (nur Storyteller): Szenenkarten sammeln, ohne sie vorab einer Session zuzuordnen
 import { h, head } from "../lib.js";
-import { S, go, registerView } from "../core.js";
+import { S, sb, go, registerView } from "../core.js";
 import { sceneBoard, resetNpcCache } from "./scenes.js";
 
 const MODES = [["pool", "Vorrat"], ["assigned", "Zugeordnet"], ["all", "Alle"]];
@@ -19,5 +19,8 @@ registerView("scenes", async m => {
     empty: { pool: "Der Vorrat ist leer. Lege mit „Neue Szene“ oder „Szenen importieren“ Karten an.", assigned: "Noch keine Szene ist einer Session zugeordnet.", all: "Noch keine Szenenkarten." }[mode],
   });
   search.addEventListener("input", () => board.setQuery(search.value));
-  m.append(head("Szenen", "Hier sammelst du Szenenkarten, ohne dafür Sessions im Voraus planen zu müssen. Nur du siehst sie.", tg), h("div", { class: "map-tools" }, search), board);
+  const { data: chr } = await sb.from("chronicles").select("id, title, sort").order("sort");
+  const chron = h("select", { id: "scene-chron", "aria-label": "Nach Chronik filtern" }, h("option", { value: "" }, "Alle Chroniken"), h("option", { value: "none" }, "Ohne Chronik"), ...(chr || []).map(c => h("option", { value: c.id }, c.title)));
+  chron.addEventListener("change", () => board.setChronicle(chron.value));
+  m.append(head("Szenen", "Hier sammelst du Szenenkarten, ohne dafür Sessions im Voraus planen zu müssen. Nur du siehst sie.", tg), h("div", { class: "map-tools" }, search, chron), board);
 });

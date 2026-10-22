@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 21.10.2026 · gilt für Website-Version 1.8.0 (siehe `CHANGELOG.md`)
+Stand: 22.10.2026 · gilt für Website-Version 1.9.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -121,6 +121,20 @@ Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()
 
 Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ session, mode })` in `scenes.js` zeigt je nach Aufruf die Szenen einer Session (`sceneBlock(n)`, `mode` leer) oder im Tab Szenen die Ansichten `pool`, `assigned` und `all`. `relocate()` ordnet zu, verschiebt und legt zurück in den Vorrat (setzt `session_number` und hängt die Position hinten an, `maxPosition()`). Die Auswahl der Sessions kommt aus `sessions`, `session_info`, `session_notes` und `scenes` (`loadSessionNumbers()`), dazu „Session N+1 (neu)“. Der Import im Tab Szenen legt immer im Vorrat an, in einer Session-Ansicht in dieser Session. `session` in der Datei ist optional (`parseScenes()`). Die Suche filtert im Browser (`setQuery()`), die Pfeile für die Reihenfolge sind bei Suche und in den Ansichten „Zugeordnet“ und „Alle“ ausgeblendet.
 
+### 4.10 Karten-Export (CSV, Excel)
+
+`MapView` zeigt „Herunterladen“ (`details.export-menu`): Excel mit den Blättern Knoten und Verbindungen oder je eine CSV. Die Tabellen baut `mapTables()` in `web/js/export.js` aus den geladenen Knoten und Kanten (Verbindungen mit Namen, Knoten mit Anzahl der Verbindungen, ID als letzte Spalte; bei der ST-Karte zusätzlich Kategorie und Verstorben). `toCsv()` schreibt UTF-8 mit BOM und Semikolon (deutsches Excel) und entschärft Zellen, die mit `= + - @` beginnen, mit einem vorangestellten `'`. `toXlsx()` schreibt eine schlichte .xlsx von Hand (ZIP ohne Kompression, Textzellen, fette Kopfzeile, fixierte erste Zeile), ohne Bibliothek und ohne CDN. Der Export liest nur, was die Person ohnehin sieht, es gibt kein neues Recht. Quelle gibt den Dateinamen über `src.exportName` vor. Test: `node tests/export_test.mjs`.
+
+### 4.9 Szenen-Import ohne Hochladen (`scene-import`)
+
+Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenendatei `kbn-scenes/1` per `POST` entgegen und legt die Szenen an, damit Claude sie aus einer Chronik-Datei (Markdown) direkt einspielen kann. Aufruf: Header `x-import-token`, optional `?dry_run=1` (prüft und gleicht ab, schreibt nichts). Aufrufskript: `tools/import-scenes.mjs`.
+
+- **Sicherheit:** Das Gateway prüft kein JWT (`verify_jwt = false` in `supabase/config.toml`), die Function prüft jeden Aufruf selbst gegen das Secret `IMPORT_TOKEN` (Vergleich in konstanter Zeit). Ist das Secret leer oder kürzer als 32 Zeichen, ist die Function abgeschaltet (503). Die Function legt nur neue Zeilen in `scenes` und `scene_npcs` an. Sie ändert und löscht nichts Vorhandenes (außer einer Szene, deren NPC-Zeilen nicht gespeichert werden konnten, die nimmt sie zurück). Sie liest `chronicles`, `session_info`, `scenes` (Titel, Position) und `notion_cache` (NPC-Liste). Grenzen: Datei höchstens 2 MB, 100 Szenen, Texte 20 000 Zeichen.
+- **Regeln wie beim Hochladen:** vollständige Prüfung vor dem Schreiben (`parseScenes` ist in der Function nachgebaut, bei Änderungen am Format beide anpassen), neue Szenen hinten angehängt, gleichnamige Szenen derselben Chronik im Ziel werden übersprungen, NPC-Abgleich wie `matchNpc` (exakt auf Name oder Map-Label, sonst eindeutiger Teiltreffer) gegen den Cache der ST-Karte.
+- **Chronik:** `chronik` in der Datei muss dem Titel einer Chronik entsprechen (ohne Beachtung der Schreibweise), sonst Antwort 422 `unknown_chronicle` mit den vorhandenen Titeln. Fehlt `chronik`, gilt bei einer Session deren Chronik aus `session_info`, sonst keine.
+- **Einrichten (einmalig, macht der Nutzer):** (1) Migrationen `20261022120500` und `20261022120600` im SQL-Editor anwenden (die zweite gibt `service_role` die nötigen Rechte, in diesem Projekt bekommt es neue Tabellen nicht automatisch). (2) Supabase → Edge Functions → neue Function `scene-import`, Inhalt von `index.ts` einfügen, JWT-Prüfung aus (wie bei `notion-proxy`). (3) Unter Secrets `IMPORT_TOKEN` setzen (zufällig, mindestens 32 Zeichen, z. B. `openssl rand -hex 32`). (4) Denselben Wert als Umgebungsvariable `KBN_IMPORT_TOKEN` in der Claude-Umgebung hinterlegen, und die Domain des Supabase-Projekts in der Netzwerkfreigabe der Umgebung erlauben. Den Schlüssel nie ins Repo. Bei Verdacht auf Missbrauch: Secret ändern oder löschen, dann ist der Weg sofort zu.
+- **Test:** `node tests/scene_import_test.mjs` (Node 22, Datenbank im Speicher, 21 Fälle).
+
 ## 5. Datenbank (Supabase Postgres)
 
 | Tabelle | Inhalt |
@@ -140,7 +154,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `chronicles` | `title`, `description`, `status` (`draft`, `running`, `done`), `started_on`, `sort` |
 | `chapters` | `chronicle_id`, `number` (je Chronik eindeutig), `title` |
 | `session_info` | `session_number` (Schlüssel), `chronicle_id`, `chapter_id` (beide `on delete set null`), `ingame_date`, `summary`. Nur der ST schreibt |
-| `scenes` | `session_number` (null = Vorrat), `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
+| `scenes` | `session_number` (null = Vorrat), `chronicle_id` (Chronik, null = ohne, bei gelöschter Chronik bleibt die Szene), `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
 | `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
@@ -160,6 +174,8 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 | `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
 | `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
+| `20261022120500_scenes_chronicle_v1_8.sql` | `scenes.chronicle_id` (Fremdschlüssel auf `chronicles`, `on delete set null`) und Index, Rechte unverändert |
+| `20261022120600_scene_import_grants_v1_9.sql` | `service_role` darf für `scene-import` Chroniken und Session-Infos lesen, Szenen lesen, anlegen und löschen, NPC-Zeilen lesen und anlegen (sonst nichts) |
 | `20261022120400_document_links_v1_7.sql` | Tabelle `document_links` mit Rechten (nur SELECT, INSERT, DELETE), drei Policies, Trigger `player_node_links_cleanup` |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
@@ -248,6 +264,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **22.10.2026 (Version 1.9.0):** Karten als CSV oder Excel herunterladen (Abschnitt 4.10, `export.js`). Szenen gehören zu einer Chronik (`scenes.chronicle_id`, Migration `20261022120500`, Auswahl im Editor, Filter im Tab Szenen, Auswahl in der Import-Vorschau). Edge Function `scene-import` und `tools/import-scenes.mjs` für den automatischen Import (Abschnitt 4.9). Szenenformat 1.2.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
 - **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).
