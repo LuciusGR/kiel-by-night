@@ -10,3 +10,7 @@ verify_jwt = false
 [functions.scene-import]
 # false: Das Gateway prüft kein JWT. Die Function prüft jeden Aufruf selbst mit dem Import-Schlüssel (Secret IMPORT_TOKEN).
 verify_jwt = false
+
+[functions.db-migrate]
+# false: Das Gateway prüft kein JWT. Die Function prüft jeden Aufruf selbst mit dem Migrations-Schlüssel (Secret MIGRATE_TOKEN).
+verify_jwt = false
