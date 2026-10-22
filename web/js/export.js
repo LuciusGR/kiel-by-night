@@ -64,9 +64,9 @@ export function mapTables(nodes, edges) {
   const label = id => (nodes.get(id) || {}).label || "";
   const deg = new Map(); for (const e of edges.values()) { deg.set(e.from, (deg.get(e.from) || 0) + 1); deg.set(e.to, (deg.get(e.to) || 0) + 1); }
   const list = [...nodes].sort((a, b) => String(a[1].label || "").localeCompare(String(b[1].label || ""), "de"));
-  const hasCat = list.some(([, n]) => n.cat), hasDead = list.some(([, n]) => n.dead);
-  const nodeRows = [["Name", "Typ", ...(hasCat ? ["Kategorie"] : []), "Tags", "Beschreibung", "Spielercharakter", ...(hasDead ? ["Verstorben"] : []), "Anzahl Verbindungen", "ID"],
-    ...list.map(([id, n]) => [n.label || "", n.type || "", ...(hasCat ? [n.cat || ""] : []), (n.tags || []).join(", "), n.description || "", n.pc ? "ja" : "nein", ...(hasDead ? [n.dead ? "ja" : "nein"] : []), deg.get(id) || 0, id])];
+  const hasCat = list.some(([, n]) => n.cat), hasDead = list.some(([, n]) => n.dead), hasSect = list.some(([, n]) => n.sect);
+  const nodeRows = [["Name", "Typ", ...(hasSect ? ["Sekte"] : []), ...(hasCat ? ["Kategorie"] : []), "Tags", "Beschreibung", "Spielercharakter", ...(hasDead ? ["Verstorben"] : []), "Anzahl Verbindungen", "ID"],
+    ...list.map(([id, n]) => [n.label || "", n.type || "", ...(hasSect ? [n.sect || ""] : []), ...(hasCat ? [n.cat || ""] : []), (n.tags || []).join(", "), n.description || "", n.pc ? "ja" : "nein", ...(hasDead ? [n.dead ? "ja" : "nein"] : []), deg.get(id) || 0, id])];
   const edgeRows = [["Von", "Nach", "Richtung", "Beschriftung", "Details", "Von-ID", "Nach-ID"],
     ...[...edges.values()].sort((a, b) => label(a.from).localeCompare(label(b.from), "de") || label(a.to).localeCompare(label(b.to), "de"))
       .map(e => [label(e.from), label(e.to), DIR[e.direction] || e.direction || "", e.label || "", e.description || "", e.from, e.to])];

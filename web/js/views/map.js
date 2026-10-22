@@ -31,6 +31,7 @@ export const SEKTE_SHAPE = {
   Unabhaengig: "round-rectangle",
   "Second Inquisition": "star",
 };
+export const SEKTEN = ["Camarilla", "Anarch", "Sabbat", "Unabhängig", "Second Inquisition"]; // Auswahl für Knoten der Spielerkarte
 export function shapeForSekte(s) {
   const k = String(s || "").trim().replace("Unabhängig", "Unabhaengig");
   return SEKTE_SHAPE[k] || "ellipse";
@@ -331,6 +332,10 @@ export function MapView(root, src) {
     const cur = normType(d.type);
     const types = ["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", ...[...nodes.values()].map(n => normType(n.type)), cur].filter((v, i, a) => v && a.indexOf(v) === i);
     const label = h("input", { type: "text", id: "nf-label", value: d.label || ""});
+    // Sekte (nur Karten mit src.sects): bestimmt die Form des Knotens, die Vorschau wechselt sofort
+    const sect = src.sects ? h("select", { id: "nf-sect" }, h("option", { value: "" }, "— keine —"), ...SEKTEN.map(x => h("option", { value: x, selected: x === d.sect ? true : null }, x))) : null;
+    if (sect && d.id) sect.addEventListener("change", () => { const el = cy && cy.getElementById(d.id); if (el && !el.empty()) el.data("shape", shapeForSekte(sect.value)); });
+    const restoreShape = () => { const el = cy && d.id && cy.getElementById(d.id); if (el && !el.empty() && nodes.get(d.id)) el.data("shape", nodes.get(d.id).shape || "ellipse"); };
     const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)), h("option", { value: "__new__" }, "＋ Neuer Typ …"));
     const newType = h("input", { type: "text", id: "nf-type-new", placeholder: "Neuen Typ eingeben", hidden: true, "aria-label": "Neuer Typ" });
     type.addEventListener("change", () => { newType.hidden = type.value !== "__new__"; if (!newType.hidden) newType.focus(); });
@@ -338,6 +343,7 @@ export function MapView(root, src) {
     return h("div", { class: "panel stack" }, h("h3", {}, d.id ? "Knoten bearbeiten" : "Neuer Knoten"),
       h("div", { class: "field" }, h("label", { for: "nf-label" }, "Name"), label),
       h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type, newType),
+      sect ? h("div", { class: "field" }, h("label", { for: "nf-sect" }, "Sekte"), sect) : null,
       h("div", { class: "field" }, h("label", { for: "nf-tags" }, "Tags"), tags),
       h("div", { class: "field" }, h("label", { for: "nf-desc" }, "Was wir wissen"), desc),
       h("div", { class: "row" },
@@ -345,11 +351,11 @@ export function MapView(root, src) {
           if (!label.value.trim()) { toast("Bitte einen Namen eintragen.", true); return; }
           const typeVal = type.value === "__new__" ? newType.value.trim() : type.value;
           if (type.value === "__new__" && !typeVal) { toast("Bitte einen neuen Typ eintragen.", true); return; }
-          const body = { label: label.value.trim(), type: normType(typeVal), tags: splitTags(tags.value), description: desc.value };
+          const body = { label: label.value.trim(), type: normType(typeVal), tags: splitTags(tags.value), description: desc.value, sect: sect ? sect.value : undefined };
           if (d.id) await src.updateNode(d.id, body); else { const id = await src.addNode(body); if (id) sel = { kind: "node", id }; }
           await afterWrite();
         } }, "Speichern"),
-        h("button", { class: "btn", type: "button", onclick: () => { editing = null; drawPanel(); } }, "Abbrechen")));
+        h("button", { class: "btn", type: "button", onclick: () => { restoreShape(); editing = null; drawPanel(); } }, "Abbrechen")));
   }
   function edgeForm(d) {
     d = d || {};
