@@ -8,6 +8,7 @@ registerView("sessions", async m => {
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
   const jump = cur != null;
   let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
+  let fresh = null; // frisch angelegte Session: Titel/Datum gleich zum Ausfüllen offen
   let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [];
   resetNpcCache();
   const me = S.user.id;
@@ -17,7 +18,8 @@ registerView("sessions", async m => {
   const bMine = h("button", { type: "button", onclick: () => { mine = true; draw(); } }, "Nur meine");
   const tg = h("div", { class: "toggle", role: "group", "aria-label": "Ansicht" }, bAll, bMine);
   m.append(head("Sessions", "Eine Zeile je Session zum Aufklappen. Jede Person schreibt ihren eigenen Abschnitt, alle können mitlesen.", tg,
-    h("button", { class: "btn primary", type: "button", onclick: () => newNote() }, "Neue Notiz")), box);
+    h("button", { class: "btn primary", type: "button", onclick: () => newSession() }, "Neue Session"),
+    h("button", { class: "btn", type: "button", onclick: () => newNote() }, "Neue Notiz")), box);
 
   async function load() {
     const [n, s, i, c, k] = await Promise.all([
@@ -32,6 +34,13 @@ registerView("sessions", async m => {
     chrons = c.error ? [] : c.data; chaps = k.error ? [] : k.data;
   }
   const sessionsList = () => { const set = new Set(notes.map(n => n.session_number)); Object.keys(meta).forEach(k => set.add(Number(k))); Object.keys(info).forEach(k => set.add(Number(k))); return [...set].sort((a, b) => b - a); };
+  async function newSession() {
+    const next = (sessionsList()[0] || 0) + 1;
+    await guard(sb.from("sessions").insert({ number: next, title: "", play_date: null, updated_by: me }), "Session " + next + " angelegt.");
+    fresh = next; cur = next; mine = false; auto = false; editing = null;
+    await load(); draw();
+    const d = box.querySelector("details.session-item[open]"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "start" });
+  }
   function newNote() { const l = sessionsList(); const next = cur ?? (l[0] || 1); editing = { id: null, session_number: next, body: "" }; mine = false; cur = next; auto = false; draw(); }
 
   function noteEditor(n) {
@@ -56,7 +65,7 @@ registerView("sessions", async m => {
     const md = meta[num] || {};
     const title = h("input", { type: "text", id: "sess-title", value: md.title || "", placeholder: "Titel der Session" });
     const date = h("input", { type: "date", id: "sess-date", value: md.play_date || "" });
-    return h("details", { "data-meta": "1" }, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — bearbeiten"),
+    return h("details", { "data-meta": "1", open: num === fresh ? true : null }, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — bearbeiten"),
       h("div", { class: "row", style: "margin-top:8px" },
         h("div", { class: "field" }, h("label", { for: "sess-title" }, "Titel"), title),
         h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "sess-date" }, "Spieldatum"), date),
