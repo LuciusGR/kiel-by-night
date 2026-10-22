@@ -18,12 +18,14 @@ const TOKEN = process.env.KBN_MIGRATE_TOKEN || "";
 const [cmd, ...rest] = process.argv.slice(2);
 const flag = n => { const i = rest.indexOf(n); return i >= 0 ? rest[i + 1] : null; };
 const has = n => rest.includes(n);
-const git = (...a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }).trim();
+const gitRaw = (...a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
+const git = (...a) => gitRaw(...a).trim();
 const usage = () => { console.error("Aufruf: node tools/db-migrate.mjs status | apply <name> [--dry-run] [--sha <commit>] | baseline --through <name> [--sha <commit>]"); process.exit(2); };
 if (!TOKEN || !["status", "apply", "baseline"].includes(cmd)) usage();
 
 const sha = flag("--sha") || git("rev-parse", "origin/main");
-const fileAt = name => git("show", sha + ":supabase/migrations/" + name + ".sql");
+// Ohne trim: der Hash muss zur Rohdatei passen, die die Function lädt (inkl. abschließendem Zeilenumbruch).
+const fileAt = name => gitRaw("show", sha + ":supabase/migrations/" + name + ".sql");
 const hash = text => crypto.createHash("sha256").update(text, "utf8").digest("hex");
 
 let body;
