@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 23.10.2026 · gilt für Website-Version 1.9.1 (siehe `CHANGELOG.md`)
+Stand: 23.10.2026 · gilt für Website-Version 1.9.2 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -176,6 +176,7 @@ Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenend
 | `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
 | `20261022120500_scenes_chronicle_v1_8.sql` | `scenes.chronicle_id` (Fremdschlüssel auf `chronicles`, `on delete set null`) und Index, Rechte unverändert |
 | `20261022120600_scene_import_grants_v1_9.sql` | `service_role` darf für `scene-import` Chroniken und Session-Infos lesen, Szenen lesen, anlegen und löschen, NPC-Zeilen lesen und anlegen (sonst nichts) |
+| `20261023120000_player_map_sect_v1_9.sql` | `player_map_nodes.sect` (Sekte, CHECK auf die fünf Sekten oder leer), Rechte unverändert |
 | `20261022120400_document_links_v1_7.sql` | Tabelle `document_links` mit Rechten (nur SELECT, INSERT, DELETE), drei Policies, Trigger `player_node_links_cleanup` |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
@@ -264,6 +265,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **23.10.2026 (Version 1.9.2):** Spielerkarte: Sekte als Auswahl (`player_map_nodes.sect`, Migration `20261023120000`), Form folgt der Sekte (`SEKTEN`, `shapeForSekte()`, `src.sects`/`src.legend` in `playermap.js`), Vorschau im Formular, Spalte „Sekte“ im Export.
 - **23.10.2026 (Version 1.9.1):** `MapView`: Kantenbeschriftung dauerhaft sichtbar (`min-zoomed-font-size`), Verbindungsdetails in der Infokarte (`nodeBody()`).
 - **22.10.2026 (Version 1.9.0):** Karten als CSV oder Excel herunterladen (Abschnitt 4.10, `export.js`). Szenen gehören zu einer Chronik (`scenes.chronicle_id`, Migration `20261022120500`, Auswahl im Editor, Filter im Tab Szenen, Auswahl in der Import-Vorschau). Edge Function `scene-import` und `tools/import-scenes.mjs` für den automatischen Import (Abschnitt 4.9). Szenenformat 1.2.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.

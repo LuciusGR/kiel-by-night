@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.9.2 – 23.10.2026
+- **Spielerkarte: Sekte und Form:** Knoten der Spielerkarte haben das Feld „Sekte“ als Auswahl (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition, „— keine —“). Die Form des Knotens folgt der Sekte wie auf der Storytellerkarte (Hexagon, Dreieck, Raute, Rechteck, Stern, sonst Kreis). Beim Ändern der Auswahl im Formular wechselt die Form sofort (Vorschau, „Abbrechen“ stellt sie zurück). Die Formen-Legende steht jetzt auch über der Spielerkarte, die Sekte in der Infokarte und im Excel-/CSV-Export (Spalte „Sekte“).
+- **Datenbank:** Neue Migration `20261023120000_player_map_sect_v1_9.sql` (`player_map_nodes.sect`, erlaubte Werte per CHECK, Standard leer). Rechte und Policies unverändert. **Die Migration muss vor dem Einspielen der neuen Seite angewendet sein**, sonst scheitert das Speichern von Knoten.
+- „Auf Spielerkarte“ von der Storytellerkarte überträgt die Sekte nicht (wie schon den Typ: ST-Wissen).
+
 ## 1.9.1 – 23.10.2026
 - **Karten:** Auf der Spielerkarte und der Storytellerkarte (gemeinsamer Code `MapView`) steht die Beschriftung einer Verbindung jetzt dauerhaft auf der Linie, sobald man weit genug hineinzoomt (Cytoscape `min-zoomed-font-size`). Bisher erschien sie nur bei markierten Verbindungen.
 - **Infokarte:** Bei jedem Knoten zeigt die Liste „Verbindungen“ neben der Beschriftung jetzt auch die Details (Beschreibung) der Verbindung, auf beiden Karten.
