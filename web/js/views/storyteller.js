@@ -84,7 +84,7 @@ function notionSource(focus) {
     return data;
   }
   return {
-    editable: false, legend: true, focus: focus || null,
+    editable: false, legend: true, exportName: "storytellerkarte", focus: focus || null,
     reloadLabel: "Aus Notion neu laden",
     reload: async () => { force = true; },
     statusText: () => meta ? "Stand " + fmtDateTime(meta.fetched_at) + (meta.source === "cache" ? " (Cache)" : " (frisch)") : "",

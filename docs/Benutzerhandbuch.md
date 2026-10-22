@@ -87,6 +87,7 @@ Bedienung:
 - **Knoten anlegen:** Name (Pflicht), Typ, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
 - **Dokumente am Knoten:** Im Detailfeld steht „Dokumente (n)“ mit den verknüpften Dokumenten. Ein Klick auf den Titel springt zum Dokument. Im Modus **Bearbeitung** wählst du ein Dokument aus der Liste und klickst „Verknüpfen“. Mit „×“ löst du die Verknüpfung (das Dokument bleibt erhalten).
+- **Herunterladen:** Über der Karte steht „Herunterladen“ mit **Excel (.xlsx)** (zwei Blätter: Knoten und Verbindungen), **Knoten (.csv)** und **Verbindungen (.csv)**. Die Verbindungen enthalten die Namen von und nach. So lässt sich die Karte auswerten, zum Beispiel indem du die Datei Claude gibst. Die CSV-Dateien öffnen sich im deutschen Excel direkt richtig (UTF-8, Semikolon). Auf der Storytellerkarte gibt es dasselbe (nur für dich).
 - **Löschen** fragt nach. Beim Löschen eines Knotens verschwinden auch seine Verbindungen. Vorsicht bei Spielercharakteren: Jeder in der Gruppe darf jeden Knoten löschen.
 
 ## 8. Wiki
@@ -196,7 +197,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
-- **22.10.2026 (Version 1.9.0):** Szenen lassen sich einer Chronik zuordnen (Editor, Import-Vorschau, Filter im Tab Szenen). Claude kann Szenen automatisch einspielen (Abschnitt 10).
+- **22.10.2026 (Version 1.9.0):** Spielerkarte und Storytellerkarte lassen sich als Excel oder CSV herunterladen (Abschnitt 7). Szenen lassen sich einer Chronik zuordnen (Editor, Import-Vorschau, Filter im Tab Szenen). Claude kann Szenen automatisch einspielen (Abschnitt 10).
 - **22.10.2026 (Version 1.5.3):** Fehler behoben (Text „null“ in den Szenenkarten), Sessions und Szenenkarten am Handy kompakter.
 - **22.10.2026 (Version 1.5.2):** Sessions sind aufklappbare Zeilen in der Liste, der Inhalt steht nicht mehr am Seitenende (Abschnitt 5).
 - **22.10.2026 (Version 1.5.1):** Hilfe bei Netzfehlern in der Anmeldung (Abschnitt 12).

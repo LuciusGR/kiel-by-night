@@ -19,7 +19,7 @@ export async function loadPositions(scope) {
 
 export function playerMapSource() {
   return {
-    editable: true, focus: (S.arg && S.arg.focus) || null,
+    editable: true, focus: (S.arg && S.arg.focus) || null, exportName: "spielerkarte",
     // Dokumente am Knoten: Liste für alle, Verknüpfen und Lösen nur im Modus Bearbeitung
     nodeExtras: (n, id, nodes, o) => [docLinksBox("player", id, n.label, !!(o && o.edit))],
     async load() {

@@ -2,6 +2,7 @@
 // Aufruf: node tools/import-scenes.mjs <szenen.json> [--dry-run]
 // Umgebung: KBN_IMPORT_TOKEN (Pflicht, gleicher Wert wie das Secret IMPORT_TOKEN in Supabase)
 //           KBN_IMPORT_URL   (optional, Standard: Function des Projekts)
+// Hinter einem Proxy (z. B. Claude-Cloud-Umgebung) zusätzlich NODE_USE_ENV_PROXY=1 setzen, sonst findet Node den Host nicht.
 // Der Schlüssel gehört nie ins Repo. --dry-run prüft und gleicht ab, schreibt aber nichts.
 import fs from "node:fs";
 

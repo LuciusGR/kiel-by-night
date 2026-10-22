@@ -121,26 +121,27 @@ Deno.serve(async (req: Request) => {
   // Chronik: "chronik" in der Datei muss genau (ohne Beachtung der Groß-/Kleinschreibung) einem Chroniktitel entsprechen.
   // Ohne Angabe gilt die Chronik der Session (Zusatzangaben), sonst keine. Eine unbekannte Chronik bricht ab, statt falsch zuzuordnen.
   const { data: chrons, error: chErr } = await admin.from("chronicles").select("id, title");
-  if (chErr) return json(500, { error: "read_failed" });
+  if (chErr) return json(500, { error: "read_failed", where: "chronicles", detail: chErr.message });
   let chronicleId: string | null = null;
   if (data.chronicle) {
     const hit = (chrons ?? []).find((c: any) => String(c.title).trim().toLowerCase() === data.chronicle.toLowerCase());
     if (!hit) return json(422, { error: "unknown_chronicle", chronik: data.chronicle, known: (chrons ?? []).map((c: any) => c.title) });
     chronicleId = hit.id;
   } else if (session != null) {
-    const { data: info } = await admin.from("session_info").select("chronicle_id").eq("session_number", session).maybeSingle();
+    const { data: info, error: iErr } = await admin.from("session_info").select("chronicle_id").eq("session_number", session).maybeSingle();
+    if (iErr) return json(500, { error: "read_failed", where: "session_info", detail: iErr.message });
     chronicleId = info?.chronicle_id ?? null;
   }
   const chronicleTitle = (chrons ?? []).find((c: any) => c.id === chronicleId)?.title ?? null;
 
   // Vorhandene Szenen im Ziel: Titel in derselben Chronik (zum Überspringen) und höchste Position
   const { data: existing, error: exErr } = await admin.from("scenes").select("session_number, position, title, chronicle_id");
-  if (exErr) return json(500, { error: "read_failed" });
+  if (exErr) return json(500, { error: "read_failed", where: "scenes", detail: exErr.message });
   const here = (existing ?? []).filter((x: any) => (x.session_number ?? null) === session);
   const titles = new Set(here.filter((x: any) => (x.chronicle_id ?? null) === chronicleId).map((x: any) => String(x.title).trim().toLowerCase()));
   let pos = here.reduce((m: number, x: any) => Math.max(m, x.position || 0), 0);
 
-  const { data: cache } = await admin.from("notion_cache").select("payload").eq("id", 1).maybeSingle();
+  const { data: cache } = await admin.from("notion_cache").select("payload").eq("id", 1).maybeSingle(); // ohne Cache: NPCs bleiben unverknüpft
   const npcList: NotionNpc[] = ((cache?.payload?.npcs ?? []) as any[]).filter((r) => r?.id && (r.name || r.label))
     .map((r) => ({ id: String(r.id), name: String(r.name || r.label || ""), label: String(r.label || "") }));
 
@@ -160,13 +161,13 @@ Deno.serve(async (req: Request) => {
         session_number: session, chronicle_id: chronicleId, position: ++pos, title: sc.title, place: sc.place, mood: sc.mood, goal: sc.goal, antagonist: sc.antagonist,
         outcomes: sc.outcomes, threads: sc.threads, body: sc.body, details: sc.details,
       }).select("id").single();
-      if (error || !row) return json(500, { error: "insert_failed", imported, skipped, failed_at: sc.title });
+      if (error || !row) return json(500, { error: "insert_failed", detail: error?.message, imported, skipped, failed_at: sc.title });
       id = row.id;
       if (npcs.length) {
         const { error: nErr } = await admin.from("scene_npcs").insert(npcs.map((n) => ({ scene_id: id, notion_id: n.notion_id, name: n.name, motivation: n.motivation })));
         if (nErr) {
           await admin.from("scenes").delete().eq("id", id); // halb angelegte Szene zurücknehmen
-          return json(500, { error: "npc_insert_failed", imported, skipped, failed_at: sc.title });
+          return json(500, { error: "npc_insert_failed", detail: nErr.message, imported, skipped, failed_at: sc.title });
         }
       }
     }
