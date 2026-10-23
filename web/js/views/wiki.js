@@ -57,7 +57,7 @@ registerView("wiki", async m => {
     const listBox = h("div", {});
     function drawList() {
       const l = inCat.filter(p => !q || (p.title + " " + p.body).toLowerCase().includes(q)).filter(p => !tag || (p.tags || []).includes(tag)).sort((a, b) => a.title.localeCompare(b.title, "de"));
-      listBox.replaceChildren(l.length ? h("div", { class: "list" }, ...l.map(p => h("button", { type: "button", "aria-current": String(cur === p.id), onclick: () => { cur = p.id; edit = false; draw(); } }, h("span", {}, p.title)))) : h("div", { class: "empty" }, "Keine Seiten."));
+      listBox.replaceChildren(l.length ? h("div", { class: "list" }, ...l.map(p => h("button", { type: "button", "aria-current": String(cur === p.id), onclick: () => { cur = p.id; edit = false; draw(); } }, h("span", {}, p.title), S.isST && p.st_only ? h("span", { class: "badge st", style: "margin-left:6px" }, "versteckt") : null))) : h("div", { class: "empty" }, "Keine Seiten."));
     }
     c2.replaceChildren(h("button", { class: "btn primary", type: "button", disabled: cat ? null : true, onclick: () => { cur = null; edit = true; draw(); } }, "Neue Seite"), sI,
       tags.length ? h("div", { class: "chips" }, ...tags.map(t => h("button", { type: "button", class: "chip", "aria-pressed": String(!tag || tag === t), onclick: () => { tag = tag === t ? null : t; draw(); } }, "#" + t))) : null, listBox);
@@ -68,8 +68,10 @@ registerView("wiki", async m => {
     else if (p) {
       const c = catOf(p.category_id);
       c3.replaceChildren(h("article", { class: "article" },
-        h("div", { class: "row", style: "justify-content:space-between" }, h("span", { class: "eyebrow" }, c ? (c.st_only ? c.name + " · nur für dich" : c.name) : "Ohne Kategorie"),
-          h("button", { class: "btn small", type: "button", onclick: () => { edit = true; draw(); } }, "Bearbeiten")),
+        h("div", { class: "row", style: "justify-content:space-between" }, h("span", { class: "eyebrow" }, c ? (c.st_only ? c.name + " · nur für dich" : c.name) : "Ohne Kategorie", p.st_only ? " · versteckt" : ""),
+          h("div", { class: "row" },
+            S.isST ? h("button", { class: "btn small", type: "button", onclick: async () => { await guard(sb.from("wiki_pages").update({ st_only: !p.st_only }).eq("id", p.id), p.st_only ? "Für alle Mitglieder sichtbar." : "Nur für dich sichtbar."); await load(); draw(); } }, p.st_only ? "Für alle sichtbar machen" : "Nur für ST sichtbar") : null,
+            h("button", { class: "btn small", type: "button", onclick: () => { edit = true; draw(); } }, "Bearbeiten"))),
         h("h2", { style: "margin-top:6px" }, p.title),
         (p.tags || []).length ? h("div", { class: "chips", style: "margin-top:8px" }, ...p.tags.map(t => h("span", { class: "chip" }, "#" + t))) : null,
         body(p.body),
@@ -94,15 +96,18 @@ registerView("wiki", async m => {
     const tg = h("input", { type: "text", id: "wp-tags", value: p ? (p.tags || []).join(", ") : "", placeholder: "durch Komma getrennt" });
     const cs = h("select", { id: "wp-cat" }, ...cats.map(c => h("option", { value: c.id, selected: (p ? p.category_id : cat) === c.id ? true : null }, c.name + (c.st_only ? " (versteckt)" : ""))));
     const b = h("textarea", { id: "wp-body", style: "min-height:280px" }, p ? p.body : "");
+    const hid = h("input", { type: "checkbox", id: "wp-hidden", checked: p && p.st_only ? true : null, style: "width:auto" });
     return h("div", { class: "panel stack" }, h("h3", {}, p ? "Seite bearbeiten" : "Neue Seite"),
       h("div", { class: "field" }, h("label", { for: "wp-title" }, "Titel"), t),
       h("div", { class: "field" }, h("label", { for: "wp-cat" }, "Kategorie"), cs),
       h("div", { class: "field" }, h("label", { for: "wp-tags" }, "Tags"), tg),
       h("div", { class: "field" }, h("label", { for: "wp-body" }, "Text"), b),
+      S.isST ? h("label", { class: "row", style: "align-items:center;gap:8px" }, hid, "Nur für den ST sichtbar (Spieler sehen die Seite nicht)") : null,
       h("div", { class: "row" },
         h("button", { class: "btn primary", type: "button", onclick: async () => {
           if (!t.value.trim()) { toast("Bitte einen Titel eintragen.", true); return; }
           const data = { title: t.value.trim(), tags: splitTags(tg.value), body: b.value, category_id: cs.value };
+          if (S.isST) data.st_only = hid.checked;
           if (p) await guard(sb.from("wiki_pages").update(data).eq("id", p.id), "Gespeichert.");
           else { const r = await guard(sb.from("wiki_pages").insert({ ...data, created_by: S.user.id, updated_by: S.user.id }).select("id").single(), "Seite angelegt."); cur = r.id; }
           cat = cs.value; edit = false; await load(); draw();
