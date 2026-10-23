@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 23.10.2026 · gilt für Website-Version 1.9.2 (siehe `CHANGELOG.md`)
+Stand: 23.10.2026 · gilt für Website-Version 1.10.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -156,7 +156,7 @@ Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenend
 | `session_notes` | `session_number`, `author_id`, `body` |
 | `private_notes` | `owner_id`, `title`, `body` |
 | `wiki_categories` | `name`, `sort`, `st_only`, `created_by` |
-| `wiki_pages` | `category_id`, `title`, `tags`, `body`, `created_by` (unveränderlich), `updated_by` |
+| `wiki_pages` | `category_id`, `title`, `tags`, `body`, `created_by` (unveränderlich), `updated_by`, `st_only` (Seite nur für den ST, seit 1.10.0) |
 | `documents` | Metadaten zu Dateien im Bucket, `draft` |
 | `document_links` | `document_id` (Cascade), `scope` (`player`, `st`), `node_key`, `label`, `created_by`. Eindeutig je (`document_id`, `scope`, `node_key`) |
 | `player_map_nodes` | `label` (eindeutig ohne Groß/Klein), `type`, `tags`, `description`, `is_pc`, `character_id` |
@@ -169,7 +169,7 @@ Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenend
 | `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
-**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `player_node_links_cleanup` (entfernt Verknüpfungen eines gelöschten Spielerkarten-Knotens), `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
+**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `player_node_links_cleanup` (entfernt Verknüpfungen eines gelöschten Spielerkarten-Knotens), `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `wiki_pages_guard_visibility` (nur ST setzt `st_only`), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
 
 ### Migrationen (in dieser Reihenfolge anwenden, nie ändern, Änderungen kommen als neue Datei)
 
@@ -184,6 +184,7 @@ Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenend
 | `20261022120000_chronicles_v1_4.sql` | Chroniken, Kapitel, Session-Infos, Szenenkarten mit Rechten |
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 | `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
+| `20261023130000_wiki_page_visibility_v1_10.sql` | `wiki_pages.st_only`; Lesen, Anlegen und Ändern versteckter Seiten nur ST; Trigger lässt nur den ST `st_only` setzen |
 | `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
 | `20261022120500_scenes_chronicle_v1_8.sql` | `scenes.chronicle_id` (Fremdschlüssel auf `chronicles`, `on delete set null`) und Index, Rechte unverändert |
 | `20261022120600_scene_import_grants_v1_9.sql` | `service_role` darf für `scene-import` Chroniken und Session-Infos lesen, Szenen lesen, anlegen und löschen, NPC-Zeilen lesen und anlegen (sonst nichts) |
@@ -204,7 +205,7 @@ Grundsatz: `anon` darf nichts außer `ping()`. `authenticated` bekommt Tabellenr
 | `session_notes` | Mitglieder | eigene; ST alle (auch im Namen anderer anlegen) |
 | `private_notes` | Besitzer und ST | Besitzer; ST alle |
 | `wiki_categories` | Mitglieder (`st_only` nur ST) | Mitglieder legen an (nicht `st_only`); umbenennen und löschen nur ST |
-| `wiki_pages` | je Kategorie sichtbar | in sichtbaren Kategorien anlegen und ändern; löschen Ersteller und ST |
+| `wiki_pages` | je Kategorie sichtbar; mit `st_only` nur ST | in sichtbaren Kategorien anlegen und ändern; `st_only` setzen und ändern nur ST (Trigger `wiki_pages_guard_visibility`); löschen Ersteller und ST |
 | `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); Titel und Beschreibung ändern Uploader (nur eigene, veröffentlichte) und ST; Entwurf/Freigabe ST; löschen Uploader und ST. Das Spalten-GRANT erlaubt UPDATE nur auf `title`, `description`, `draft` |
 | `document_links` | `player`: Mitglieder, `st`: ST (jeweils nur zu sichtbaren Dokumenten) | anlegen: `created_by` = eigene ID, `player` Mitglieder, `st` ST; löschen: `player` Mitglieder, `st` ST. Kein UPDATE |
 | `player_map_*` | Mitglieder | Mitglieder (auch Löschen von Spielercharakter-Knoten) |
@@ -276,6 +277,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **23.10.2026 (Version 1.10.0):** Wiki-Seiten einzeln für den ST verstecken (`wiki_pages.st_only`, Migration `20261023130000`, Trigger `wiki_pages_guard_visibility`). Oberfläche in `wiki.js` (Umschalter, Häkchen im Formular, Kennzeichen „versteckt“).
 - **23.10.2026 (Version 1.9.2):** Edge Function `db-migrate` und `tools/db-migrate.mjs` (Abschnitt 4.11). Spielerkarte: Sekte als Auswahl (`player_map_nodes.sect`, Migration `20261023120000`), Form folgt der Sekte (`SEKTEN`, `shapeForSekte()`, `src.sects`/`src.legend` in `playermap.js`), Vorschau im Formular, Spalte „Sekte“ im Export.
 - **23.10.2026 (Version 1.9.1):** `MapView`: Kantenbeschriftung dauerhaft sichtbar (`min-zoomed-font-size`), Verbindungsdetails in der Infokarte (`nodeBody()`).
 - **22.10.2026 (Version 1.9.0):** Karten als CSV oder Excel herunterladen (Abschnitt 4.10, `export.js`). Szenen gehören zu einer Chronik (`scenes.chronicle_id`, Migration `20261022120500`, Auswahl im Editor, Filter im Tab Szenen, Auswahl in der Import-Vorschau). Edge Function `scene-import` und `tools/import-scenes.mjs` für den automatischen Import (Abschnitt 4.9). Szenenformat 1.2.
