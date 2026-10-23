@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 23.10.2026 · gilt für Website-Version 1.9.2
+Stand: 23.10.2026 · gilt für Website-Version 1.10.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -101,6 +101,7 @@ Gemeinsames Wissen der Gruppe in **Kategorien** mit **Seiten**.
 - **Kategorie hinzufügen:** alle dürfen neue Kategorien anlegen. Umbenennen und Löschen darf nur der ST (leere Kategorien).
 - Seiten bearbeiten darf jeder, **löschen** nur der Ersteller und der ST.
 - Die Kategorie **ST-Notizen** (mit Hinweis „versteckt“) sehen nur der ST.
+- **Einzelne Seite verstecken:** Der ST setzt bei einer Seite das Häkchen „Nur für den ST sichtbar“ (beim Bearbeiten) oder klickt oben rechts auf „Nur für ST sichtbar“. Die Seite erscheint dann in der Liste mit „versteckt“ nur bei dir. „Für alle sichtbar machen“ hebt das wieder auf. Spieler sehen die Seite nicht, auch nicht über einen `[[Verweis]]`.
 
 ## 9. Dokumente
 
@@ -198,6 +199,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).
+- **23.10.2026 (Version 1.10.0):** Wiki-Seiten lassen sich einzeln für den ST verstecken (Abschnitt 8).
 - **23.10.2026 (Version 1.9.2):** Knoten der Spielerkarte haben eine Sekte (Auswahl). Die Form des Knotens richtet sich nach der Sekte, wie auf der Storytellerkarte (Abschnitt 7).
 - **23.10.2026 (Version 1.9.1):** Auf beiden Karten steht die Beschriftung der Verbindungen auf der Linie (beim Hineinzoomen), und die Infokarte zeigt bei den Verbindungen auch deren Details (Abschnitt 7).
 - **22.10.2026 (Version 1.9.0):** Spielerkarte und Storytellerkarte lassen sich als Excel oder CSV herunterladen (Abschnitt 7). Szenen lassen sich einer Chronik zuordnen (Editor, Import-Vorschau, Filter im Tab Szenen). Claude kann Szenen automatisch einspielen (Abschnitt 10).
