@@ -230,3 +230,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .manual-body th,.manual-body td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
 .manual-body th{background:var(--raised)}
 @media (max-width:860px){.toc{position:static;max-height:none}}
+
+/* Karten-Export (Herunterladen) */
+.export-menu{display:inline-block}
+.export-menu>summary{list-style:none;cursor:pointer;display:inline-block}
+.export-menu>summary::-webkit-details-marker{display:none}

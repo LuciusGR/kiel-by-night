@@ -340,6 +340,15 @@ begin
   perform pg_temp.q('R325', 'ST: Knoten der Spielerkarte löschen räumt Verknüpfungen auf', st, 'authenticated', $x$delete from public.player_map_nodes where label = 'UAT A'$x$, 'rows=1');
   perform pg_temp.q('R326', 'Verknüpfungen des gelöschten Knotens sind weg', st, 'authenticated', $x$select count(*) from public.document_links where label = 'UAT A'$x$, 'n=0');
   perform pg_temp.q('R327', 'ST: Verknüpfung mit leerem Schlüssel', st, 'authenticated', format($x$insert into public.document_links(document_id, scope, node_key, label) values (%L, 'player', '', 'x')$x$, d_pub), 'err');
+  -- v1.10: einzelne Wiki-Seiten nur für den ST (st_only)
+  perform pg_temp.q('R330', 'ST: legt versteckte Wiki-Seite an', st, 'authenticated', format($x$insert into public.wiki_pages(category_id, title, st_only) values (%L, 'UAT hidden', true)$x$, catpub), 'rows=1');
+  perform pg_temp.q('R331', 'Spieler: sieht versteckte Wiki-Seite nicht', p1, 'authenticated', $x$select count(*) from public.wiki_pages where title = 'UAT hidden'$x$, 'n=0');
+  perform pg_temp.q('R332', 'ST: sieht versteckte Wiki-Seite', st, 'authenticated', $x$select count(*) from public.wiki_pages where title = 'UAT hidden'$x$, 'n=1');
+  perform pg_temp.q('R333', 'Spieler: versteckte Seite anlegen (Versuch)', p1, 'authenticated', format($x$insert into public.wiki_pages(category_id, title, st_only) values (%L, 'UAT hidden2', true)$x$, catpub), 'err');
+  perform pg_temp.q('R334', 'Spieler: eigene Seite verstecken (Versuch)', p1, 'authenticated', format($x$update public.wiki_pages set st_only = true where title = 'UAT neu'$x$), 'err');
+  perform pg_temp.q('R335', 'Spieler: eigene Seite ändern, Sichtbarkeit bleibt', p1, 'authenticated', format($x$update public.wiki_pages set body = 'f' where title = 'UAT neu'$x$), 'rows=1');
+  perform pg_temp.q('R336', 'ST: versteckte Seite wieder sichtbar machen', st, 'authenticated', $x$update public.wiki_pages set st_only = false where title = 'UAT hidden'$x$, 'rows=1');
+  perform pg_temp.q('R337', 'Spieler: Seite nach Freigabe sichtbar', p1, 'authenticated', $x$select count(*) from public.wiki_pages where title = 'UAT hidden'$x$, 'n=1');
 
   -- ---------- E: Konfiguration der Datenbank ----------
   perform pg_temp.q('R190', 'service_role darf notion_cache schreiben', null, 'postgres', $x$select count(*) from (select 1 where has_table_privilege('service_role','public.notion_cache','INSERT') and has_table_privilege('service_role','public.notion_cache','UPDATE')) s$x$, 'n=1');

@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 24.10.2026 · gilt für Website-Version 1.9.1 (siehe `CHANGELOG.md`)
+Stand: 24.10.2026 · gilt für Website-Version 1.11.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -88,7 +88,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend) und private Spielernotizen |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]` |
 | `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
-| `manual.js` | Anleitung | Zeigt `docs/Benutzerhandbuch.md` live aus GitHub (Abschnitt 4.9). Für alle Rollen |
+| `manual.js` | Anleitung | Zeigt `docs/Benutzerhandbuch.md` live aus GitHub (Abschnitt 4.12). Für alle Rollen |
 
 ### 4.3 Charakterbogen
 - JSON-Felder: `attr` (9 Attribute 1–5), `skills` (je `{v, spec}`), `disc` (`[{name, lvl, powers}]`), `health` und `wp` (Arrays 0/1/2 = leer/oberflächlich/schwer), `hunger`, `humanity`, `stains`, `bp`, `xpTotal`, `xpSpent` und Textfelder (concept, ambition, desire, predator, sire, generation, resonance, touchstones, advantages, notes). Health = Stamina + 3, Willpower = Composure + Resolve. `normSheet()` ergänzt fehlende Felder.
@@ -122,6 +122,31 @@ Format `kbn-scenes/1`, Beschreibung in `docs/Szenenformat_v1.md`. `parseScenes()
 
 Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ session, mode })` in `scenes.js` zeigt je nach Aufruf die Szenen einer Session (`sceneBlock(n)`, `mode` leer) oder im Tab Szenen die Ansichten `pool`, `assigned` und `all`. `relocate()` ordnet zu, verschiebt und legt zurück in den Vorrat (setzt `session_number` und hängt die Position hinten an, `maxPosition()`). Die Auswahl der Sessions kommt aus `sessions`, `session_info`, `session_notes` und `scenes` (`loadSessionNumbers()`), dazu „Session N+1 (neu)“. Der Import im Tab Szenen legt immer im Vorrat an, in einer Session-Ansicht in dieser Session. `session` in der Datei ist optional (`parseScenes()`). Die Suche filtert im Browser (`setQuery()`), die Pfeile für die Reihenfolge sind bei Suche und in den Ansichten „Zugeordnet“ und „Alle“ ausgeblendet.
 
+### 4.11 Migrationen automatisch einspielen (`db-migrate`)
+
+Edge Function `supabase/functions/db-migrate/index.ts`, Aufrufskript `tools/db-migrate.mjs` (`status`, `apply <name> [--dry-run]`, `baseline --through <name>`). Die Function verbindet sich über die eingebaute `SUPABASE_DB_URL` mit der Datenbank und führt eine Migrationsdatei aus.
+
+- **Schutz:** Ohne Secret `MIGRATE_TOKEN` (mindestens 32 Zeichen) ist sie abgeschaltet (503), der Schlüssel wird in konstanter Zeit verglichen. Es läuft nur `supabase/migrations/<name>.sql` des Repos `LuciusGR/kiel-by-night` unter einem festen Commit (`sha`). Die Function prüft über die GitHub-API (`compare/<sha>...main`), dass der Commit auf `main` liegt, lädt die Datei unter diesem Commit von `raw.githubusercontent.com` und vergleicht deren SHA-256 mit dem mitgeschickten Wert (das Skript zeigt vorher SQL und Hash an). Der Name muss `^\d{14}_[a-z0-9_]+$` entsprechen (keine Pfadtricks). Datei höchstens 1 MB, Anfrage höchstens 64 KB.
+- **Ablauf:** Jede Migration läuft in **einer Transaktion** (mit Advisory Lock gegen parallele Läufe) und wird danach in `kbn_admin.migrations` vermerkt. Das Schema `kbn_admin` wird bei Bedarf angelegt, `anon` und `authenticated` haben keine Rechte darauf, und es ist nicht in der API freigegeben. Eine vermerkte Migration läuft nie ein zweites Mal (409). Ein SQL-Fehler rollt alles zurück (500 mit Fehlercode, Meldung und Position). `dry_run: true` führt die Migration aus und rollt sie zurück, es wird nichts vermerkt.
+- **Baseline:** Bereits von Hand angewendete Migrationen werden einmalig mit `baseline` vermerkt (prüft nur, dass die Dateien auf `main` liegen, führt nichts aus).
+- **Grenzen:** `CREATE INDEX CONCURRENTLY` und andere Befehle, die keine Transaktion vertragen, gehen so nicht. Die GitHub-API ohne Anmeldung hat ein Ratenlimit (60 Anfragen je Stunde und IP); optional Secret `GITHUB_TOKEN` setzen. Die Function ist ein mächtiger Zugang: Wer `MIGRATE_TOKEN` hat **und** auf `main` schreiben kann, kann SQL in die Produktion bringen. Bei Verdacht Secret ändern oder löschen, dann ist der Weg zu.
+- **Einrichten (einmalig, macht der Nutzer):** (1) Schlüssel erzeugen (mindestens 32 Zeichen, z. B. `openssl rand -hex 32`). (2) Dashboard → Edge Functions → neue Function `db-migrate`, Inhalt von `index.ts` einfügen, JWT-Prüfung aus, deployen. (3) Secret `MIGRATE_TOKEN` setzen. (4) Denselben Wert als `KBN_MIGRATE_TOKEN` in der Claude-Umgebung hinterlegen (die Supabase-Domain ist dort schon freigegeben). (5) Einmal `baseline --through <letzte von Hand angewendete Migration>`.
+- **Test:** `node tests/db_migrate_test.mjs` (Node 22, Datenbank und GitHub im Speicher, 17 Fälle).
+
+### 4.10 Karten-Export (CSV, Excel)
+
+`MapView` zeigt „Herunterladen“ (`details.export-menu`): Excel mit den Blättern Knoten und Verbindungen oder je eine CSV. Die Tabellen baut `mapTables()` in `web/js/export.js` aus den geladenen Knoten und Kanten (Verbindungen mit Namen, Knoten mit Anzahl der Verbindungen, ID als letzte Spalte; bei der ST-Karte zusätzlich Kategorie und Verstorben). `toCsv()` schreibt UTF-8 mit BOM und Semikolon (deutsches Excel) und entschärft Zellen, die mit `= + - @` beginnen, mit einem vorangestellten `'`. `toXlsx()` schreibt eine schlichte .xlsx von Hand (ZIP ohne Kompression, Textzellen, fette Kopfzeile, fixierte erste Zeile), ohne Bibliothek und ohne CDN. Der Export liest nur, was die Person ohnehin sieht, es gibt kein neues Recht. Quelle gibt den Dateinamen über `src.exportName` vor. Test: `node tests/export_test.mjs`.
+
+### 4.9 Szenen-Import ohne Hochladen (`scene-import`)
+
+Edge Function `supabase/functions/scene-import/index.ts`. Sie nimmt eine Szenendatei `kbn-scenes/1` per `POST` entgegen und legt die Szenen an, damit Claude sie aus einer Chronik-Datei (Markdown) direkt einspielen kann. Aufruf: Header `x-import-token`, optional `?dry_run=1` (prüft und gleicht ab, schreibt nichts). Aufrufskript: `tools/import-scenes.mjs`.
+
+- **Sicherheit:** Das Gateway prüft kein JWT (`verify_jwt = false` in `supabase/config.toml`), die Function prüft jeden Aufruf selbst gegen das Secret `IMPORT_TOKEN` (Vergleich in konstanter Zeit). Ist das Secret leer oder kürzer als 32 Zeichen, ist die Function abgeschaltet (503). Die Function legt nur neue Zeilen in `scenes` und `scene_npcs` an. Sie ändert und löscht nichts Vorhandenes (außer einer Szene, deren NPC-Zeilen nicht gespeichert werden konnten, die nimmt sie zurück). Sie liest `chronicles`, `session_info`, `scenes` (Titel, Position) und `notion_cache` (NPC-Liste). Grenzen: Datei höchstens 2 MB, 100 Szenen, Texte 20 000 Zeichen.
+- **Regeln wie beim Hochladen:** vollständige Prüfung vor dem Schreiben (`parseScenes` ist in der Function nachgebaut, bei Änderungen am Format beide anpassen), neue Szenen hinten angehängt, gleichnamige Szenen derselben Chronik im Ziel werden übersprungen, NPC-Abgleich wie `matchNpc` (exakt auf Name oder Map-Label, sonst eindeutiger Teiltreffer) gegen den Cache der ST-Karte.
+- **Chronik:** `chronik` in der Datei muss dem Titel einer Chronik entsprechen (ohne Beachtung der Schreibweise), sonst Antwort 422 `unknown_chronicle` mit den vorhandenen Titeln. Fehlt `chronik`, gilt bei einer Session deren Chronik aus `session_info`, sonst keine.
+- **Einrichten (einmalig, macht der Nutzer):** (1) Migrationen `20261022120500` und `20261022120600` im SQL-Editor anwenden (die zweite gibt `service_role` die nötigen Rechte, in diesem Projekt bekommt es neue Tabellen nicht automatisch). (2) Supabase → Edge Functions → neue Function `scene-import`, Inhalt von `index.ts` einfügen, JWT-Prüfung aus (wie bei `notion-proxy`). (3) Unter Secrets `IMPORT_TOKEN` setzen (zufällig, mindestens 32 Zeichen, z. B. `openssl rand -hex 32`). (4) Denselben Wert als Umgebungsvariable `KBN_IMPORT_TOKEN` in der Claude-Umgebung hinterlegen, und die Domain des Supabase-Projekts in der Netzwerkfreigabe der Umgebung erlauben. Den Schlüssel nie ins Repo. Bei Verdacht auf Missbrauch: Secret ändern oder löschen, dann ist der Weg sofort zu.
+- **Test:** `node tests/scene_import_test.mjs` (Node 22, Datenbank im Speicher, 21 Fälle).
+
 ## 5. Datenbank (Supabase Postgres)
 
 | Tabelle | Inhalt |
@@ -132,7 +157,7 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `session_notes` | `session_number`, `author_id`, `body` |
 | `private_notes` | `owner_id`, `title`, `body` |
 | `wiki_categories` | `name`, `sort`, `st_only`, `created_by` |
-| `wiki_pages` | `category_id`, `title`, `tags`, `body`, `created_by` (unveränderlich), `updated_by` |
+| `wiki_pages` | `category_id`, `title`, `tags`, `body`, `created_by` (unveränderlich), `updated_by`, `st_only` (Seite nur für den ST, seit 1.10.0) |
 | `documents` | Metadaten zu Dateien im Bucket, `draft` |
 | `document_links` | `document_id` (Cascade), `scope` (`player`, `st`), `node_key`, `label`, `created_by`. Eindeutig je (`document_id`, `scope`, `node_key`) |
 | `player_map_nodes` | `label` (eindeutig ohne Groß/Klein), `type`, `tags`, `description`, `is_pc`, `character_id` |
@@ -141,11 +166,11 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `chronicles` | `title`, `description`, `status` (`draft`, `running`, `done`), `started_on`, `sort` |
 | `chapters` | `chronicle_id`, `number` (je Chronik eindeutig), `title` |
 | `session_info` | `session_number` (Schlüssel), `chronicle_id`, `chapter_id` (beide `on delete set null`), `ingame_date`, `summary`. Nur der ST schreibt |
-| `scenes` | `session_number` (null = Vorrat), `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
+| `scenes` | `session_number` (null = Vorrat), `chronicle_id` (Chronik, null = ohne, bei gelöschter Chronik bleibt die Szene), `position`, `title`, `place`, `mood`, `goal`, `antagonist`, `outcomes` und `threads` (jsonb-Listen), `body`, `details`, `status` (`open`, `played`, `skipped`, `postponed`). Nur ST |
 | `scene_npcs` | `scene_id` (Cascade), `notion_id` (Schlüssel zur ST-Karte), `name` (Rückfall), `motivation` (gilt nur für diese Szene). Nur ST |
 | `notion_cache` | genau eine Zeile (`id = 1`): `payload` (jsonb) und `fetched_at` |
 
-**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `player_node_links_cleanup` (entfernt Verknüpfungen eines gelöschten Spielerkarten-Knotens), `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
+**Funktionen** (alle `security definer` mit festem `search_path`): `is_st()`, `is_member()`, `wiki_category_visible(uuid)`, `ping()` (liefert `ok:<Anzahl Profile>`, für den Keepalive). **Trigger:** `player_node_links_cleanup` (entfernt Verknüpfungen eines gelöschten Spielerkarten-Knotens), `touch_updated` (`updated_at`), `wiki_touch` (hält `created_by` unveränderlich), `wiki_pages_guard_visibility` (nur ST setzt `st_only`), `profiles_guard` (nur der ST ändert Rollen, nicht die eigene). **Realtime:** nur `player_map_nodes` und `player_map_edges`.
 
 ### Migrationen (in dieser Reihenfolge anwenden, nie ändern, Änderungen kommen als neue Datei)
 
@@ -160,7 +185,11 @@ Szenen ohne Session haben `session_number = null` (Vorrat). `sceneBoard({ sessio
 | `20261022120000_chronicles_v1_4.sql` | Chroniken, Kapitel, Session-Infos, Szenenkarten mit Rechten |
 | `20261022120100_chronicles_grants_v1_4.sql` | entzieht `anon` und den Zusatzrechten die Default Privileges der neuen Tabellen |
 | `20261022120200_scenes_pool_v1_5.sql` | `scenes.session_number` darf null sein (Szenen-Vorrat) |
+| `20261023130000_wiki_page_visibility_v1_10.sql` | `wiki_pages.st_only`; Lesen, Anlegen und Ändern versteckter Seiten nur ST; Trigger lässt nur den ST `st_only` setzen |
 | `20261022120300_documents_edit_v1_6.sql` | Dokumente: Spalten-GRANT für UPDATE (title, description, draft), Policy `documents_update_own` |
+| `20261022120500_scenes_chronicle_v1_8.sql` | `scenes.chronicle_id` (Fremdschlüssel auf `chronicles`, `on delete set null`) und Index, Rechte unverändert |
+| `20261022120600_scene_import_grants_v1_9.sql` | `service_role` darf für `scene-import` Chroniken und Session-Infos lesen, Szenen lesen, anlegen und löschen, NPC-Zeilen lesen und anlegen (sonst nichts) |
+| `20261023120000_player_map_sect_v1_9.sql` | `player_map_nodes.sect` (Sekte, CHECK auf die fünf Sekten oder leer), Rechte unverändert |
 | `20261022120400_document_links_v1_7.sql` | Tabelle `document_links` mit Rechten (nur SELECT, INSERT, DELETE), drei Policies, Trigger `player_node_links_cleanup` |
 
 Anwenden: Supabase-Dashboard → *SQL Editor* (jede Datei ganz einfügen, Run) oder `npx supabase db push`. Der SQL-Editor führt ein Skript als eine Transaktion aus. **Achtung bei neuen Tabellen:** Supabase vergibt auf neue Tabellen in `public` automatisch alle Rechte an `anon` und `authenticated` (Default Privileges). Jede Migration mit neuen Tabellen muss sie wieder entziehen und gezielt vergeben. `tests/mock_supabase.sql` bildet die Default Privileges nach, so fängt der Rechte-Test (R191, R192) einen vergessenen Entzug ab.
@@ -177,7 +206,7 @@ Grundsatz: `anon` darf nichts außer `ping()`. `authenticated` bekommt Tabellenr
 | `session_notes` | Mitglieder | eigene; ST alle (auch im Namen anderer anlegen) |
 | `private_notes` | Besitzer und ST | Besitzer; ST alle |
 | `wiki_categories` | Mitglieder (`st_only` nur ST) | Mitglieder legen an (nicht `st_only`); umbenennen und löschen nur ST |
-| `wiki_pages` | je Kategorie sichtbar | in sichtbaren Kategorien anlegen und ändern; löschen Ersteller und ST |
+| `wiki_pages` | je Kategorie sichtbar; mit `st_only` nur ST | in sichtbaren Kategorien anlegen und ändern; `st_only` setzen und ändern nur ST (Trigger `wiki_pages_guard_visibility`); löschen Ersteller und ST |
 | `documents` | Mitglieder (Entwürfe nur ST) | anlegen Mitglieder (Entwurf nur ST); Titel und Beschreibung ändern Uploader (nur eigene, veröffentlichte) und ST; Entwurf/Freigabe ST; löschen Uploader und ST. Das Spalten-GRANT erlaubt UPDATE nur auf `title`, `description`, `draft` |
 | `document_links` | `player`: Mitglieder, `st`: ST (jeweils nur zu sichtbaren Dokumenten) | anlegen: `created_by` = eigene ID, `player` Mitglieder, `st` ST; löschen: `player` Mitglieder, `st` ST. Kein UPDATE |
 | `player_map_*` | Mitglieder | Mitglieder (auch Löschen von Spielercharakter-Knoten) |
@@ -223,7 +252,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 - **Datenänderungen per SQL** im SQL-Editor, immer mit Blick auf die Profile und Fremdschlüssel (Löschen eines Profils löscht dessen Notizen und Dokument-Einträge).
 - **Sicherung:** Im Free-Plan gibt es keine automatische Wiederherstellung (nicht geprüft). Wichtige Inhalte regelmäßig exportieren.
 
-### 4.9 Anleitung
+### 4.12 Anleitung
 
 Der Tab „Anleitung“ (`#manual`, für Spieler und ST) enthält keinen eigenen Text. `manual.js` holt bei jedem Aufruf `docs/Benutzerhandbuch.md` vom Branch `main` über `https://raw.githubusercontent.com/LuciusGR/kiel-by-night/main/docs/Benutzerhandbuch.md` (`fetch` mit `cache: "no-cache"`, 12 s Zeitlimit; die Konstanten stehen am Anfang der Datei). Wer das Handbuch auf `main` ändert, ändert damit die Anleitung, ohne dass die Seite neu ausgeliefert werden muss. GitHubs Raw-Server halten eine Datei bis zu etwa 5 Minuten im Cache, „Neu laden“ in der Ansicht holt sie erneut.
 
@@ -256,12 +285,15 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGl
 
 ## 12. Doku pflegen
 
-Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`). Das Benutzerhandbuch erscheint zusätzlich live im Tab „Anleitung“ (Abschnitt 4.9): Es ist für alle Mitglieder lesbar, deshalb keine Zugangsdaten, Schlüssel oder Betriebsinterna hineinschreiben, und Überschriften der Ebene 2 knapp halten (sie bilden die Gliederung).
+Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`). Das Benutzerhandbuch erscheint zusätzlich live im Tab „Anleitung“ (Abschnitt 4.12): Es ist für alle Mitglieder lesbar, deshalb keine Zugangsdaten, Schlüssel oder Betriebsinterna hineinschreiben, und Überschriften der Ebene 2 knapp halten (sie bilden die Gliederung).
 
 ## 13. Änderungen an dieser Doku
 
-- **24.10.2026 (Version 1.9.1):** Anleitung ohne Link auf GitHub (kein Knopf „Auf GitHub öffnen“, kein Link in der Fehlermeldung, relative Verweise bleiben Text). Tests U240, U242, U244 angepasst.
-- **24.10.2026 (Version 1.9.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.9). `APP_VERSION` in `config.js` von 1.0.0 auf 1.9.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
+- **24.10.2026 (Version 1.11.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.12), kein Link auf GitHub. `APP_VERSION` in `config.js` von 1.0.0 auf 1.11.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
+- **23.10.2026 (Version 1.10.0):** Wiki-Seiten einzeln für den ST verstecken (`wiki_pages.st_only`, Migration `20261023130000`, Trigger `wiki_pages_guard_visibility`). Oberfläche in `wiki.js` (Umschalter, Häkchen im Formular, Kennzeichen „versteckt“).
+- **23.10.2026 (Version 1.9.2):** Edge Function `db-migrate` und `tools/db-migrate.mjs` (Abschnitt 4.11). Spielerkarte: Sekte als Auswahl (`player_map_nodes.sect`, Migration `20261023120000`), Form folgt der Sekte (`SEKTEN`, `shapeForSekte()`, `src.sects`/`src.legend` in `playermap.js`), Vorschau im Formular, Spalte „Sekte“ im Export.
+- **23.10.2026 (Version 1.9.1):** `MapView`: Kantenbeschriftung dauerhaft sichtbar (`min-zoomed-font-size`), Verbindungsdetails in der Infokarte (`nodeBody()`).
+- **22.10.2026 (Version 1.9.0):** Karten als CSV oder Excel herunterladen (Abschnitt 4.10, `export.js`). Szenen gehören zu einer Chronik (`scenes.chronicle_id`, Migration `20261022120500`, Auswahl im Editor, Filter im Tab Szenen, Auswahl in der Import-Vorschau). Edge Function `scene-import` und `tools/import-scenes.mjs` für den automatischen Import (Abschnitt 4.9). Szenenformat 1.2.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
 - **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).

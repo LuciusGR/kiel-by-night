@@ -3,6 +3,7 @@
 //                    A5 Form je Sekte (nur ST-Karte, sonst Kreis) · A7 unterscheidbare Farben
 import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
+import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
 // ---------- A7: Farben je Typ ----------
 const TYPE_TOK = {
@@ -30,6 +31,7 @@ export const SEKTE_SHAPE = {
   Unabhaengig: "round-rectangle",
   "Second Inquisition": "star",
 };
+export const SEKTEN = ["Camarilla", "Anarch", "Sabbat", "Unabhängig", "Second Inquisition"]; // Auswahl für Knoten der Spielerkarte
 export function shapeForSekte(s) {
   const k = String(s || "").trim().replace("Unabhängig", "Unabhaengig");
   return SEKTE_SHAPE[k] || "ellipse";
@@ -64,12 +66,14 @@ function cyStyle() {
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
     { selector: "node[?pc]", style: { "border-width": 4, "border-style": "double", "border-color": ink } }, // SC-Ring, nicht verwechselbar mit Ghoul-Messing
     { selector: "node[?dead]", style: { "opacity": .5, "border-width": 1.5, "border-style": "dashed", "border-color": muted, "background-opacity": .35 } },
-    { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8 } },
+    { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8,
+      "label": "data(label)", "font-size": 8, "color": muted, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .85, "text-background-padding": 1.5,
+      "text-wrap": "ellipsis", "text-max-width": 110, "min-zoomed-font-size": 7 } },
     { selector: "edge[dir = 'undirected']", style: { "target-arrow-shape": "none" } },
     { selector: "edge[dir = 'mutual']", style: { "source-arrow-shape": "triangle", "source-arrow-color": line } },
     { selector: ".faded", style: { "opacity": .1 } },
     { selector: "edge.hl", style: { "label": "data(label)", "font-size": 9, "color": ink, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .9, "text-background-padding": 2,
-      "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160 } },
+      "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160, "min-zoomed-font-size": 0 } },
     { selector: "node:selected", style: { "border-width": 3, "border-color": sea } },
     { selector: ".hide", style: { "display": "none" } },
   ];
@@ -117,7 +121,16 @@ export function MapView(root, src) {
   function setMode(next) { if (next === mode) return; mode = next; if (mode === "view") { editing = null; flushPositions(); } paintMode(); drawPanel(); }
   paintMode();
   if (src.reload) actions.append(h("button", { class: "btn", type: "button", onclick: async () => { await src.reload(); await refresh(); } }, src.reloadLabel || "Neu laden"));
-  actions.append(status);
+  // Herunterladen als CSV (Knoten, Verbindungen) oder Excel (beides als zwei Blätter), z. B. zur Auswertung durch Claude
+  const exportMenu = h("details", { class: "export-menu" }, h("summary", { class: "btn", "aria-label": "Karte herunterladen" }, "Herunterladen"),
+    h("div", { class: "row", style: "margin-top:6px" },
+      ...[["Excel (.xlsx)", "xlsx"], ["Knoten (.csv)", "nodes"], ["Verbindungen (.csv)", "edges"]].map(([label, kind]) => h("button", { class: "btn small", type: "button", onclick: () => {
+        const { nodeRows, edgeRows } = mapTables(nodes, edges), base = (src.exportName || "karte") + "_" + stamp();
+        if (kind === "xlsx") download(base + ".xlsx", toXlsx([["Knoten", nodeRows], ["Verbindungen", edgeRows]]), MIME.xlsx);
+        else download(base + (kind === "nodes" ? "_knoten" : "_verbindungen") + ".csv", toCsv(kind === "nodes" ? nodeRows : edgeRows), MIME.csv);
+        exportMenu.open = false;
+      } }, label))));
+  actions.append(exportMenu, status);
 
   const onTheme = () => { if (cy) cy.style(cyStyle()); drawChips(); };
   themeListeners.add(onTheme);
@@ -269,7 +282,7 @@ export function MapView(root, src) {
     if (conn.length) out.push(h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "Verbindungen (" + conn.length + ")"), h("div", { class: "conn" }, ...conn.map(e => {
       const other = e.from === id ? e.to : e.from;
       const arrow = e.direction === "undirected" ? "—" : (e.direction === "mutual" ? "↔" : (e.from === id ? "→" : "←"));
-      return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { resultsOn = false; sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null);
+      return h("div", { class: "c" }, arrow + " ", h("button", { class: "linkbtn", type: "button", onclick: () => { resultsOn = false; sel = { kind: "node", id: other }; highlight(); drawPanel(); } }, nodeLabel(other)), e.label ? h("div", { class: "muted" }, e.label) : null, e.description ? h("div", { class: "pre muted", style: "font-size:.88rem;margin-top:2px" }, e.description) : null);
     }))));
     const btns = h("div", { class: "row" });
     if (src.editable && mode === "edit") btns.append(
@@ -321,6 +334,10 @@ export function MapView(root, src) {
     const cur = normType(d.type);
     const types = ["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", ...[...nodes.values()].map(n => normType(n.type)), cur].filter((v, i, a) => v && a.indexOf(v) === i);
     const label = h("input", { type: "text", id: "nf-label", value: d.label || ""});
+    // Sekte (nur Karten mit src.sects): bestimmt die Form des Knotens, die Vorschau wechselt sofort
+    const sect = src.sects ? h("select", { id: "nf-sect" }, h("option", { value: "" }, "— keine —"), ...SEKTEN.map(x => h("option", { value: x, selected: x === d.sect ? true : null }, x))) : null;
+    if (sect && d.id) sect.addEventListener("change", () => { const el = cy && cy.getElementById(d.id); if (el && !el.empty()) el.data("shape", shapeForSekte(sect.value)); });
+    const restoreShape = () => { const el = cy && d.id && cy.getElementById(d.id); if (el && !el.empty() && nodes.get(d.id)) el.data("shape", nodes.get(d.id).shape || "ellipse"); };
     const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)), h("option", { value: "__new__" }, "＋ Neuer Typ …"));
     const newType = h("input", { type: "text", id: "nf-type-new", placeholder: "Neuen Typ eingeben", hidden: true, "aria-label": "Neuer Typ" });
     type.addEventListener("change", () => { newType.hidden = type.value !== "__new__"; if (!newType.hidden) newType.focus(); });
@@ -328,6 +345,7 @@ export function MapView(root, src) {
     return h("div", { class: "panel stack" }, h("h3", {}, d.id ? "Knoten bearbeiten" : "Neuer Knoten"),
       h("div", { class: "field" }, h("label", { for: "nf-label" }, "Name"), label),
       h("div", { class: "field" }, h("label", { for: "nf-type" }, "Typ"), type, newType),
+      sect ? h("div", { class: "field" }, h("label", { for: "nf-sect" }, "Sekte"), sect) : null,
       h("div", { class: "field" }, h("label", { for: "nf-tags" }, "Tags"), tags),
       h("div", { class: "field" }, h("label", { for: "nf-desc" }, "Was wir wissen"), desc),
       h("div", { class: "row" },
@@ -335,11 +353,11 @@ export function MapView(root, src) {
           if (!label.value.trim()) { toast("Bitte einen Namen eintragen.", true); return; }
           const typeVal = type.value === "__new__" ? newType.value.trim() : type.value;
           if (type.value === "__new__" && !typeVal) { toast("Bitte einen neuen Typ eintragen.", true); return; }
-          const body = { label: label.value.trim(), type: normType(typeVal), tags: splitTags(tags.value), description: desc.value };
+          const body = { label: label.value.trim(), type: normType(typeVal), tags: splitTags(tags.value), description: desc.value, sect: sect ? sect.value : undefined };
           if (d.id) await src.updateNode(d.id, body); else { const id = await src.addNode(body); if (id) sel = { kind: "node", id }; }
           await afterWrite();
         } }, "Speichern"),
-        h("button", { class: "btn", type: "button", onclick: () => { editing = null; drawPanel(); } }, "Abbrechen")));
+        h("button", { class: "btn", type: "button", onclick: () => { restoreShape(); editing = null; drawPanel(); } }, "Abbrechen")));
   }
   function edgeForm(d) {
     d = d || {};

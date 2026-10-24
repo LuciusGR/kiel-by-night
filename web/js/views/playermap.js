@@ -1,7 +1,7 @@
 // Kiel by Night · Spielerkarte (gemeinsam, alle bearbeiten; Form immer Kreis gemäß A5-Entscheidung)
 import { guard, head } from "../lib.js";
 import { sb, S, registerView } from "../core.js";
-import { MapView } from "./map.js";
+import { MapView, shapeForSekte } from "./map.js";
 import { docLinksBox } from "./doclinks.js";
 
 export async function savePositions(scope, list) {
@@ -19,7 +19,7 @@ export async function loadPositions(scope) {
 
 export function playerMapSource() {
   return {
-    editable: true, focus: (S.arg && S.arg.focus) || null,
+    editable: true, focus: (S.arg && S.arg.focus) || null, legend: true, sects: true, exportName: "spielerkarte",
     // Dokumente am Knoten: Liste für alle, Verknüpfen und Lösen nur im Modus Bearbeitung
     nodeExtras: (n, id, nodes, o) => [docLinksBox("player", id, n.label, !!(o && o.edit))],
     async load() {
@@ -29,7 +29,7 @@ export function playerMapSource() {
         loadPositions("player"),
       ]);
       if (n.error) throw n.error; if (e.error) throw e.error;
-      const nodes = new Map(n.data.map(x => [x.id, { label: x.label, type: x.type, tags: x.tags || [], description: x.description, pc: x.is_pc, shape: "ellipse" }]));
+      const nodes = new Map(n.data.map(x => [x.id, { label: x.label, type: x.type, tags: x.tags || [], description: x.description, pc: x.is_pc, sect: x.sect || "", shape: shapeForSekte(x.sect) }]));
       const edges = new Map(e.data.map(x => [x.id, { from: x.from_node, to: x.to_node, label: x.label, direction: x.direction, description: x.description }]));
       return { nodes, edges, positions };
     },
@@ -43,8 +43,9 @@ export function playerMapSource() {
         .subscribe();
       return () => { clearTimeout(t); sb.removeChannel(ch); };
     },
-    addNode: async b => (await guard(sb.from("player_map_nodes").insert({ label: b.label, type: b.type, tags: b.tags, description: b.description }).select("id").single(), "Hinzugefügt.")).id,
-    updateNode: (id, b) => guard(sb.from("player_map_nodes").update({ label: b.label, type: b.type, tags: b.tags, description: b.description }).eq("id", id), "Gespeichert."),
+    addNode: async b => (await guard(sb.from("player_map_nodes").insert({ label: b.label, type: b.type, tags: b.tags, description: b.description, sect: b.sect || "" }).select("id").single(), "Hinzugefügt.")).id,
+    updateNode: (id, b) => guard(sb.from("player_map_nodes").update({ label: b.label, type: b.type, tags: b.tags, description: b.description, sect: b.sect || "" }).eq("id", id), "Gespeichert."),
+    metaRows: n => n.sect ? [["Sekte", n.sect]] : [],
     deleteNode: async id => {
       await guard(sb.from("player_map_nodes").delete().eq("id", id), "Gelöscht."); // Kanten per FK-Cascade
       await sb.from("map_positions").delete().eq("scope", "player").eq("node_key", id);

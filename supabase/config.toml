@@ -6,3 +6,11 @@ project_id = "kiel-by-night"
 # false: Das Gateway prüft das JWT nicht selbst; die Function prüft jeden Aufruf per
 # auth.getUser() + is_st(). So funktioniert es mit alten und neuen JWT-Signaturschlüsseln.
 verify_jwt = false
+
+[functions.scene-import]
+# false: Das Gateway prüft kein JWT. Die Function prüft jeden Aufruf selbst mit dem Import-Schlüssel (Secret IMPORT_TOKEN).
+verify_jwt = false
+
+[functions.db-migrate]
+# false: Das Gateway prüft kein JWT. Die Function prüft jeden Aufruf selbst mit dem Migrations-Schlüssel (Secret MIGRATE_TOKEN).
+verify_jwt = false
