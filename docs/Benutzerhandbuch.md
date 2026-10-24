@@ -193,11 +193,15 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 - Es werden **keine E-Mail-Adressen** gespeichert. Benutzernamen sind Pseudo-Adressen.
 - Private Notizen sieht der ST. Alles andere sehen alle Mitglieder.
-- Die Seite lädt Schriften von Google Fonts und Skripte von jsDelivr.
+- Schriften und Skripte liegen auf der Seite selbst. Es werden keine Google Fonts und keine Skripte von Dritten geladen. Nur der Bereich „Anleitung“ lädt das Handbuch von GitHub.
+- Die Seite setzt keine Cookies. Im Browser liegen nur die Anmelde-Sitzung und die Wahl von hellem oder dunklem Aussehen.
+- Unten auf jeder Seite steht **Datenschutz** mit allen Angaben.
+- Die Seite ist ein inoffizielles Fan-Projekt und nicht mit den Rechteinhabern von Vampire: Die Maskerade verbunden.
 - Der Zugang ist nur für die Chronik-Gruppe vorgesehen. Die Seite ist nicht für Suchmaschinen gedacht (noindex).
 
 ## 14. Änderungen an diesem Handbuch
 
+- **24.10.2026 (Version 1.12.0):** Datenschutz in der Fußzeile, Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
 - **24.10.2026 (Version 1.11.0):** Neuer Bereich Anleitung: zeigt dieses Handbuch live aus GitHub (Abschnitt 2).
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).

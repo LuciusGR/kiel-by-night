@@ -1,5 +1,5 @@
 // Kiel by Night · Zustand, Supabase-Client, Router
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+import { createClient } from "../vendor/supabase-js.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { h } from "./lib.js";
 

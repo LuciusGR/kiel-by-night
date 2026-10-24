@@ -41,7 +41,9 @@ async function openApp(role, hash = "start", o = {}) {
     const u = new URL(route.request().url());
     if (u.hostname === "kbn.test") {
       const p = u.pathname === "/" ? "/index.html" : u.pathname;
-      if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: `export const SUPABASE_URL="${o.url || "https://x.supabase.co"}";export const SUPABASE_ANON_KEY="k";export const APP_VERSION="uat";` });
+      if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: `export const SUPABASE_URL="${o.url || "https://x.supabase.co"}";export const SUPABASE_ANON_KEY="k";export const LEGAL={name:"Test",email:"t@example.org",supabaseRegion:"EU"};export const APP_VERSION="uat";` });
+      if (p === "/vendor/supabase-js.js") return route.fulfill({ contentType: "text/javascript", body: fake });
+      if (p === "/vendor/cytoscape.min.js") return route.fulfill({ contentType: "text/javascript", body: cyto });
       const f = path.join(WEB, p);
       if (fs.existsSync(f)) return route.fulfill({ contentType: types[path.extname(f)] || "application/octet-stream", body: fs.readFileSync(f) });
       return route.fulfill({ status: 404, body: "" });
@@ -977,10 +979,10 @@ T("U158", "Sicherheit", "Kein innerHTML/eval/document.write im Frontend-Code au�
   const hits = []; const walk = d => fs.readdirSync(d, { withFileTypes: true }).forEach(e => { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else if (f.endsWith(".js") || f.endsWith(".html")) fs.readFileSync(f, "utf8").split("\n").forEach((l, i) => { if (/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/.test(l)) hits.push(path.basename(f) + ":" + (i + 1) + " " + l.trim().slice(0, 90)); }); }); walk(WEB);
   live.push({ innerHTML: hits }); assert.ok(hits.length <= 1 && hits.every(h => /shape-legend|SVG_SHAPE|s\.innerHTML/.test(h) || /map\.js/.test(h)), hits.join(" | ")); return null;
 });
-T("U159", "Sicherheit", "Externe Ressourcen: Skripte ohne Integritätsprüfung (SRI) und Google Fonts (Datenschutz) erfasst", async () => {
+T("U159", "Sicherheit", "Keine externen Skripte, ESM-Importe oder Google Fonts (Datenschutz): alles liegt lokal in vendor/ und fonts/", async () => {
   const html = fs.readFileSync(WEB + "/index.html", "utf8"); const scripts = [...html.matchAll(/<script[^>]+src="(https:[^"]+)"[^>]*>/g)].map(m => ({ src: m[1], sri: /integrity=/.test(m[0]) }));
   const core = fs.readFileSync(WEB + "/js/core.js", "utf8"); const esm = [...core.matchAll(/from "(https:[^"]+)"/g)].map(m => m[1]); const fonts = /fonts\.googleapis\.com/.test(html); const csp = /Content-Security-Policy/i.test(html);
-  live.push({ scripts, esm, googleFonts: fonts, csp }); assert.ok(scripts.every(s => /@\d+\.\d+\.\d+/.test(s.src)), "Versionen fest gepinnt"); return null;
+  live.push({ scripts, esm, googleFonts: fonts, csp }); const css = fs.readFileSync(WEB + "/css/theme.css", "utf8"); assert.equal(scripts.length, 0, "keine externen Skripte"); assert.equal(esm.length, 0, "keine externen ESM-Importe"); assert.ok(!fonts && !/fonts\.g(oogleapis|static)\.com/.test(css), "keine Google Fonts"); return null;
 });
 
 // =====================================================================

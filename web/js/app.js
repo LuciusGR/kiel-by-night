@@ -2,6 +2,7 @@
 import { h, toast, errMsg, store, diagnoseNetwork } from "./lib.js";
 import { sb, S, go, loadProfiles, loadChars, setNavRenderer, personName } from "./core.js";
 import { SUPABASE_URL, APP_VERSION } from "./config.js";
+import { mountFooter } from "./legal.js";
 import "./views/overview.js";
 import "./views/characters.js";
 import "./views/chronicles.js";
@@ -132,6 +133,7 @@ async function enterInner(user) {
 }
 
 (async function boot() {
+  mountFooter();
   if (SUPABASE_URL.includes("DEIN-PROJECT-REF")) {
     document.getElementById("main").replaceChildren(h("div", { class: "notice bad" }, "web/js/config.js ist noch nicht ausgefüllt (Supabase-URL und anon key)."));
     return;

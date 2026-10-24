@@ -26,7 +26,7 @@ flowchart LR
 | Supabase-Projekt | Ref `ueiqslwzpjzfpexiwtbb`, Region eu-central-1 (Frankfurt), Free-Plan |
 | Supabase-URL | https://ueiqslwzpjzfpexiwtbb.supabase.co |
 | Edge Function | `/functions/v1/notion-proxy` |
-| Bibliotheken (CDN jsDelivr) | cytoscape 3.33.1 (Script-Tag), @supabase/supabase-js 2.45.4 (ESM-Import in `core.js`) |
+| Bibliotheken (lokal in `web/vendor/`) | cytoscape 3.33.1 (Script-Tag), @supabase/supabase-js 2.45.4 (ESM-Import in `core.js`, mit esbuild aus dem npm-Paket gebündelt: `esbuild in.js --bundle --format=esm --minify`). Schriften lokal in `web/fonts/` |
 | Schriften | Google Fonts (Alegreya Sans, IBM Plex Mono, Libre Caslon Display) |
 
 ## 2. Repository-Aufbau
@@ -278,7 +278,8 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGl
 - Keine Zurück-Taste und keine Tiefen-Links; ein geöffneter Bogen ist nach Neuladen wieder die Liste.
 - Schließt man den Tab in den 800 ms nach der letzten Eingabe, kann die Änderung fehlen.
 - Alle Mitglieder dürfen Spielerkarten-Knoten löschen, auch Spielercharakter-Knoten.
-- Schriften von Google Fonts, Skripte von jsDelivr ohne Integritätsprüfung, keine Content-Security-Policy (GitHub Pages setzt keine Header).
+- Keine Content-Security-Policy (GitHub Pages setzt keine Header). Schriften und Bibliotheken liegen lokal (`web/fonts/`, `web/vendor/`); ein Update von supabase-js oder Cytoscape heißt, die Datei in `vendor/` neu zu erzeugen.
+- Die Datenschutzerklärung (`web/js/legal.js`) ist eine Vorlage. Es gibt bewusst kein Impressum. Name, E-Mail und Region stehen in `LEGAL` in `config.js`, die Texte sind keine Rechtsberatung.
 - Die Oberfläche bietet dem ST noch kein Bearbeiten und Löschen fremder Notizen und keine Rollen- oder Profilverwaltung (die Rechte bestehen in der Datenbank).
 - Badge-Kontrast im Dunkelmodus knapp unter 4,5:1.
 - Der Tab „Anleitung“ hängt von `raw.githubusercontent.com` ab (bis etwa 5 Minuten Cache, Rückfall auf die zuletzt geladene Fassung im Browser). Wird das Repository privat gemacht oder der Branch umbenannt, zeigt der Tab nur noch die Fehlermeldung.
@@ -289,6 +290,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **24.10.2026 (Version 1.12.0):** Fußzeile mit Datenschutz und Markenhinweis (kein Impressum) (`legal.js`, `LEGAL` in `config.js`). Schriften nach `web/fonts/`, Cytoscape und supabase-js nach `web/vendor/`; kein Google-Fonts- und kein jsDelivr-Aufruf mehr. Test U159 angepasst.
 - **24.10.2026 (Version 1.11.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.12), kein Link auf GitHub. `APP_VERSION` in `config.js` von 1.0.0 auf 1.11.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
 - **23.10.2026 (Version 1.10.0):** Wiki-Seiten einzeln für den ST verstecken (`wiki_pages.st_only`, Migration `20261023130000`, Trigger `wiki_pages_guard_visibility`). Oberfläche in `wiki.js` (Umschalter, Häkchen im Formular, Kennzeichen „versteckt“).
 - **23.10.2026 (Version 1.9.2):** Edge Function `db-migrate` und `tools/db-migrate.mjs` (Abschnitt 4.11). Spielerkarte: Sekte als Auswahl (`player_map_nodes.sect`, Migration `20261023120000`), Form folgt der Sekte (`SEKTEN`, `shapeForSekte()`, `src.sects`/`src.legend` in `playermap.js`), Vorschau im Formular, Spalte „Sekte“ im Export.
