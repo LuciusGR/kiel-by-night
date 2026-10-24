@@ -996,7 +996,7 @@ T("U240", "Anleitung", "Tab Anleitung für Spieler und ST: lädt docs/Benutzerha
     const expected = MANUAL_FILE.split("\n").filter(l => /^## /.test(l)).map(l => l.slice(3).trim());
     assert.deepEqual(await p.locator(".manual-body h3").allInnerTexts(), expected);
     assert.equal(await p.locator(".toc .list button").count(), expected.length);
-    assert.equal(await p.locator('a[href="https://github.com/LuciusGR/kiel-by-night/blob/main/docs/Benutzerhandbuch.md"]').count(), 1);
+    assert.equal(await p.locator('main a[href*="github.com"]').count(), 0, "kein Link auf GitHub in der Anleitung"); assert.equal(await p.getByText("Auf GitHub öffnen").count(), 0);
     last = p;
   }
   return last;
@@ -1007,14 +1007,14 @@ T("U241", "Anleitung", "Änderung im Handbuch erscheint ohne Änderung an der Se
   p.manualBody = "# T\n\n## 1. Neu\n\nText\n\n## 2. Noch neuer\n\nText 2\n"; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500);
   assert.deepEqual(await p.locator(".manual-body h3").allInnerTexts(), ["1. Neu", "2. Noch neuer"]); assert.equal(p.rawReqs.length, 2); return p;
 });
-T("U242", "Anleitung", "Darstellung: Absatz, fett, Code, Links (relativ, bloße URL), verschachtelte Liste, nummerierte Liste, Tabelle, Unterüberschrift; Dateititel (H1) fehlt", async () => {
+T("U242", "Anleitung", "Darstellung: Absatz, fett, Code, Links (relative Verweise bleiben Text, bloße URL wird Link), verschachtelte Liste, nummerierte Liste, Tabelle, Unterüberschrift; Dateititel (H1) fehlt", async () => {
   const p = await openApp("player");
   p.manualBody = ["# Dateititel", "", "Stand: x", "", "## 1. Test", "", "Absatz Zeile eins", "zeile zwei mit **fett** und `a_b_c` und [Doku](Technische_Doku.md) sowie https://example.org/x.", "", "Liste:", "- eins", "  - eins-a", "  - eins-b", "- zwei", "", "1. erste", "2. zweite", "", "| A | B |", "|---|---|", "| x | `y` |", "", "### Unter", "", "Ende"].join("\n");
   await nav(p, "Anleitung", 700); const b = p.locator(".manual-body");
   assert.equal(await b.locator("h1").count(), 0); assert.doesNotMatch(await b.innerText(), /Dateititel/);
   assert.equal(await b.locator("p", { hasText: "Absatz" }).innerText(), "Absatz Zeile eins zeile zwei mit fett und a_b_c und Doku sowie https://example.org/x.");
   assert.equal(await b.locator("strong").innerText(), "fett"); assert.deepEqual(await b.locator("code").allInnerTexts(), ["a_b_c", "y"]);
-  const rel = b.locator('a[href="https://github.com/LuciusGR/kiel-by-night/blob/main/docs/Technische_Doku.md"]'); assert.equal(await rel.count(), 1); assert.equal(await rel.getAttribute("target"), "_blank"); assert.match(await rel.getAttribute("rel"), /noopener/);
+  assert.equal(await b.locator('a[href*="Technische_Doku"]').count(), 0, "Verweis auf eine Repo-Datei bleibt Text"); assert.equal(await b.locator("a").first().getAttribute("target"), "_blank"); assert.match(await b.locator("a").first().getAttribute("rel"), /noopener/);
   assert.equal(await b.locator('a[href="https://example.org/x"]').count(), 1, "bloße URL ohne Schlusspunkt");
   assert.equal(await b.locator(":scope > ul > li").count(), 2); assert.equal(await b.locator("ul ul > li").count(), 2); assert.equal(await b.locator("ol > li").count(), 2);
   assert.equal(await b.locator("table th").count(), 2); assert.equal(await b.locator("table td").count(), 2); assert.equal(await b.locator("h4").innerText(), "Unter"); return p;
@@ -1026,9 +1026,9 @@ T("U243", "Anleitung", "Sicherheit: HTML und Skripte im Handbuch erscheinen nur 
   assert.equal(await p.evaluate(() => window.__xss), undefined); assert.equal(await b.locator("img, script, iframe").count(), 0); assert.match(await b.innerText(), /<img src=x/);
   assert.deepEqual(await b.locator("a").evaluateAll(a => a.map(x => x.getAttribute("href"))), ["https://example.org"]); return p;
 });
-T("U244", "Anleitung", "GitHub nicht erreichbar: ohne Zwischenspeicher klare Meldung mit Link, mit Zwischenspeicher die letzte Fassung samt Hinweis", async () => {
+T("U244", "Anleitung", "GitHub nicht erreichbar: ohne Zwischenspeicher klare Meldung ohne Link, mit Zwischenspeicher die letzte Fassung samt Hinweis", async () => {
   const p = await openApp("player"); p.manualFail = true; await nav(p, "Anleitung", 800);
-  assert.match(await p.locator(".notice.bad").innerText(), /nicht von GitHub geladen/); assert.equal(await p.locator('.notice.bad a[href$="docs/Benutzerhandbuch.md"]').count(), 1); assert.equal(await p.locator(".manual-body").count(), 0);
+  assert.match(await p.locator(".notice.bad").innerText(), /nicht geladen/); assert.equal(await p.locator(".notice.bad a").count(), 0, "kein Link auf GitHub"); assert.equal(await p.locator(".manual-body").count(), 0);
   p.manualFail = false; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500); assert.ok(await p.locator(".manual-body h3").count() > 5); assert.equal(await p.locator(".notice").count(), 0);
   p.manualFail = true; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500);
   assert.match(await p.locator(".notice").innerText(), /Fassung vom \d\d\.\d\d\.\d{4}/); assert.ok(await p.locator(".manual-body h3").count() > 5, "Rückfall zeigt die letzte Fassung"); return p;

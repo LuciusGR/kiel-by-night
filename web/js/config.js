@@ -3,4 +3,4 @@
 // NIEMALS hier den service_role- bzw. secret-Key eintragen.
 export const SUPABASE_URL = "https://ueiqslwzpjzfpexiwtbb.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_Xs4DkCeL3NSF9qelWGQUhA_AGFNnYlU";
-export const APP_VERSION = "1.9.0";
+export const APP_VERSION = "1.9.1";

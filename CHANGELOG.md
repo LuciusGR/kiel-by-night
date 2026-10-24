@@ -3,6 +3,10 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.9.1 – 24.10.2026
+- **Anleitung:** Kein Link mehr auf GitHub. Der Knopf „Auf GitHub öffnen“ und der Link in der Fehlermeldung entfallen, Verweise des Handbuchs auf andere Dateien im Repository (zum Beispiel die Technische Dokumentation) erscheinen als Text. Externe `https://`-Adressen im Handbuch bleiben Links.
+- **Tests:** U240, U242 und U244 angepasst, Browser weiter 171 Fälle.
+
 ## 1.9.0 – 24.10.2026
 - **Anleitung:** Neuer Tab „Anleitung“ für Spieler und Storyteller. Er zeigt `docs/Benutzerhandbuch.md` live aus dem GitHub-Repository (`raw.githubusercontent.com`, Branch `main`). Wer das Handbuch ändert, ändert damit die Anleitung, ohne dass die Seite neu ausgeliefert werden muss. Gliederung mit Sprung zum Abschnitt (am Handy eingeklappt), „Neu laden“, „Auf GitHub öffnen“. Ist GitHub nicht erreichbar, erscheint die zuletzt geladene Fassung mit Datum, sonst eine Meldung mit Link.
 - **Darstellung:** Eigener Markdown-Renderer (`web/js/views/manual.js`) ohne Fremdbibliothek und ohne `innerHTML`. HTML im Handbuch erscheint nur als Text, Links nur mit `http(s)` oder relativ zu `docs/`.

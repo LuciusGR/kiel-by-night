@@ -6,19 +6,14 @@ import { registerView } from "../core.js";
 
 const REPO = "LuciusGR/kiel-by-night", BRANCH = "main", FILE = "docs/Benutzerhandbuch.md";
 export const MANUAL_RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE}`;
-export const MANUAL_PAGE = `https://github.com/${REPO}/blob/${BRANCH}/${FILE}`;
-const DOCS_BASE = `https://github.com/${REPO}/blob/${BRANCH}/docs/`;
 const CACHE_KEY = "kbn-manual";
 
 // ---------- Markdown → DOM ----------
 const INLINE = /`([^`]+)`|\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>]*[^\s<>.,;:!?)"'“”„])/g;
 
-// Nur http(s) und relative Pfade im Repo (docs/) werden zu Links, alles andere (javascript:, data:, #…) bleibt Text.
-function linkHref(u) {
-  if (/^https?:\/\//i.test(u)) return u;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(u) || u.startsWith("#") || u.startsWith("//")) return null;
-  return DOCS_BASE + u.replace(/^\.?\//, "");
-}
+// Nur http(s)-Adressen werden zu Links. Relative Pfade (Verweise auf andere Dateien im Repository) und alles andere
+// (javascript:, data:, #…) bleiben Text, damit die Anleitung nicht auf das Repository verweist.
+const linkHref = u => (/^https?:\/\//i.test(u) ? u : null);
 
 export function inline(text) {
   const re = new RegExp(INLINE.source, "g"), out = [];
@@ -142,10 +137,10 @@ async function loadManual() {
 
 // ---------- Ansicht ----------
 registerView("manual", async m => {
-  const out = h("div", {}, h("div", { class: "muted" }, "Anleitung wird von GitHub geladen …"));
+  const out = h("div", {}, h("div", { class: "muted" }, "Anleitung wird geladen …"));
   const reload = h("button", { class: "btn small", type: "button", onclick: () => draw() }, "Neu laden");
   m.append(head("Anleitung", "Das Benutzerhandbuch der Seite. Es wird live aus dem Repository geladen und ist deshalb immer auf dem neuesten Stand.",
-    reload, h("a", { class: "btn small", href: MANUAL_PAGE, target: "_blank", rel: "noopener noreferrer" }, "Auf GitHub öffnen")), out);
+    reload), out);
 
   async function draw() {
     reload.disabled = true;
@@ -153,14 +148,13 @@ registerView("manual", async m => {
     reload.disabled = false;
     if (r.error) {
       out.replaceChildren(h("div", { class: "notice bad" },
-        "Die Anleitung konnte nicht von GitHub geladen werden (" + (r.error.name === "AbortError" ? "Zeitüberschreitung" : r.error.message) + "). Neu laden oder direkt auf GitHub lesen: ",
-        h("a", { href: MANUAL_PAGE, target: "_blank", rel: "noopener noreferrer" }, "Benutzerhandbuch auf GitHub"), "."));
+        "Die Anleitung konnte nicht geladen werden (" + (r.error.name === "AbortError" ? "Zeitüberschreitung" : r.error.message) + "). Bitte „Neu laden“ drücken oder später noch einmal versuchen."));
       return;
     }
     const { nodes, toc } = renderMarkdown(r.text);
     const tocList = h("div", { class: "list" }, ...toc.map(t => h("button", { type: "button", onclick: () => t.el.scrollIntoView({ behavior: "smooth", block: "start" }) }, h("span", {}, t.text))));
     out.replaceChildren(
-      r.cachedAt ? h("div", { class: "notice", style: "margin-bottom:14px" }, "GitHub ist gerade nicht erreichbar. Angezeigt wird die Fassung vom " + new Date(r.cachedAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) + ".") : null,
+      r.cachedAt ? h("div", { class: "notice", style: "margin-bottom:14px" }, "Die Anleitung lässt sich gerade nicht aktuell laden. Angezeigt wird die Fassung vom " + new Date(r.cachedAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) + ".") : null,
       h("div", { class: "split" },
         toc.length ? h("details", { class: "panel toc", open: window.innerWidth > 860 }, h("summary", {}, "Inhalt"), tocList) : h("div"),
         h("article", { class: "article manual-body" }, ...nodes)));

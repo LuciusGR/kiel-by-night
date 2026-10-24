@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 24.10.2026 · gilt für Website-Version 1.9.0 (siehe `CHANGELOG.md`)
+Stand: 24.10.2026 · gilt für Website-Version 1.9.1 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -228,9 +228,9 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 Der Tab „Anleitung“ (`#manual`, für Spieler und ST) enthält keinen eigenen Text. `manual.js` holt bei jedem Aufruf `docs/Benutzerhandbuch.md` vom Branch `main` über `https://raw.githubusercontent.com/LuciusGR/kiel-by-night/main/docs/Benutzerhandbuch.md` (`fetch` mit `cache: "no-cache"`, 12 s Zeitlimit; die Konstanten stehen am Anfang der Datei). Wer das Handbuch auf `main` ändert, ändert damit die Anleitung, ohne dass die Seite neu ausgeliefert werden muss. GitHubs Raw-Server halten eine Datei bis zu etwa 5 Minuten im Cache, „Neu laden“ in der Ansicht holt sie erneut.
 
 - **Darstellung:** `renderMarkdown()` baut das Markdown als DOM auf (`h()`, kein `innerHTML`, keine Bibliothek). Unterstützt sind Überschriften (die H1 der Datei entfällt, `##` wird zu `h3`, `###` zu `h4`), Absätze, Aufzählungen mit Verschachtelung über die Einrückung, nummerierte Listen, Tabellen, Codeblöcke, Zitate, Trennlinien sowie **fett**, `Code`, `[Text](Ziel)` und bloße `https://`-Adressen. Kursiv, Bilder und HTML werden nicht ausgewertet und erscheinen als Text.
-- **Links:** nur `http(s)://` und relative Pfade im Ordner `docs/` (sie führen zur Datei auf GitHub), alles andere (`javascript:`, `data:`, `#…`) bleibt Text. Externe Links öffnen im neuen Tab mit `rel="noopener noreferrer"`.
+- **Links:** nur `http(s)://`-Adressen werden Links (neuer Tab, `rel="noopener noreferrer"`). Relative Verweise auf Dateien im Repository, `javascript:`, `data:` und `#…` bleiben Text, die Anleitung verweist nirgends auf GitHub. Es gibt auch keinen „Auf GitHub öffnen“-Knopf.
 - **Gliederung:** Die Überschriften der Ebene 2 stehen links als Liste „Inhalt“ (am Handy eingeklappt) und springen per `scrollIntoView` zum Abschnitt.
-- **Ausfall:** Jede erfolgreich geladene Fassung liegt im `localStorage` (`kbn-manual`). Ist GitHub nicht erreichbar (Ausfall, Werbeblocker, kein Netz), zeigt die Seite diese Fassung mit Datum und Hinweis. Ohne Zwischenspeicher erscheint eine Meldung mit Link zum Handbuch auf GitHub.
+- **Ausfall:** Jede erfolgreich geladene Fassung liegt im `localStorage` (`kbn-manual`). Ist GitHub nicht erreichbar (Ausfall, Werbeblocker, kein Netz), zeigt die Seite diese Fassung mit Datum und Hinweis. Ohne Zwischenspeicher erscheint eine Fehlermeldung (ohne Link) und „Neu laden“.
 - **Sicherheit:** Der Inhalt kommt aus dem öffentlichen Repository und ist kein Geheimnis. Eine Änderung an `docs/Benutzerhandbuch.md` auf `main` erscheint ungeprüft in der Seite, deshalb gehören dort weder Zugangsdaten noch interne Betriebsdetails hinein (siehe Abschnitt 12).
 
 ## 10. Tests
@@ -260,6 +260,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **24.10.2026 (Version 1.9.1):** Anleitung ohne Link auf GitHub (kein Knopf „Auf GitHub öffnen“, kein Link in der Fehlermeldung, relative Verweise bleiben Text). Tests U240, U242, U244 angepasst.
 - **24.10.2026 (Version 1.9.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.9). `APP_VERSION` in `config.js` von 1.0.0 auf 1.9.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
