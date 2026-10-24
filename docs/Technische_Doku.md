@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 21.10.2026 · gilt für Website-Version 1.8.0 (siehe `CHANGELOG.md`)
+Stand: 24.10.2026 · gilt für Website-Version 1.9.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -88,6 +88,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend) und private Spielernotizen |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]` |
 | `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
+| `manual.js` | Anleitung | Zeigt `docs/Benutzerhandbuch.md` live aus GitHub (Abschnitt 4.9). Für alle Rollen |
 
 ### 4.3 Charakterbogen
 - JSON-Felder: `attr` (9 Attribute 1–5), `skills` (je `{v, spec}`), `disc` (`[{name, lvl, powers}]`), `health` und `wp` (Arrays 0/1/2 = leer/oberflächlich/schwer), `hunger`, `humanity`, `stains`, `bp`, `xpTotal`, `xpSpent` und Textfelder (concept, ambition, desire, predator, sire, generation, resonance, touchstones, advantages, notes). Health = Stamina + 3, Willpower = Composure + Resolve. `normSheet()` ergänzt fehlende Felder.
@@ -222,6 +223,16 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 - **Datenänderungen per SQL** im SQL-Editor, immer mit Blick auf die Profile und Fremdschlüssel (Löschen eines Profils löscht dessen Notizen und Dokument-Einträge).
 - **Sicherung:** Im Free-Plan gibt es keine automatische Wiederherstellung (nicht geprüft). Wichtige Inhalte regelmäßig exportieren.
 
+### 4.9 Anleitung
+
+Der Tab „Anleitung“ (`#manual`, für Spieler und ST) enthält keinen eigenen Text. `manual.js` holt bei jedem Aufruf `docs/Benutzerhandbuch.md` vom Branch `main` über `https://raw.githubusercontent.com/LuciusGR/kiel-by-night/main/docs/Benutzerhandbuch.md` (`fetch` mit `cache: "no-cache"`, 12 s Zeitlimit; die Konstanten stehen am Anfang der Datei). Wer das Handbuch auf `main` ändert, ändert damit die Anleitung, ohne dass die Seite neu ausgeliefert werden muss. GitHubs Raw-Server halten eine Datei bis zu etwa 5 Minuten im Cache, „Neu laden“ in der Ansicht holt sie erneut.
+
+- **Darstellung:** `renderMarkdown()` baut das Markdown als DOM auf (`h()`, kein `innerHTML`, keine Bibliothek). Unterstützt sind Überschriften (die H1 der Datei entfällt, `##` wird zu `h3`, `###` zu `h4`), Absätze, Aufzählungen mit Verschachtelung über die Einrückung, nummerierte Listen, Tabellen, Codeblöcke, Zitate, Trennlinien sowie **fett**, `Code`, `[Text](Ziel)` und bloße `https://`-Adressen. Kursiv, Bilder und HTML werden nicht ausgewertet und erscheinen als Text.
+- **Links:** nur `http(s)://` und relative Pfade im Ordner `docs/` (sie führen zur Datei auf GitHub), alles andere (`javascript:`, `data:`, `#…`) bleibt Text. Externe Links öffnen im neuen Tab mit `rel="noopener noreferrer"`.
+- **Gliederung:** Die Überschriften der Ebene 2 stehen links als Liste „Inhalt“ (am Handy eingeklappt) und springen per `scrollIntoView` zum Abschnitt.
+- **Ausfall:** Jede erfolgreich geladene Fassung liegt im `localStorage` (`kbn-manual`). Ist GitHub nicht erreichbar (Ausfall, Werbeblocker, kein Netz), zeigt die Seite diese Fassung mit Datum und Hinweis. Ohne Zwischenspeicher erscheint eine Meldung mit Link zum Handbuch auf GitHub.
+- **Sicherheit:** Der Inhalt kommt aus dem öffentlichen Repository und ist kein Geheimnis. Eine Änderung an `docs/Benutzerhandbuch.md` auf `main` erscheint ungeprüft in der Seite, deshalb gehören dort weder Zugangsdaten noch interne Betriebsdetails hinein (siehe Abschnitt 12).
+
 ## 10. Tests
 
 | Test | Aufruf | Prüft |
@@ -230,7 +241,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 163 Fälle, Stand 22.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 171 Fälle, Stand 24.10.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -241,13 +252,15 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGl
 - Schriften von Google Fonts, Skripte von jsDelivr ohne Integritätsprüfung, keine Content-Security-Policy (GitHub Pages setzt keine Header).
 - Die Oberfläche bietet dem ST noch kein Bearbeiten und Löschen fremder Notizen und keine Rollen- oder Profilverwaltung (die Rechte bestehen in der Datenbank).
 - Badge-Kontrast im Dunkelmodus knapp unter 4,5:1.
+- Der Tab „Anleitung“ hängt von `raw.githubusercontent.com` ab (bis etwa 5 Minuten Cache, Rückfall auf die zuletzt geladene Fassung im Browser). Wird das Repository privat gemacht oder der Branch umbenannt, zeigt der Tab nur noch die Fehlermeldung.
 
 ## 12. Doku pflegen
 
-Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`).
+Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`). Das Benutzerhandbuch erscheint zusätzlich live im Tab „Anleitung“ (Abschnitt 4.9): Es ist für alle Mitglieder lesbar, deshalb keine Zugangsdaten, Schlüssel oder Betriebsinterna hineinschreiben, und Überschriften der Ebene 2 knapp halten (sie bilden die Gliederung).
 
 ## 13. Änderungen an dieser Doku
 
+- **24.10.2026 (Version 1.9.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.9). `APP_VERSION` in `config.js` von 1.0.0 auf 1.9.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (`doclinks.js`, `linkChips()` in `docs.js`, `nodeExtras` und `focus` in `map.js`, `playermap.js`, `storyteller.js`). Migration `20261022120400` (Tabelle `document_links`, Trigger `player_node_links_cleanup`, jetzt 67 Policies). Typ-Auswahl statt Freitext auf der Spielerkarte (Pull Request 1). Tests R300 bis R327, U112, U112b, U230 bis U232.
 - **22.10.2026 (Version 1.7.0):** Dokumente umbenennen und beschreiben (`editForm()` in `docs.js`), Migration `20261022120300` (Spalten-GRANT, Policy `documents_update_own`, jetzt 64 Policies). Tests R94, R97 bis R99b, R164, R164a, U109.
 - **22.10.2026 (Version 1.6.1):** Dunkelmodus: `--blood` von `#d76675` auf `#df7482` (Kontrast roter Badges 5,2:1, Test U155b grün).

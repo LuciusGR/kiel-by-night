@@ -11,10 +11,11 @@ import "./views/private.js";
 import "./views/playermap.js";
 import "./views/wiki.js";
 import "./views/docs.js";
+import "./views/manual.js";
 import "./views/storyteller.js";
 
-const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"]];
-const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "private", "st"]);
+const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"], ["manual", "Anleitung"]];
+const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "manual", "private", "st"]);
 
 // Supabase Auth braucht eine E-Mail als Kennung. Die Gruppe meldet sich mit einem Benutzernamen an, intern wird
 // daraus name@kbn.invalid (".invalid" kann nie eine echte Adresse sein, es werden keine Mails verschickt).

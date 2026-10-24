@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 21.10.2026 · gilt für Website-Version 1.8.0
+Stand: 24.10.2026 · gilt für Website-Version 1.9.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -22,7 +22,9 @@ Bitte ein **eigenes, langes Passwort** wählen, das nirgends sonst verwendet wir
 
 ## 2. Aufbau der Seite
 
-Oben stehen die Bereiche: **Übersicht, Charaktere, Chroniken, Sessions, Spielerkarte, Wiki, Dokumente** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben.
+Oben stehen die Bereiche: **Übersicht, Charaktere, Chroniken, Sessions, Spielerkarte, Wiki, Dokumente, Anleitung** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben.
+
+Der Bereich **Anleitung** zeigt dieses Handbuch. Er lädt es bei jedem Öffnen frisch von GitHub, deshalb steht dort immer die aktuelle Fassung, auch nach Neuerungen der Seite. Links steht die Gliederung (am Handy unter „Inhalt“ eingeklappt), ein Klick springt zum Abschnitt. „Neu laden“ holt den Text noch einmal (GitHub hält eine geänderte Datei bis zu etwa 5 Minuten zurück). Ist GitHub nicht erreichbar, zeigt die Seite die zuletzt geladene Fassung mit Datum.
 
 Hinweis: Die Zurück-Taste des Browsers führt aus der Seite hinaus. Innerhalb der Seite navigierst du mit den Bereichen oben und den Knöpfen „← Alle Charaktere“ usw. Nach einem Neuladen (F5) steht wieder die Liste des Bereichs vor dir.
 
@@ -190,6 +192,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **24.10.2026 (Version 1.9.0):** Neuer Bereich Anleitung: zeigt dieses Handbuch live aus GitHub (Abschnitt 2).
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
 - **22.10.2026 (Version 1.6.0):** Tab Szenen mit Vorrat für Szenen ohne Session, Zuordnen und Verschieben zwischen Sessions, Suche (Abschnitt 10).

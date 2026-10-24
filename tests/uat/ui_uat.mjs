@@ -24,6 +24,7 @@ rep("functions: { invoke: async () => ({ data: { ...NOTION, fetched_at: now(), s
   "functions: { invoke: async (n, o) => { (window.__invokes = window.__invokes || []).push({ n, o }); const m = window.__NOTION_MODE || 'ok'; if (m === 'error') return { data: null, error: { context: { json: async () => ({ error: 'notion_failed', message: 'Notion 401: unauthorized' }) } } }; return { data: { ...NOTION, fetched_at: now(), source: m === 'fresh' || (o && o.body && o.body.refresh) ? 'notion' : 'cache', warning: m === 'warn' ? 'Cache nicht gespeichert' : undefined }, error: null }; } }");
 const cyto = fs.readFileSync(HERE + "/node_modules/cytoscape/dist/cytoscape.min.js", "utf8");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
+const MANUAL_FILE = fs.readFileSync(REPO + "/docs/Benutzerhandbuch.md", "utf8");
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
 const results = [];
@@ -44,6 +45,11 @@ async function openApp(role, hash = "start", o = {}) {
       const f = path.join(WEB, p);
       if (fs.existsSync(f)) return route.fulfill({ contentType: types[path.extname(f)] || "application/octet-stream", body: fs.readFileSync(f) });
       return route.fulfill({ status: 404, body: "" });
+    }
+    if (u.hostname === "raw.githubusercontent.com") {
+      (page.rawReqs = page.rawReqs || []).push(u.href);
+      if (page.manualFail) return route.abort();
+      return route.fulfill({ contentType: "text/plain; charset=utf-8", headers: { "access-control-allow-origin": "*" }, body: page.manualBody ?? MANUAL_FILE });
     }
     if (u.href.includes("supabase-js")) return route.fulfill({ contentType: "text/javascript", body: fake });
     if (u.href.includes("cytoscape")) return route.fulfill({ contentType: "text/javascript", body: cyto });
@@ -120,13 +126,13 @@ T("U03", "Anmeldung", "Konto ohne Profil: klare Meldung, kein Zugriff auf Inhalt
   assert.match(t, /kein Profil/); assert.equal(await p.locator("#nav button").count(), 0);
   return p;
 });
-T("U04", "Navigation", "ST sieht 8 Bereiche plus Storyteller, aber nicht Privat", async () => {
+T("U04", "Navigation", "ST sieht 9 Bereiche plus Storyteller, aber nicht Privat", async () => {
   const p = await openApp("st"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Storyteller"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Anleitung", "Storyteller"]); return p;
 });
-T("U05", "Navigation", "Spieler sieht 7 Bereiche plus Privat, aber nicht Storyteller", async () => {
+T("U05", "Navigation", "Spieler sieht 8 Bereiche plus Privat, aber nicht Storyteller", async () => {
   const p = await openApp("player"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Privat"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Anleitung", "Privat"]); return p;
 });
 T("U06", "Navigation", "Kopfzeile zeigt Rolle und Namen", async () => {
   const a = await openApp("st"); assert.match(await a.locator("#who").innerText(), /Storyteller · Roland/); await a.close();
@@ -975,6 +981,73 @@ T("U159", "Sicherheit", "Externe Ressourcen: Skripte ohne Integritätsprüfung (
   const html = fs.readFileSync(WEB + "/index.html", "utf8"); const scripts = [...html.matchAll(/<script[^>]+src="(https:[^"]+)"[^>]*>/g)].map(m => ({ src: m[1], sri: /integrity=/.test(m[0]) }));
   const core = fs.readFileSync(WEB + "/js/core.js", "utf8"); const esm = [...core.matchAll(/from "(https:[^"]+)"/g)].map(m => m[1]); const fonts = /fonts\.googleapis\.com/.test(html); const csp = /Content-Security-Policy/i.test(html);
   live.push({ scripts, esm, googleFonts: fonts, csp }); assert.ok(scripts.every(s => /@\d+\.\d+\.\d+/.test(s.src)), "Versionen fest gepinnt"); return null;
+});
+
+// =====================================================================
+// Anleitung (Handbuch live aus GitHub)
+// =====================================================================
+const RAW_URL = "https://raw.githubusercontent.com/LuciusGR/kiel-by-night/main/docs/Benutzerhandbuch.md";
+T("U240", "Anleitung", "Tab Anleitung für Spieler und ST: lädt docs/Benutzerhandbuch.md (main) von GitHub und zeigt alle Abschnitte samt Gliederung", async () => {
+  let last;
+  for (const role of ["player", "st"]) {
+    const p = await openApp(role); await nav(p, "Anleitung", 900);
+    assert.equal(await p.locator("#nav [aria-current=page]").innerText(), "Anleitung"); assert.match(await p.locator("main h2").first().innerText(), /Anleitung/);
+    assert.deepEqual(p.rawReqs, [RAW_URL]);
+    const expected = MANUAL_FILE.split("\n").filter(l => /^## /.test(l)).map(l => l.slice(3).trim());
+    assert.deepEqual(await p.locator(".manual-body h3").allInnerTexts(), expected);
+    assert.equal(await p.locator(".toc .list button").count(), expected.length);
+    assert.equal(await p.locator('a[href="https://github.com/LuciusGR/kiel-by-night/blob/main/docs/Benutzerhandbuch.md"]').count(), 1);
+    last = p;
+  }
+  return last;
+});
+T("U241", "Anleitung", "Änderung im Handbuch erscheint ohne Änderung an der Seite (Neu laden holt den neuen Stand)", async () => {
+  const p = await openApp("player"); p.manualBody = "# T\n\n## 1. Neu\n\nNeuer **Absatz** mit `Code`.\n"; await nav(p, "Anleitung", 700);
+  assert.deepEqual(await p.locator(".manual-body h3").allInnerTexts(), ["1. Neu"]); assert.equal(await p.locator(".manual-body strong").innerText(), "Absatz"); assert.equal(await p.locator(".manual-body code").innerText(), "Code");
+  p.manualBody = "# T\n\n## 1. Neu\n\nText\n\n## 2. Noch neuer\n\nText 2\n"; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500);
+  assert.deepEqual(await p.locator(".manual-body h3").allInnerTexts(), ["1. Neu", "2. Noch neuer"]); assert.equal(p.rawReqs.length, 2); return p;
+});
+T("U242", "Anleitung", "Darstellung: Absatz, fett, Code, Links (relativ, bloße URL), verschachtelte Liste, nummerierte Liste, Tabelle, Unterüberschrift; Dateititel (H1) fehlt", async () => {
+  const p = await openApp("player");
+  p.manualBody = ["# Dateititel", "", "Stand: x", "", "## 1. Test", "", "Absatz Zeile eins", "zeile zwei mit **fett** und `a_b_c` und [Doku](Technische_Doku.md) sowie https://example.org/x.", "", "Liste:", "- eins", "  - eins-a", "  - eins-b", "- zwei", "", "1. erste", "2. zweite", "", "| A | B |", "|---|---|", "| x | `y` |", "", "### Unter", "", "Ende"].join("\n");
+  await nav(p, "Anleitung", 700); const b = p.locator(".manual-body");
+  assert.equal(await b.locator("h1").count(), 0); assert.doesNotMatch(await b.innerText(), /Dateititel/);
+  assert.equal(await b.locator("p", { hasText: "Absatz" }).innerText(), "Absatz Zeile eins zeile zwei mit fett und a_b_c und Doku sowie https://example.org/x.");
+  assert.equal(await b.locator("strong").innerText(), "fett"); assert.deepEqual(await b.locator("code").allInnerTexts(), ["a_b_c", "y"]);
+  const rel = b.locator('a[href="https://github.com/LuciusGR/kiel-by-night/blob/main/docs/Technische_Doku.md"]'); assert.equal(await rel.count(), 1); assert.equal(await rel.getAttribute("target"), "_blank"); assert.match(await rel.getAttribute("rel"), /noopener/);
+  assert.equal(await b.locator('a[href="https://example.org/x"]').count(), 1, "bloße URL ohne Schlusspunkt");
+  assert.equal(await b.locator(":scope > ul > li").count(), 2); assert.equal(await b.locator("ul ul > li").count(), 2); assert.equal(await b.locator("ol > li").count(), 2);
+  assert.equal(await b.locator("table th").count(), 2); assert.equal(await b.locator("table td").count(), 2); assert.equal(await b.locator("h4").innerText(), "Unter"); return p;
+});
+T("U243", "Anleitung", "Sicherheit: HTML und Skripte im Handbuch erscheinen nur als Text, javascript:-/data:-/Anker-Links werden keine Links", async () => {
+  const p = await openApp("player");
+  p.manualBody = '# T\n\n## A\n\n<img src=x onerror="window.__xss=1"> <script>window.__xss=2</script>\n\n[klick](javascript:window.__xss=3) und [daten](data:text/html,x) und [anker](#a)\n\n[ok](https://example.org)\n';
+  await nav(p, "Anleitung", 700); const b = p.locator(".manual-body");
+  assert.equal(await p.evaluate(() => window.__xss), undefined); assert.equal(await b.locator("img, script, iframe").count(), 0); assert.match(await b.innerText(), /<img src=x/);
+  assert.deepEqual(await b.locator("a").evaluateAll(a => a.map(x => x.getAttribute("href"))), ["https://example.org"]); return p;
+});
+T("U244", "Anleitung", "GitHub nicht erreichbar: ohne Zwischenspeicher klare Meldung mit Link, mit Zwischenspeicher die letzte Fassung samt Hinweis", async () => {
+  const p = await openApp("player"); p.manualFail = true; await nav(p, "Anleitung", 800);
+  assert.match(await p.locator(".notice.bad").innerText(), /nicht von GitHub geladen/); assert.equal(await p.locator('.notice.bad a[href$="docs/Benutzerhandbuch.md"]').count(), 1); assert.equal(await p.locator(".manual-body").count(), 0);
+  p.manualFail = false; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500); assert.ok(await p.locator(".manual-body h3").count() > 5); assert.equal(await p.locator(".notice").count(), 0);
+  p.manualFail = true; await p.getByRole("button", { name: "Neu laden" }).click(); await p.waitForTimeout(500);
+  assert.match(await p.locator(".notice").innerText(), /Fassung vom \d\d\.\d\d\.\d{4}/); assert.ok(await p.locator(".manual-body h3").count() > 5, "Rückfall zeigt die letzte Fassung"); return p;
+});
+T("U245", "Anleitung", "Handy (390 px): kein seitliches Scrollen, Gliederung eingeklappt und aufklappbar, Tabellen scrollen im eigenen Rahmen", async () => {
+  const p = await openApp("player", "manual", { viewport: { width: 390, height: 800 }, wait: 1000 });
+  assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, "kein horizontales Scrollen");
+  assert.equal(await p.locator("details.toc[open]").count(), 0); await p.locator(".toc summary").click(); assert.equal(await p.locator("details.toc[open]").count(), 1);
+  assert.ok(await p.locator(".table-wrap").count() >= 2, "Tabellen im Handbuch"); return p;
+});
+T("U246", "Anleitung", "Gliederung: Klick auf einen Abschnitt scrollt dorthin und lässt die Überschrift unter der Kopfleiste sichtbar", async () => {
+  const p = await openApp("player", "manual", { wait: 1000 }); await p.locator(".toc .list button", { hasText: "9. Dokumente" }).click(); await p.waitForTimeout(1200);
+  const r = await p.evaluate(() => { const t = [...document.querySelectorAll(".manual-body h3")].find(x => x.textContent.startsWith("9.")).getBoundingClientRect().top; return { y: scrollY, t }; });
+  assert.ok(r.y > 500, "gescrollt: " + r.y); assert.ok(r.t > 60 && r.t < 300, "Überschrift sichtbar unter der Kopfleiste: " + r.t); return p;
+});
+T("U247", "Anleitung", "Das echte Handbuch bleibt ohne Rohzeichen (**, ](, |---) und ohne JS-Fehler lesbar, auch im Dunkelmodus", async () => {
+  const p = await openApp("st", "manual", { scheme: "dark", wait: 1000 }); const t = await p.locator(".manual-body").innerText();
+  for (const raw of ["**", "](", "|---", "\n## ", "\n### "]) assert.ok(!t.includes(raw), "Rohzeichen im Text: " + JSON.stringify(raw));
+  assert.ok(t.includes("Hilfe bei Problemen")); assert.equal(await p.locator(".manual-body table").count(), MANUAL_FILE.split("\n").filter((l, i, a) => /^\|\s*-{3}/.test(l) || /^\|[-| :]+\|$/.test(l)).length); return p;
 });
 
 // =====================================================================

@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.9.0 – 24.10.2026
+- **Anleitung:** Neuer Tab „Anleitung“ für Spieler und Storyteller. Er zeigt `docs/Benutzerhandbuch.md` live aus dem GitHub-Repository (`raw.githubusercontent.com`, Branch `main`). Wer das Handbuch ändert, ändert damit die Anleitung, ohne dass die Seite neu ausgeliefert werden muss. Gliederung mit Sprung zum Abschnitt (am Handy eingeklappt), „Neu laden“, „Auf GitHub öffnen“. Ist GitHub nicht erreichbar, erscheint die zuletzt geladene Fassung mit Datum, sonst eine Meldung mit Link.
+- **Darstellung:** Eigener Markdown-Renderer (`web/js/views/manual.js`) ohne Fremdbibliothek und ohne `innerHTML`. HTML im Handbuch erscheint nur als Text, Links nur mit `http(s)` oder relativ zu `docs/`.
+- **Version:** `APP_VERSION` in `config.js` stand noch auf 1.0.0 und ist jetzt 1.9.0.
+- **Tests:** Browser 171 Fälle (neu U240 bis U247, U04 und U05 um den Tab ergänzt). Rechte und Edge Function unverändert, keine Migration.
+
 ## 1.8.0 – 22.10.2026
 - **Dokumente und Karten verknüpfen:** Dokumente lassen sich mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen. Der Link gilt in beide Richtungen. Im Detailfeld eines Knotens stehen die verknüpften Dokumente (Klick springt zum Dokument). In der Dokumenten-Liste stehen an jedem Dokument die verknüpften Knoten (Klick springt zum Knoten, „×“ löst die Verknüpfung). Verknüpfen und Lösen geht auf der Spielerkarte nur im Modus Bearbeitung. Verknüpfungen mit Elementen der Storytellerkarte sieht nur der Storyteller.
 - **Rechte:** Neue Migration `20261022120400_document_links_v1_7.sql` mit Tabelle `document_links` (nur SELECT, INSERT, DELETE für `authenticated`, `anon` ohne Rechte), drei Policies (jetzt 67). Löscht man einen Spielerkarten-Knoten, entfernt ein Trigger dessen Verknüpfungen. Löscht man ein Dokument, verschwinden seine Verknüpfungen (Cascade).

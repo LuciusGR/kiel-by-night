@@ -209,3 +209,24 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 /* Karten-Legende Formen (A5) */
 .shape-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;color:var(--muted);margin:-4px 0 10px}
 .shape-legend svg{vertical-align:-3px;margin-right:4px}
+
+/* Anleitung (Handbuch live aus GitHub) */
+.toc{position:sticky;top:120px;max-height:calc(100vh - 140px);overflow:auto}
+.toc summary{cursor:pointer;font-weight:500;margin-bottom:8px}
+.manual-body h3{margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);scroll-margin-top:130px}
+.manual-body h3:first-child{margin-top:0}
+.manual-body h4{font-family:var(--f-body);font-weight:700;font-size:1.08rem;margin:20px 0 6px;scroll-margin-top:130px}
+.manual-body p{margin:0 0 10px;max-width:72ch;overflow-wrap:anywhere}
+.manual-body ul,.manual-body ol{margin:0 0 12px;padding-left:1.4em;max-width:72ch}
+.manual-body li{margin:3px 0;overflow-wrap:anywhere}
+.manual-body li>ul,.manual-body li>ol{margin:4px 0 4px}
+.manual-body code{font-family:var(--f-mono);font-size:.88em;background:var(--raised);border:1px solid var(--line);border-radius:3px;padding:0 4px;overflow-wrap:anywhere}
+.manual-body pre{overflow-x:auto;background:var(--raised);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.manual-body pre code{border:0;padding:0;background:none}
+.manual-body blockquote{margin:0 0 12px;padding:2px 12px;border-left:3px solid var(--line2);color:var(--muted)}
+.manual-body hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.table-wrap{overflow-x:auto;margin:0 0 14px}
+.manual-body table{border-collapse:collapse;min-width:100%;font-size:.94rem}
+.manual-body th,.manual-body td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+.manual-body th{background:var(--raised)}
+@media (max-width:860px){.toc{position:static;max-height:none}}
