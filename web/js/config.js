@@ -3,11 +3,4 @@
 // NIEMALS hier den service_role- bzw. secret-Key eintragen.
 export const SUPABASE_URL = "https://ueiqslwzpjzfpexiwtbb.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_Xs4DkCeL3NSF9qelWGQUhA_AGFNnYlU";
-export const APP_VERSION = "1.12.0";
-
-// Angaben für die Datenschutzerklärung (js/legal.js). Platzhalter in [eckigen Klammern] ersetzen.
-export const LEGAL = {
-  name: "Roland Krifft",
-  email: "Roland-krifft@web.de",
-  supabaseRegion: "Frankfurt (eu-central-1)",
-};
+export const APP_VERSION = "1.12.1";

@@ -244,11 +244,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .export-menu>summary{list-style:none;cursor:pointer;display:inline-block}
 .export-menu>summary::-webkit-details-marker{display:none}
 
-/* Fußzeile und Datenschutz */
+/* Fußzeile */
 .site-foot{max-width:1280px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 36px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
 .site-foot button{background:none;border:0;padding:0;color:var(--sea);text-decoration:underline;cursor:pointer;font-size:inherit}
-dialog.legal{max-width:min(94vw,720px);max-height:88vh;overflow:auto}
-dialog.legal h3{margin:18px 0 6px;font-size:1.1rem}
-dialog.legal h3:first-of-type{margin-top:0}
-dialog.legal p,dialog.legal ul{margin:0 0 8px}
-dialog.legal ul{padding-left:20px}

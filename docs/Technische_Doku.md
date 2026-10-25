@@ -279,7 +279,7 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 259 Fälle auf PGl
 - Schließt man den Tab in den 800 ms nach der letzten Eingabe, kann die Änderung fehlen.
 - Alle Mitglieder dürfen Spielerkarten-Knoten löschen, auch Spielercharakter-Knoten.
 - Keine Content-Security-Policy (GitHub Pages setzt keine Header). Schriften und Bibliotheken liegen lokal (`web/fonts/`, `web/vendor/`); ein Update von supabase-js oder Cytoscape heißt, die Datei in `vendor/` neu zu erzeugen.
-- Die Datenschutzerklärung (`web/js/legal.js`) ist eine Vorlage. Es gibt bewusst kein Impressum. Name, E-Mail und Region stehen in `LEGAL` in `config.js`, die Texte sind keine Rechtsberatung.
+- Es gibt bewusst weder Impressum noch Datenschutzerklärung (Entscheidung des Betreibers). `web/js/legal.js` zeigt nur den Hinweis „Inoffizielles Fan-Projekt“ in der Fußzeile.
 - Die Oberfläche bietet dem ST noch kein Bearbeiten und Löschen fremder Notizen und keine Rollen- oder Profilverwaltung (die Rechte bestehen in der Datenbank).
 - Badge-Kontrast im Dunkelmodus knapp unter 4,5:1.
 - Der Tab „Anleitung“ hängt von `raw.githubusercontent.com` ab (bis etwa 5 Minuten Cache, Rückfall auf die zuletzt geladene Fassung im Browser). Wird das Repository privat gemacht oder der Branch umbenannt, zeigt der Tab nur noch die Fehlermeldung.
@@ -290,6 +290,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **25.10.2026 (Version 1.12.1):** Datenschutzerklärung und `LEGAL` in `config.js` entfernt; `legal.js` zeigt nur noch den Markenhinweis in der Fußzeile.
 - **24.10.2026 (Version 1.12.0):** Fußzeile mit Datenschutz und Markenhinweis (kein Impressum) (`legal.js`, `LEGAL` in `config.js`). Schriften nach `web/fonts/`, Cytoscape und supabase-js nach `web/vendor/`; kein Google-Fonts- und kein jsDelivr-Aufruf mehr. Test U159 angepasst.
 - **24.10.2026 (Version 1.11.0):** Tab „Anleitung“ (`manual.js`): zeigt `docs/Benutzerhandbuch.md` live aus GitHub, eigener Markdown-Renderer ohne `innerHTML`, Gliederung, Rückfall auf die zuletzt geladene Fassung (Abschnitt 4.12), kein Link auf GitHub. `APP_VERSION` in `config.js` von 1.0.0 auf 1.11.0 nachgezogen. Tests U240 bis U247, U04 und U05 angepasst.
 - **23.10.2026 (Version 1.10.0):** Wiki-Seiten einzeln für den ST verstecken (`wiki_pages.st_only`, Migration `20261023130000`, Trigger `wiki_pages_guard_visibility`). Oberfläche in `wiki.js` (Umschalter, Häkchen im Formular, Kennzeichen „versteckt“).

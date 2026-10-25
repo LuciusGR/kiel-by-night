@@ -24,7 +24,7 @@ for (const role of ["st", "player"]) {
       const u = new URL(route.request().url());
       if (u.hostname === "kbn.test") {
         let p = u.pathname === "/" ? "/index.html" : u.pathname;
-        if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: 'export const SUPABASE_URL="https://x.supabase.co";export const SUPABASE_ANON_KEY="k";export const LEGAL={name:"Test",email:"t@example.org",supabaseRegion:"EU"};export const APP_VERSION="test";' });
+        if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: 'export const SUPABASE_URL="https://x.supabase.co";export const SUPABASE_ANON_KEY="k";export const APP_VERSION="test";' });
         if (p === "/vendor/supabase-js.js") return route.fulfill({ contentType: "text/javascript", body: fake });
       if (p === "/vendor/cytoscape.min.js") return route.fulfill({ contentType: "text/javascript", body: cyto });
       const f = path.join(WEB, p);
@@ -76,7 +76,7 @@ for (const role of ["st", "player"]) {
     const u = new URL(route.request().url());
     if (u.hostname === "kbn.test") {
       let p = u.pathname === "/" ? "/index.html" : u.pathname;
-      if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: 'export const SUPABASE_URL="https://x.supabase.co";export const SUPABASE_ANON_KEY="k";export const LEGAL={name:"Test",email:"t@example.org",supabaseRegion:"EU"};export const APP_VERSION="test";' });
+      if (p === "/js/config.js") return route.fulfill({ contentType: "text/javascript", body: 'export const SUPABASE_URL="https://x.supabase.co";export const SUPABASE_ANON_KEY="k";export const APP_VERSION="test";' });
       if (p === "/vendor/supabase-js.js") return route.fulfill({ contentType: "text/javascript", body: fake });
       if (p === "/vendor/cytoscape.min.js") return route.fulfill({ contentType: "text/javascript", body: cyto });
       const f = path.join(WEB, p);

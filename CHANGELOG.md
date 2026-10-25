@@ -3,6 +3,9 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.12.1 – 25.10.2026
+- **Datenschutzerklärung entfernt:** Der Knopf „Datenschutz“, der Dialog, die Angaben `LEGAL` in `config.js` und das zugehörige CSS sind weg. In der Fußzeile bleibt der Hinweis „Inoffizielles Fan-Projekt“ (`web/js/legal.js`). Schriften und Bibliotheken bleiben lokal. Es gibt weder Impressum noch Datenschutzerklärung (Entscheidung des Betreibers).
+
 ## 1.12.0 – 24.10.2026
 - **Recht: Datenschutz, Hinweis:** Neue Fußzeile auf jeder Seite (auch vor der Anmeldung) mit dem Knopf „Datenschutz“ (Dialog, `web/js/legal.js`) und dem Hinweis, dass die Seite ein inoffizielles Fan-Projekt ohne Verbindung zu den Rechteinhabern von Vampire: Die Maskerade ist. Name, E-Mail und Supabase-Region stehen in `LEGAL` in `web/js/config.js`. Ein Impressum gibt es bewusst nicht (Entscheidung des Betreibers: geschlossene private Gruppenseite). Die Angaben sind eingetragen. Fehlen sie (Platzhalter in [eckigen Klammern]), zeigt jeder Dialog eine Warnung. Die Texte sind eine Vorlage, keine Rechtsberatung.
 - **Schriften lokal:** Alegreya Sans, IBM Plex Mono und Libre Caslon Display liegen in `web/fonts/` (SIL OFL 1.1, Lizenzhinweis in `fonts/LICENSE.md`). Kein Aufruf von Google Fonts mehr (LG München I, 20.01.2022, Az. 3 O 17493/20).

@@ -189,19 +189,19 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - **„Diese Seite erreicht den Server (supabase.co) von diesem Gerät aus nicht“:** Andere Seiten gehen, der Server nicht. Meist blockiert ein Werbeblocker, ein VPN, privates DNS (Android) oder ein Filter im WLAN die Adresse. Ausschalten oder einen anderen Browser oder ein anderes Netz nehmen. Zum Testen im Browser `https://ueiqslwzpjzfpexiwtbb.supabase.co/auth/v1/health` öffnen: Erscheint irgendeine Antwort als Text (auch „No API key found in request“, das ist die Antwort des Servers ohne Schlüssel), geht die Verbindung. Erscheint eine Fehlerseite des Browsers oder bleibt es leer, wird die Adresse blockiert.
 - **„Der Server ist erreichbar, die Anfrage ist trotzdem fehlgeschlagen“:** Seite neu laden und noch einmal versuchen. Bleibt es, dem Storyteller melden.
 
-## 13. Datenschutz
+## 13. Hinweise zu Daten
 
 - Es werden **keine E-Mail-Adressen** gespeichert. Benutzernamen sind Pseudo-Adressen.
 - Private Notizen sieht der ST. Alles andere sehen alle Mitglieder.
 - Schriften und Skripte liegen auf der Seite selbst. Es werden keine Google Fonts und keine Skripte von Dritten geladen. Nur der Bereich „Anleitung“ lädt das Handbuch von GitHub.
 - Die Seite setzt keine Cookies. Im Browser liegen nur die Anmelde-Sitzung und die Wahl von hellem oder dunklem Aussehen.
-- Unten auf jeder Seite steht **Datenschutz** mit allen Angaben.
 - Die Seite ist ein inoffizielles Fan-Projekt und nicht mit den Rechteinhabern von Vampire: Die Maskerade verbunden.
 - Der Zugang ist nur für die Chronik-Gruppe vorgesehen. Die Seite ist nicht für Suchmaschinen gedacht (noindex).
 
 ## 14. Änderungen an diesem Handbuch
 
-- **24.10.2026 (Version 1.12.0):** Datenschutz in der Fußzeile, Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
+- **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
+- **24.10.2026 (Version 1.12.0):** Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
 - **24.10.2026 (Version 1.11.0):** Neuer Bereich Anleitung: zeigt dieses Handbuch live aus GitHub (Abschnitt 2).
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).

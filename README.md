@@ -6,7 +6,7 @@ Das Repo ist öffentlich. Es enthält **keine Spieldaten und keine Geheimnisse**
 
 ## Aufbau
 ```
-web/                      Frontend ohne Build-Schritt (ES-Module, supabase-js + Cytoscape + Schriften lokal in vendor/ und fonts/, Datenschutz in js/legal.js)
+web/                      Frontend ohne Build-Schritt (ES-Module, supabase-js + Cytoscape + Schriften lokal in vendor/ und fonts/, Markenhinweis in js/legal.js)
   js/config.js            Supabase-URL + anon key (ausfüllen)
   js/views/*.js           ein Modul pro Bereich; map.js = gemeinsame Kartenansicht
 supabase/migrations/      Schema, RLS, Storage, Startdaten (in dieser Reihenfolge)
