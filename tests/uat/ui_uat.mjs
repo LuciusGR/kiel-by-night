@@ -141,15 +141,15 @@ T("U06", "Navigation", "Kopfzeile zeigt Rolle und Namen", async () => {
   const a = await openApp("st"); assert.match(await a.locator("#who").innerText(), /Storyteller · Roland/); await a.close();
   const b = await openApp("player"); assert.match(await b.locator("#who").innerText(), /Spieler · Anna/); return b;
 });
-T("U07", "Navigation", "Theme-Schalter wechselt Auto → Hell → Dunkel → Auto und merkt sich die Wahl", async () => {
-  const p = await openApp("st"); const b = p.locator("#who .hbtn", { hasText: /^Theme:/ });
-  const th = () => p.evaluate(() => [document.documentElement.dataset.theme || "auto", localStorage.getItem("kbn-theme")]);
-  assert.deepEqual(await th(), ["auto", null]);
-  await b.click(); assert.deepEqual(await th(), ["light", "light"]); assert.match(await b.innerText(), /Hell/);
-  await b.click(); assert.deepEqual(await th(), ["dark", "dark"]); assert.match(await b.innerText(), /Dunkel/);
-  await b.click(); assert.deepEqual(await th(), ["auto", null]);
-  await b.click(); await p.reload(); await p.waitForTimeout(600); assert.equal(await p.evaluate(() => document.documentElement.dataset.theme), "light", "Wahl überlebt Neuladen");
-  return p;
+T("U07", "Navigation", "Theme-Knopf schaltet alle Darstellungsmodi durch (Stil × Auto/Hell/Dunkel), zeigt sie an und merkt sich die Wahl", async () => {
+  const p = await openApp("st", "start", { defaultStyle: true }); const b = p.locator("#who .hbtn", { hasText: /^Theme:/ });
+  const st = () => p.evaluate(() => [document.documentElement.dataset.style || "classic", document.documentElement.dataset.theme || "auto", localStorage.getItem("kbn-style"), localStorage.getItem("kbn-theme")]);
+  assert.equal(await b.textContent(), "Theme: Rulebook · Auto"); assert.deepEqual(await st(), ["rulebook", "auto", null, null]);
+  const steps = [["Rulebook · Hell", ["rulebook", "light", null, "light"]], ["Rulebook · Dunkel", ["rulebook", "dark", null, "dark"]],
+    ["Klassisch · Auto", ["classic", "auto", "classic", null]], ["Klassisch · Hell", ["classic", "light", "classic", "light"]], ["Klassisch · Dunkel", ["classic", "dark", "classic", "dark"]], ["Rulebook · Auto", ["rulebook", "auto", null, null]]];
+  for (const [label, state] of steps) { await b.click(); assert.equal(await b.textContent(), "Theme: " + label); assert.deepEqual(await st(), state, label); }
+  await b.click(); await b.click(); await b.click(); await p.reload(); await p.waitForTimeout(600); assert.deepEqual(await st(), ["classic", "auto", "classic", null], "Wahl (Klassisch · Auto) überlebt Neuladen"); assert.equal(await p.locator("#who .hbtn", { hasText: /^Theme:/ }).textContent(), "Theme: Klassisch · Auto");
+  assert.equal(await p.locator("#who .hbtn", { hasText: /^Stil:/ }).count(), 0, "kein eigener Stil-Knopf mehr"); return p;
 });
 T("U08", "Navigation", "Spieler ruft #st auf: Hinweis 'nur für den Storyteller', keine Notion-Anfrage", async () => {
   const p = await openApp("player", "st"); assert.match(await p.locator("main .notice.bad").innerText(), /nur für den Storyteller/);
@@ -1058,22 +1058,22 @@ T("U247", "Anleitung", "Das echte Handbuch bleibt ohne Rohzeichen (**, ](, |---)
 // =====================================================================
 const RB_INIT = "localStorage.setItem('kbn-style','rulebook')";
 const fontOf = (p, sel) => p.evaluate(sel => getComputedStyle(document.querySelector(sel)).fontFamily, sel);
-T("U248", "Stil Rulebook", "Voreinstellung ist Rulebook (ohne Wahl); Knopf 'Stil' wechselt zu Klassisch und zurück, merkt sich die Wahl nach dem Neuladen (Schrift und Farbe ändern sich)", async () => {
-  const p = await openApp("player", "start", { defaultStyle: true }); const btn = () => p.locator("#who button", { hasText: /^Stil:/ });
-  assert.equal(await btn().textContent(), "Stil: Rulebook"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null, "nichts gespeichert, solange man nicht wählt");
+T("U248", "Stil Rulebook", "Voreinstellung ist Rulebook (ohne Wahl) mit Bodoni/Garamond; Klassisch wechselt Schrift und Farben und bleibt nach dem Neuladen", async () => {
+  const p = await openApp("player", "start", { defaultStyle: true }); const btn = () => p.locator("#who button", { hasText: /^Theme:/ });
+  assert.equal(await btn().textContent(), "Theme: Rulebook · Auto"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null, "nichts gespeichert, solange man nicht wählt");
   assert.match(await fontOf(p, "main h2"), /Bodoni Moda/); assert.match(await fontOf(p, "body"), /EB Garamond/);
   const sea0 = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim());
-  await btn().click(); assert.equal(await btn().textContent(), "Stil: Klassisch"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined);
+  for (let i = 0; i < 3; i++) await btn().click(); assert.equal(await btn().textContent(), "Theme: Klassisch · Auto"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined);
   assert.match(await fontOf(p, "main h2"), /Libre Caslon/); assert.notEqual(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()), sea0); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), "classic");
-  await p.reload(); await p.waitForTimeout(800); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined, "Klassisch bleibt nach dem Neuladen"); assert.equal(await btn().textContent(), "Stil: Klassisch");
-  await btn().click(); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null); return p;
+  await p.reload(); await p.waitForTimeout(800); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined, "Klassisch bleibt nach dem Neuladen"); assert.equal(await btn().textContent(), "Theme: Klassisch · Auto");
+  for (let i = 0; i < 3; i++) await btn().click(); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null); return p;
 });
 T("U248b", "Stil Rulebook", "Voreinstellung gilt auch bei gesperrtem Browser-Speicher und auf der Anmeldeseite", async () => {
   const p = await openApp("st", "", { loggedOut: true, defaultStyle: true, init: "Object.defineProperty(window, 'localStorage', { get() { throw new Error('gesperrt'); } })" });
-  assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.locator("#who button", { hasText: /^Stil: Rulebook$/ }).count(), 1); return p;
+  assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.locator("#who button", { hasText: /^Theme: Rulebook · Auto$/ }).count(), 1); return p;
 });
-T("U249", "Stil Rulebook", "Stil und Hell/Dunkel sind unabhängig: Rulebook gibt es hell und dunkel (Papier hell, nahezu schwarz im Dunkelmodus), vor der Anmeldung ist der Knopf schon da", async () => {
-  const lo = await openApp("st", "", { loggedOut: true, init: RB_INIT }); assert.equal(await lo.locator("#who button", { hasText: /^Stil: Rulebook$/ }).count(), 1, "Knopf auch auf der Anmeldeseite"); await lo.close();
+T("U249", "Stil Rulebook", "Stil und Hell/Dunkel sind unabhängig: Rulebook gibt es hell und dunkel (Papier hell, nahezu schwarz im Dunkelmodus), vor der Anmeldung ist der Theme-Knopf schon da", async () => {
+  const lo = await openApp("st", "", { loggedOut: true, init: RB_INIT }); assert.equal(await lo.locator("#who button", { hasText: /^Theme: Rulebook/ }).count(), 1, "Theme-Knopf auch auf der Anmeldeseite"); await lo.close();
   const bgOf = p => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const l = await openApp("player", "start", { init: RB_INIT, scheme: "light" }); const lbg = await bgOf(l);
   const d = await openApp("player", "start", { init: RB_INIT, scheme: "dark" }); const dbg = await bgOf(d);

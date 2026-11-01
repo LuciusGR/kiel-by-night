@@ -41,32 +41,32 @@ function renderNav() {
 setNavRenderer(renderNav);
 
 // ---------- Theme ----------
-function themeLabel() { const t = document.documentElement.dataset.theme; return t === "dark" ? "Dunkel" : t === "light" ? "Hell" : "Auto"; }
-function cycleTheme(btn) {
-  const cur = document.documentElement.dataset.theme || "auto";
-  const next = { auto: "light", light: "dark", dark: "auto" }[cur];
-  if (next === "auto") { delete document.documentElement.dataset.theme; store("kbn-theme", null); }
-  else { document.documentElement.dataset.theme = next; store("kbn-theme", next); }
-  btn.textContent = "Theme: " + themeLabel();
+// Ein Knopf schaltet alle Darstellungsmodi durch: Stil (Rulebook = Look der V5-Regelbücher, voreingestellt, oder Klassisch) mal Farbmodus (Auto, Hell, Dunkel).
+// Reihenfolge: Rulebook Auto → Hell → Dunkel → Klassisch Auto → Hell → Dunkel → Rulebook Auto. Gespeichert wird getrennt:
+// kbn-theme ("light"/"dark", sonst Auto) und kbn-style ("classic", sonst Rulebook). Das <head>-Skript in index.html setzt beides vor dem ersten Rendern.
+const MODES = [["rulebook", "auto"], ["rulebook", "light"], ["rulebook", "dark"], ["classic", "auto"], ["classic", "light"], ["classic", "dark"]];
+const COLOR = { auto: "Auto", light: "Hell", dark: "Dunkel" };
+function currentMode() { const d = document.documentElement.dataset; return [d.style === "rulebook" ? "rulebook" : "classic", d.theme === "light" || d.theme === "dark" ? d.theme : "auto"]; }
+function themeLabel() { const [st, co] = currentMode(); return (st === "rulebook" ? "Rulebook" : "Klassisch") + " · " + COLOR[co]; }
+function applyMode([st, co]) {
+  const d = document.documentElement.dataset;
+  if (st === "rulebook") { d.style = "rulebook"; store("kbn-style", null); } else { delete d.style; store("kbn-style", "classic"); }
+  if (co === "auto") { delete d.theme; store("kbn-theme", null); } else { d.theme = co; store("kbn-theme", co); }
 }
-// Stil: "Rulebook" (theme-v5.css, Look der V5-Regelbücher, voreingestellt) oder "Klassisch" (nur theme.css). Hell/Dunkel gilt für beide.
-function styleLabel() { return document.documentElement.dataset.style === "rulebook" ? "Rulebook" : "Klassisch"; }
-function toggleStyle(btn) {
-  if (document.documentElement.dataset.style === "rulebook") { delete document.documentElement.dataset.style; store("kbn-style", "classic"); }
-  else { document.documentElement.dataset.style = "rulebook"; store("kbn-style", null); }
-  btn.textContent = "Stil: " + styleLabel();
+function cycleTheme(btn) {
+  const [st, co] = currentMode();
+  const i = MODES.findIndex(m => m[0] === st && m[1] === co);
+  applyMode(MODES[(i + 1) % MODES.length]);
+  btn.textContent = "Theme: " + themeLabel();
 }
 
 function renderWho() {
   const who = document.getElementById("who");
-  const themeBtn = h("button", { class: "hbtn", type: "button", title: "Hell / Dunkel / Automatisch" }, "Theme: " + themeLabel());
+  const themeBtn = h("button", { class: "hbtn", type: "button", title: "Darstellung durchschalten: Rulebook oder Klassisch, jeweils Auto, Hell, Dunkel" }, "Theme: " + themeLabel());
   themeBtn.addEventListener("click", () => cycleTheme(themeBtn));
-  const styleBtn = h("button", { class: "hbtn", type: "button", title: "Rulebook (Look der V5-Regelbücher) / Klassisch" }, "Stil: " + styleLabel());
-  styleBtn.addEventListener("click", () => toggleStyle(styleBtn));
-  if (!S.user) { who.replaceChildren(styleBtn, themeBtn); return; }
+  if (!S.user) { who.replaceChildren(themeBtn); return; }
   who.replaceChildren(
     h("span", {}, (S.isST ? "Storyteller" : "Spieler") + " · " + personName(S.user.id)),
-    styleBtn,
     themeBtn,
     h("button", { class: "hbtn", type: "button", onclick: passwordDialog }, "Passwort"),
     h("button", { class: "hbtn", type: "button", onclick: async () => { await sb.auth.signOut(); location.hash = ""; location.reload(); } }, "Abmelden"));

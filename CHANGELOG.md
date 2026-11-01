@@ -3,6 +3,10 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.13.2 – 01.11.2026
+- **Ein Knopf für alle Darstellungen:** Der Knopf „Stil“ ist weg. Der Knopf „Theme“ schaltet bei jedem Klick durch alle sechs Darstellungen: Rulebook Auto → Hell → Dunkel → Klassisch Auto → Hell → Dunkel → Rulebook Auto. Auf dem Knopf steht die aktuelle Darstellung („Theme: Rulebook · Dunkel“). Die Kopfzeile hat wieder drei Knöpfe und ist am Handy schmaler.
+- **Tests:** U07 neu gefasst (alle sechs Schritte, Anzeige, Speicherung, kein eigener Stil-Knopf), U248 und U248b angepasst, Browser weiter 178 Fälle.
+
 ## 1.13.1 – 01.11.2026
 - **Rulebook ist jetzt voreingestellt:** Die Seite startet für alle im Look der V5-Regelbücher. Der bisherige Look heißt „Klassisch“ und bleibt mit dem Knopf „Stil: Rulebook/Klassisch“ in der Kopfzeile wählbar (Browser-Speicher `kbn-style` = `classic`). Wer nichts gewählt hat, bekommt Rulebook, auch wenn der Browser den Speicher sperrt.
 - **Tests:** U248 bis U252 angepasst (Voreinstellung, Umschalten auf Klassisch, Merken nach dem Neuladen). Der Test-Harness setzt für die übrigen Tests `classic`, damit sie weiter den bisherigen Look prüfen.

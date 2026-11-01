@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 01.11.2026 · gilt für Website-Version 1.13.1 (siehe `CHANGELOG.md`)
+Stand: 01.11.2026 · gilt für Website-Version 1.13.2 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -267,7 +267,7 @@ Der Tab „Anleitung“ (`#manual`, für Spieler und ST) enthält keinen eigenen
 
 Voreingestelltes Erscheinungsbild, neben dem der bisherige Look („Klassisch“, nur `theme.css`) wählbar bleibt. `theme-v5.css` wird nach `theme.css` geladen und wirkt nur, wenn `<html data-style="rulebook">` gesetzt ist. Es überschreibt dieselben Variablen (`--paper`, `--surface`, `--ink`, `--sea` …) und ergänzt Schriften und Bausteine. Alle Selektoren beginnen mit `:root[data-style="rulebook"]`, `theme.css` bleibt unverändert und ist der Look „Klassisch“.
 
-- **Umschalten:** Knopf „Stil: Rulebook/Klassisch“ in der Kopfzeile (`toggleStyle()` in `app.js`, auch vor der Anmeldung sichtbar). Die Wahl steht im `localStorage` unter `kbn-style`: nicht vorhanden = Rulebook (Voreinstellung, auch wenn `localStorage` gesperrt ist), `classic` = Klassisch. Das Skript im `<head>` von `index.html` setzt `data-style="rulebook"` vor dem ersten Rendern (kein Aufblitzen), außer bei `classic`. Hell/Dunkel (`data-theme`) ist unabhängig davon: Das Stylesheet hat die Blöcke hell, dunkel (System, `prefers-color-scheme`) und erzwungen dunkel.
+- **Umschalten:** Ein Knopf „Theme: <Stil> · <Farbmodus>“ in der Kopfzeile (`cycleTheme()` in `app.js`, auch vor der Anmeldung sichtbar) schaltet die sechs Kombinationen aus Stil (Rulebook, Klassisch) und Farbmodus (Auto, Hell, Dunkel) durch: `MODES` = Rulebook Auto, Hell, Dunkel, Klassisch Auto, Hell, Dunkel, dann von vorn. Gespeichert wird getrennt im `localStorage`: `kbn-theme` (`light`/`dark`, sonst Auto) und `kbn-style` (nicht vorhanden = Rulebook, Voreinstellung auch bei gesperrtem `localStorage`, `classic` = Klassisch). Das Skript im `<head>` von `index.html` setzt `data-theme` und `data-style="rulebook"` vor dem ersten Rendern (kein Aufblitzen). Das Stylesheet hat die Blöcke hell, dunkel (System, `prefers-color-scheme`) und erzwungen dunkel.
 - **Karten:** `lib.js` beobachtet neben `data-theme` auch `data-style`, damit die Cytoscape-Karten ihre Farben (`tok()`) neu lesen.
 - **Look:** Vorlage sind die V5-Regelbücher. Papierweiß (hell) bzw. Fast-Schwarz (dunkel), Karmesinrot als Akzent (`--sea`), Gold nur sparsam (`--brass`), Titel in Bodoni Moda (Didone, kursiv bei Namen und Marke), Fließtext in EB Garamond, Beschriftungen als gesperrte Versalien in Montserrat (`--f-label`), Haarlinien statt Schatten und Rundungen (`--r: 2px`), rote Reiter an Karten und Artikeln, Zierlinie unter dem Seitenkopf und das Ornament aus verschränkten Dreiecken (`--orn`, SVG als Data-URI) rechts im Seitenkopf, sofern dort keine Knöpfe stehen.
 - **Schriften:** `web/fonts/BodoniModa-var.woff2`, `BodoniModa-Italic-var.woff2`, `EBGaramond-var.woff2`, `EBGaramond-Italic-var.woff2`, `Montserrat-var.woff2` (variable Schriften, SIL OFL 1.1, auf Latein zugeschnitten, zusammen rund 420 KB). Sie liegen auf der eigenen Domain, es gibt keine Verbindung zu Google. Der Browser lädt eine Schrift erst, wenn Text sie benutzt, im Stil „Klassisch“ werden sie also nicht geholt. Lizenzhinweise in `web/fonts/LICENSE.md`.
@@ -301,6 +301,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **01.11.2026 (Version 1.13.2):** Der Stil-Knopf ist im Theme-Knopf aufgegangen (`cycleTheme()`, `MODES`, `applyMode()` in `app.js`, `toggleStyle()` entfällt). Test U07 neu gefasst, U248 und U248b angepasst, Kopfzeile zeigt wieder drei Knöpfe.
 - **01.11.2026 (Version 1.13.1):** Rulebook ist voreingestellt, der alte Look heißt „Klassisch“ (`kbn-style` = `classic`). `<head>`-Skript, `toggleStyle()`, Tests U248 bis U252 angepasst, Test-Harness setzt standardmäßig `classic`.
 - **01.11.2026 (Version 1.13.0):** Stil „Rulebook“ (`css/theme-v5.css`, Knopf „Stil“ in `app.js`, `data-style` und `kbn-style`, `lib.js` beobachtet `data-style`, fünf lokale WOFF2-Schriften, Abschnitt 4.13). Kopfzeile bricht am Handy um (`.who-box`). Tests U248 bis U252.
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung und `LEGAL` in `config.js` entfernt; `legal.js` zeigt nur noch den Markenhinweis in der Fußzeile.
