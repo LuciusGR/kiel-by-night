@@ -1,0 +1,116 @@
+/* Kiel by Night · Stil „Rulebook“ (Version 1.13.0)
+   Angelehnt an die Regelbücher von Vampire: Die Maskerade V5: weißes Papier, Karmesinrot, Didone-Titel mit kursiver Zeile,
+   gesperrte Versalien für Beschriftungen, dünne Linien statt Kästen, Garamond im Fließtext.
+   Wird nach theme.css geladen und nur aktiv, wenn <html data-style="rulebook"> gesetzt ist (Knopf „Stil“ in der Kopfzeile).
+   Schriften lokal (SIL Open Font License, siehe fonts/LICENSE.md), auf Latein zugeschnitten. */
+@font-face{font-family:"Bodoni Moda";font-style:normal;font-weight:400 900;font-display:swap;src:url("../fonts/BodoniModa-var.woff2") format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-style:italic;font-weight:400 900;font-display:swap;src:url("../fonts/BodoniModa-Italic-var.woff2") format("woff2")}
+@font-face{font-family:"EB Garamond";font-style:normal;font-weight:400 800;font-display:swap;src:url("../fonts/EBGaramond-var.woff2") format("woff2")}
+@font-face{font-family:"EB Garamond";font-style:italic;font-weight:400 800;font-display:swap;src:url("../fonts/EBGaramond-Italic-var.woff2") format("woff2")}
+@font-face{font-family:"Montserrat";font-style:normal;font-weight:100 900;font-display:swap;src:url("../fonts/Montserrat-var.woff2") format("woff2")}
+
+/* ---------- Farben und Schriften ---------- */
+:root[data-style="rulebook"]{
+  --paper:#ebe7df; --surface:#faf8f3; --raised:#ffffff; --ink:#17161a; --muted:#5c5852;
+  --line:#d8d1c4; --line2:#8f8678;
+  --sea:#9c1a2e; --sea-soft:#f1dfe0; --blood:#6a1020; --blood-soft:#e7d9d0;
+  --brass:#8a6a22; --moss:#4c6b55; --plum:#5f4772;
+  --teal:#1f7a7a; --rust:#a4501f; --slate:#4a5a8c; --olive:#6b6b1f; --grey:#8a949a;
+  --band:#0b0e13; --band-ink:#efe9dc; --band-muted:#a39d90;
+  --ok:#2f6b45; --warn:#9a6a12; --bad:#a8202f;
+  --f-display:"Bodoni Moda","Libre Caslon Display",Georgia,"Times New Roman",serif;
+  --f-body:"EB Garamond",Georgia,"Times New Roman",serif;
+  --f-label:"Montserrat","Alegreya Sans",system-ui,-apple-system,sans-serif;
+  --r:2px;
+  --orn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 132' fill='none' stroke-width='1.2'%3E%3Cpath d='M60 4 112 94H8Z' stroke='%2317161a' stroke-opacity='.28'/%3E%3Cpath d='M22 40h76L60 108Z' stroke='%239c1a2e' stroke-opacity='.55'/%3E%3Cpath d='M34 84h52L60 128Z' stroke='%239c1a2e' stroke-opacity='.4'/%3E%3Cpath d='M0 66h120' stroke='%2317161a' stroke-opacity='.2'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark){ :root[data-style="rulebook"]:not([data-theme="light"]){
+  --paper:#08080a; --surface:#111114; --raised:#18181c; --ink:#ece6da; --muted:#a29b8e;
+  --line:#2a2a30; --line2:#5a5a63;
+  --sea:#e0586d; --sea-soft:#2b1519; --blood:#e58a96; --blood-soft:#34171c;
+  --brass:#d2ab5e; --moss:#88ab92; --plum:#ad91c8;
+  --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
+  --band:#050507; --band-ink:#efe9dc; --band-muted:#9a9488;
+  --ok:#6fbf8a; --warn:#d9a441; --bad:#ec7080; color-scheme:dark;
+  --orn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 132' fill='none' stroke-width='1.2'%3E%3Cpath d='M60 4 112 94H8Z' stroke='%23ece6da' stroke-opacity='.3'/%3E%3Cpath d='M22 40h76L60 108Z' stroke='%23e0586d' stroke-opacity='.6'/%3E%3Cpath d='M34 84h52L60 128Z' stroke='%23e0586d' stroke-opacity='.4'/%3E%3Cpath d='M0 66h120' stroke='%23ece6da' stroke-opacity='.2'/%3E%3C/svg%3E") }}
+:root[data-style="rulebook"][data-theme="dark"]{
+  --paper:#08080a; --surface:#111114; --raised:#18181c; --ink:#ece6da; --muted:#a29b8e;
+  --line:#2a2a30; --line2:#5a5a63;
+  --sea:#e0586d; --sea-soft:#2b1519; --blood:#e58a96; --blood-soft:#34171c;
+  --brass:#d2ab5e; --moss:#88ab92; --plum:#ad91c8;
+  --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
+  --band:#050507; --band-ink:#efe9dc; --band-muted:#9a9488;
+  --ok:#6fbf8a; --warn:#d9a441; --bad:#ec7080; color-scheme:dark;
+  --orn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 132' fill='none' stroke-width='1.2'%3E%3Cpath d='M60 4 112 94H8Z' stroke='%23ece6da' stroke-opacity='.3'/%3E%3Cpath d='M22 40h76L60 108Z' stroke='%23e0586d' stroke-opacity='.6'/%3E%3Cpath d='M34 84h52L60 128Z' stroke='%23e0586d' stroke-opacity='.4'/%3E%3Cpath d='M0 66h120' stroke='%23ece6da' stroke-opacity='.2'/%3E%3C/svg%3E") }
+
+/* ---------- Grundschrift ---------- */
+:root[data-style="rulebook"] body{font-size:1.1rem;line-height:1.5;font-variant-numeric:lining-nums}
+:root[data-style="rulebook"] ::selection{background:var(--sea);color:#fff}
+:root[data-style="rulebook"] h1,:root[data-style="rulebook"] h2,:root[data-style="rulebook"] h3{font-family:var(--f-display);font-weight:500;letter-spacing:-.005em}
+:root[data-style="rulebook"] h2{font-size:2.5rem;line-height:1.05}
+:root[data-style="rulebook"] h3{font-size:1.55rem}
+:root[data-style="rulebook"] a,:root[data-style="rulebook"] .linkbtn,:root[data-style="rulebook"] .wlink{text-underline-offset:3px}
+:root[data-style="rulebook"] .eyebrow,:root[data-style="rulebook"] .sheet h4{font-family:var(--f-label);font-weight:600;font-size:.66rem;letter-spacing:.24em;color:var(--sea)}
+:root[data-style="rulebook"] .muted{color:var(--muted)}
+
+/* ---------- Kopfband ---------- */
+:root[data-style="rulebook"] .top{border-bottom:2px solid #8f1a2c;background-image:radial-gradient(circle at 1px 1px,rgba(210,171,94,.16) 1px,transparent 1.3px),linear-gradient(100deg,transparent 40%,rgba(210,171,94,.1));background-size:9px 9px,100% 100%}
+:root[data-style="rulebook"] .brand h1{font-style:italic;font-weight:500;font-size:2rem;color:var(--band-ink)}
+:root[data-style="rulebook"] .brand .coords{font-family:var(--f-label);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase}
+:root[data-style="rulebook"] nav.tabs button{font-family:var(--f-label);font-weight:600;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;padding:12px 12px 12px}
+:root[data-style="rulebook"] nav.tabs button[aria-current="page"]{border-bottom-color:#d1384d}
+:root[data-style="rulebook"] .who-box{font-family:var(--f-label);font-size:.66rem;letter-spacing:.08em}
+:root[data-style="rulebook"] .hbtn{font-family:var(--f-label);font-weight:600;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;border-color:#3a3a42;padding:4px 10px}
+:root[data-style="rulebook"] .hbtn:hover{border-color:#d1384d}
+
+/* ---------- Seitenkopf mit Ornament ---------- */
+:root[data-style="rulebook"] .head{position:relative;padding-bottom:16px;margin-bottom:26px;border-bottom:1px solid var(--ink)}
+/* Ornament (verschränkte Dreiecke) nur, wenn rechts im Kopf keine Knöpfe stehen */
+:root[data-style="rulebook"] .head:not(:has(.row > *)){background:var(--orn) right 2px center/auto 112% no-repeat}
+:root[data-style="rulebook"] .head::after{content:"";position:absolute;left:0;bottom:-3px;width:84px;border-top:4px solid var(--sea)}
+:root[data-style="rulebook"] .head p{font-style:italic;color:var(--muted);max-width:56ch}
+@media (max-width:600px){:root[data-style="rulebook"] .head,:root[data-style="rulebook"] .head:not(:has(.row > *)){background-image:none;margin-bottom:20px}:root[data-style="rulebook"] .head h2{font-size:2rem}}
+
+/* ---------- Bausteine ---------- */
+:root[data-style="rulebook"] .btn{font-family:var(--f-label);font-weight:600;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:8px 14px;border-color:var(--ink);background:transparent}
+:root[data-style="rulebook"] .btn:hover{border-color:var(--sea);color:var(--sea)}
+:root[data-style="rulebook"] .btn.primary{background:var(--sea);border-color:var(--sea);color:var(--paper)}
+:root[data-style="rulebook"] .btn.primary:hover{color:var(--paper);filter:brightness(1.08)}
+:root[data-style="rulebook"] .btn.danger{color:var(--bad);border-color:var(--bad)}
+:root[data-style="rulebook"] .btn.small{font-size:.6rem;padding:5px 10px}
+:root[data-style="rulebook"] .field label{font-family:var(--f-label);font-weight:600;font-size:.6rem;letter-spacing:.18em;text-transform:uppercase}
+:root[data-style="rulebook"] input[type=text],:root[data-style="rulebook"] input[type=search],:root[data-style="rulebook"] input[type=number],:root[data-style="rulebook"] input[type=date],:root[data-style="rulebook"] select,:root[data-style="rulebook"] textarea{font-family:var(--f-body);font-size:1.05rem;border-color:var(--line2);background:var(--raised)}
+:root[data-style="rulebook"] .badge{font-family:var(--f-label);font-weight:600;font-size:.56rem;letter-spacing:.16em;border:1px solid currentColor;background:transparent;border-radius:0;padding:1px 7px}
+:root[data-style="rulebook"] .chip{font-family:var(--f-label);font-weight:600;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;padding:3px 10px}
+:root[data-style="rulebook"] .toggle button{font-family:var(--f-label);font-weight:600;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase}
+:root[data-style="rulebook"] .toggle button[aria-pressed="true"]{background:var(--sea);color:var(--paper)}
+:root[data-style="rulebook"] .notice{border-left-width:2px;background:var(--surface)}
+:root[data-style="rulebook"] .empty{font-style:italic}
+:root[data-style="rulebook"] .toast{font-family:var(--f-label);font-size:.78rem;letter-spacing:.04em;border-radius:0}
+
+/* ---------- Flächen: Haarlinien statt Kästen, rote Reiter ---------- */
+:root[data-style="rulebook"] .pc{border-top:3px solid var(--sea)}
+:root[data-style="rulebook"] .pc h3{font-size:1.75rem;font-style:italic}
+:root[data-style="rulebook"] .article{border-left:3px solid var(--sea)}
+:root[data-style="rulebook"] .session-item .article{border:0}
+:root[data-style="rulebook"] .list{border-color:var(--line2)}
+:root[data-style="rulebook"] .list button[aria-current="true"]{background:var(--sea-soft);box-shadow:inset 3px 0 0 var(--sea)}
+:root[data-style="rulebook"] .doc .thumb .ext{font-family:var(--f-label);font-size:1rem;letter-spacing:.14em}
+:root[data-style="rulebook"] .feed .item .mono{font-size:.78rem}
+:root[data-style="rulebook"] .entry{border-top:1px solid var(--ink)}
+:root[data-style="rulebook"] dialog{border-radius:0;border-color:var(--ink)}
+:root[data-style="rulebook"] dialog::backdrop{background:rgba(0,0,0,.6)}
+:root[data-style="rulebook"] .login{border-top:3px solid var(--sea)}
+:root[data-style="rulebook"] .login h2{font-style:italic}
+
+/* ---------- Anleitung ---------- */
+:root[data-style="rulebook"] .manual-body h3{font-size:1.9rem;border-bottom:1px solid var(--ink)}
+:root[data-style="rulebook"] .manual-body h4{font-family:var(--f-label);font-weight:600;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--sea)}
+:root[data-style="rulebook"] .manual-body p,:root[data-style="rulebook"] .manual-body li{font-size:1.1rem}
+:root[data-style="rulebook"] .manual-body code{font-size:.82em}
+:root[data-style="rulebook"] .manual-body th{font-family:var(--f-label);font-weight:600;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase}
+:root[data-style="rulebook"] .manual-body a{color:var(--sea)}
+:root[data-style="rulebook"] .toc summary{font-family:var(--f-label);font-weight:600;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sea)}
+
+/* ---------- Fußzeile ---------- */
+:root[data-style="rulebook"] .site-foot{font-family:var(--f-label);font-size:.62rem;letter-spacing:.1em;border-top-color:var(--ink)}

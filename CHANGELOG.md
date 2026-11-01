@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.13.0 – 01.11.2026
+- **Neuer Stil „Rulebook“:** Zweites Erscheinungsbild im Look der V5-Regelbücher (Vorlage: Camarilla-Band): helles Papier bzw. Fast-Schwarz, Karmesinrot als Akzent, Titel in Bodoni Moda (Didone), Fließtext in EB Garamond, gesperrte Versalien in Montserrat für Knöpfe, Navigation, Beschriftungen und Abzeichen, Haarlinien statt Schatten, rote Reiter an Karten und Artikeln, Zierlinie und Dreiecks-Ornament im Seitenkopf. Umschalten mit dem neuen Knopf „Stil“ in der Kopfzeile (auch auf der Anmeldeseite), die Wahl bleibt im Browser gespeichert. Hell, Dunkel und Auto gelten wie bisher für beide Stile. Standard bleibt der bisherige Stil.
+- **Schriften lokal:** Bodoni Moda, EB Garamond und Montserrat liegen als zugeschnittene WOFF2-Dateien in `web/fonts/` (SIL OFL 1.1, zusammen rund 420 KB, werden nur im Rulebook-Stil geladen). Kein Aufruf von Google.
+- **Kopfzeile:** Die Knöpfe in der Kopfzeile brechen am Handy um, statt abgeschnitten zu werden.
+- **Tests:** Browser 177 Fälle (neu U248 bis U252: Umschalter und Speicherung, Hell/Dunkel unabhängig, Kontrast AA hell und dunkel, Handy ohne seitliches Scrollen, nur eigene Schriften).
+
 ## 1.12.1 – 25.10.2026
 - **Datenschutzerklärung entfernt:** Der Knopf „Datenschutz“, der Dialog, die Angaben `LEGAL` in `config.js` und das zugehörige CSS sind weg. In der Fußzeile bleibt der Hinweis „Inoffizielles Fan-Projekt“ (`web/js/legal.js`). Schriften und Bibliotheken bleiben lokal. Es gibt weder Impressum noch Datenschutzerklärung (Entscheidung des Betreibers).
 

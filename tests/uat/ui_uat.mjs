@@ -1053,6 +1053,61 @@ T("U247", "Anleitung", "Das echte Handbuch bleibt ohne Rohzeichen (**, ](, |---)
 });
 
 // =====================================================================
+// Stil „Rulebook“ (theme-v5.css)
+// =====================================================================
+const RB_INIT = "localStorage.setItem('kbn-style','rulebook')";
+const fontOf = (p, sel) => p.evaluate(sel => getComputedStyle(document.querySelector(sel)).fontFamily, sel);
+T("U248", "Stil Rulebook", "Knopf 'Stil' wechselt zwischen Standard und Rulebook, merkt sich die Wahl nach dem Neuladen und lässt sich zurückstellen (Schrift und Farbe ändern sich)", async () => {
+  const p = await openApp("player"); const btn = p.locator("#who button", { hasText: /^Stil:/ });
+  assert.equal(await btn.textContent(), "Stil: Standard"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined);
+  const sea0 = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()); assert.match(await fontOf(p, "main h2"), /Libre Caslon/);
+  await btn.click(); assert.equal(await btn.textContent(), "Stil: Rulebook"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook");
+  assert.match(await fontOf(p, "main h2"), /Bodoni Moda/); assert.match(await fontOf(p, "body"), /EB Garamond/); assert.notEqual(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()), sea0);
+  assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), "rulebook");
+  await p.reload(); await p.waitForTimeout(800); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.locator("#who button", { hasText: /^Stil:/ }).textContent(), "Stil: Rulebook");
+  await p.locator("#who button", { hasText: /^Stil:/ }).click(); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null); return p;
+});
+T("U249", "Stil Rulebook", "Stil und Hell/Dunkel sind unabhängig: Rulebook gibt es hell und dunkel (Papier hell, nahezu schwarz im Dunkelmodus), vor der Anmeldung ist der Knopf schon da", async () => {
+  const lo = await openApp("st", "", { loggedOut: true, init: RB_INIT }); assert.equal(await lo.locator("#who button", { hasText: /^Stil: Rulebook$/ }).count(), 1, "Knopf auch auf der Anmeldeseite"); await lo.close();
+  const bgOf = p => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const l = await openApp("player", "start", { init: RB_INIT, scheme: "light" }); const lbg = await bgOf(l);
+  const d = await openApp("player", "start", { init: RB_INIT, scheme: "dark" }); const dbg = await bgOf(d);
+  assert.equal(lbg, "rgb(235, 231, 223)"); assert.equal(dbg, "rgb(8, 8, 10)");
+  await d.evaluate(() => { document.documentElement.dataset.theme = "light"; }); assert.equal(await bgOf(d), "rgb(235, 231, 223)", "erzwungen hell trotz dunklem System");
+  await l.evaluate(() => { document.documentElement.dataset.theme = "dark"; }); assert.equal(await bgOf(l), "rgb(8, 8, 10)", "erzwungen dunkel trotz hellem System"); return d;
+});
+for (const scheme of ["light", "dark"]) T("U250" + (scheme === "light" ? "a" : "b"), "Stil Rulebook", `Textkontrast (WCAG AA 4,5:1) im Rulebook-Stil, ${scheme === "light" ? "hell" : "dunkel"}`, async () => {
+  const p = await openApp("st", "start", { scheme, init: RB_INIT }); const rows = [];
+  for (const v of ["start", "wiki", "sessions", "docs", "manual"]) {
+    await p.evaluate(v => { location.hash = "#" + v; }, v); await p.waitForTimeout(600);
+    const r = await p.evaluate(() => {
+      const parse = s => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return null; const a = m[1].split(",").map(x => parseFloat(x)); return { rgb: a.slice(0, 3), a: a[3] ?? 1 }; };
+      const bgOf = e => { for (let n = e; n; n = n.parentElement) { const c = parse(getComputedStyle(n).backgroundColor); if (c && c.a > .5) return c.rgb; } return [255, 255, 255]; };
+      const out = []; for (const sel of ["main h2", "main p", ".muted", ".btn", ".btn.primary", ".badge", ".badge.st", "#nav button", ".hbtn", ".linkbtn", ".eyebrow", "label", ".list button", "input", ".pc h3", ".manual-body a", ".manual-body h4", ".site-foot"]) { const e = document.querySelector(sel); if (!e) continue; const s = getComputedStyle(e); const c = parse(s.color); if (c) out.push({ sel, fg: c.rgb, bg: bgOf(e), size: parseFloat(s.fontSize) }); } return out;
+    });
+    for (const x of r) { const a = lum(x.fg), b = lum(x.bg), ratio = (Math.max(a, b) + .05) / (Math.min(a, b) + .05); rows.push({ v, sel: x.sel, ratio: +ratio.toFixed(2), size: x.size }); }
+  }
+  live.push({ scheme, rulebookContrast: rows }); const bad = rows.filter(x => x.ratio < 4.5).map(x => `${x.v} ${x.sel} ${x.ratio}:1 (${x.size}px)`); assert.equal(bad.length, 0, bad.join("; ")); return p;
+});
+T("U251", "Stil Rulebook", "Handy (390 px): kein seitliches Scrollen in allen Bereichen, Kopfzeile mit Knöpfen bricht um statt abgeschnitten zu werden", async () => {
+  const p = await openApp("st", "start", { init: RB_INIT, viewport: { width: 390, height: 800 } }); const bad = [];
+  for (const v of ["start", "chars", "chronicles", "sessions", "map", "wiki", "docs", "manual", "st"]) {
+    await p.evaluate(v => { location.hash = "#" + v; }, v); await p.waitForTimeout(700);
+    const r = await p.evaluate(() => ({ w: document.documentElement.scrollWidth, i: innerWidth, who: (() => { const e = document.getElementById("who"); const b = e.getBoundingClientRect(); return b.right <= innerWidth + 1 && b.left >= -1; })() }));
+    if (r.w > r.i) bad.push(v + " " + r.w + ">" + r.i); if (!r.who) bad.push(v + " Kopfzeile ragt hinaus");
+  }
+  await p.evaluate(() => { location.hash = "#start"; }); await p.waitForTimeout(600); assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector(".head")).backgroundImage), "none", "Ornament fehlt am Handy, damit es keinen Text überdeckt");
+  assert.deepEqual(bad, []); return p;
+});
+T("U252", "Stil Rulebook", "Schriften kommen von der eigenen Domain (woff2 lokal), keine Anfrage an Google oder andere Fremdserver; Standardstil lädt die neuen Schriften nicht", async () => {
+  const p = await openApp("player", "start", { init: RB_INIT, wait: 0 }); const seen = []; p.on("request", r => seen.push(new URL(r.url()))); await p.reload(); await p.waitForTimeout(1500);
+  const names = seen.map(u => u.pathname); assert.ok(names.some(n => n.endsWith("/BodoniModa-var.woff2")), "Bodoni Moda geladen"); assert.ok(names.some(n => n.endsWith("/EBGaramond-var.woff2")), "EB Garamond geladen"); assert.ok(names.some(n => n.endsWith("/Montserrat-var.woff2")), "Montserrat geladen");
+  const ext = [...new Set(seen.map(u => u.hostname))].filter(h => h !== "kbn.test" && !h.endsWith("supabase.co")); assert.deepEqual(ext, [], "Fremdserver: " + ext.join(", "));
+  const q = await openApp("player", "start", { wait: 0 }); const seen2 = []; q.on("request", r => seen2.push(new URL(r.url()).pathname)); await q.reload(); await q.waitForTimeout(1200);
+  assert.ok(!seen2.some(n => /Bodoni|EBGaramond|Montserrat/.test(n)), "Standardstil lädt die Rulebook-Schriften nicht"); return p;
+});
+
+// =====================================================================
 // Ausführen
 // =====================================================================
 const only = process.argv[2] ? new RegExp(process.argv[2]) : null;

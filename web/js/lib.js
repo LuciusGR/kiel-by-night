@@ -85,7 +85,7 @@ export function tok(name) { return getComputedStyle(document.documentElement).ge
 
 export const themeListeners = new Set();
 try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => themeListeners.forEach(f => f())); } catch (_) {}
-new MutationObserver(() => themeListeners.forEach(f => f())).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+new MutationObserver(() => themeListeners.forEach(f => f())).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-style"] });
 
 export function store(k, v) {
   try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }

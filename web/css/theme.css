@@ -186,7 +186,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .18s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
 
 /* Kopfleiste: Konto & Theme */
-.who-box{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:.85rem;color:var(--band-muted)}
+.who-box{margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;align-items:center;font-size:.85rem;color:var(--band-muted)}
 .hbtn{background:none;border:1px solid #2a3b46;color:var(--band-ink);border-radius:var(--r);padding:3px 9px;cursor:pointer;font-size:.82rem}
 .hbtn:hover{border-color:var(--brass)}
 
@@ -204,6 +204,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .toggle.wrap{flex-wrap:wrap}
 .toggle.wrap button{flex:1 1 auto}
 @media (max-width:600px){
+  .who-box{margin-left:0;width:100%;justify-content:flex-start}
+  .who-box>span:first-child{flex:1 0 100%}
   .panel{padding:12px}
   .session-item{padding:12px}
   .article{padding:14px}

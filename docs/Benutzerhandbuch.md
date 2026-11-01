@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 24.10.2026 · gilt für Website-Version 1.11.0
+Stand: 01.11.2026 · gilt für Website-Version 1.13.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -13,8 +13,9 @@ Adresse: https://luciusgr.github.io/kiel-by-night/
 3. Es gibt keine E-Mails. Eine „Passwort vergessen“-Funktion gibt es nicht. Wer sein Passwort vergisst, wendet sich an den ST.
 4. „Für dieses Konto gibt es kein Profil“: Der ST muss das Profil noch anlegen.
 
-In der Kopfzeile stehen oben rechts deine Rolle und dein Name sowie drei Knöpfe:
-- **Theme:** schaltet zwischen Auto, Hell und Dunkel um. Die Wahl bleibt gespeichert.
+In der Kopfzeile stehen oben rechts deine Rolle und dein Name sowie vier Knöpfe:
+- **Stil:** schaltet zwischen **Standard** und **Rulebook** um. Rulebook ist an die Regelbücher von Vampire: Die Maskerade angelehnt: helles Papier, Karmesinrot, Titel in Didone-Schrift, gesperrte Versalien für Beschriftungen und Garamond im Text. Der Stil ändert nur das Aussehen, nicht die Inhalte. Die Wahl bleibt in diesem Browser gespeichert und gilt schon auf der Anmeldeseite.
+- **Theme:** schaltet zwischen Auto, Hell und Dunkel um. Die Wahl bleibt gespeichert und gilt für beide Stile.
 - **Passwort:** ändert dein Passwort (mindestens 8 Zeichen, zweimal eingeben).
 - **Abmelden.**
 
@@ -202,6 +203,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
 - **24.10.2026 (Version 1.12.0):** Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
+- **01.11.2026 (Version 1.13.0):** Neuer Stil „Rulebook“ mit Knopf „Stil“ in der Kopfzeile (Abschnitt 1).
 - **24.10.2026 (Version 1.11.0):** Neuer Bereich Anleitung: zeigt dieses Handbuch live aus GitHub (Abschnitt 2).
 - **22.10.2026 (Version 1.8.0):** Dokumente mit Elementen der Spielerkarte und der Storytellerkarte verknüpfen, in beide Richtungen (Abschnitte 7, 9 und 11). Typ ist auf der Spielerkarte eine Auswahl (Abschnitt 7).
 - **22.10.2026 (Version 1.7.0):** Dokumente: Titel und Beschreibung nachträglich ändern (Abschnitt 9).
