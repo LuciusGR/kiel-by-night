@@ -49,11 +49,11 @@ function cycleTheme(btn) {
   else { document.documentElement.dataset.theme = next; store("kbn-theme", next); }
   btn.textContent = "Theme: " + themeLabel();
 }
-// Stil: "Standard" (theme.css) oder "Rulebook" (theme-v5.css, Look der V5-Regelbücher). Hell/Dunkel gilt für beide.
-function styleLabel() { return document.documentElement.dataset.style === "rulebook" ? "Rulebook" : "Standard"; }
+// Stil: "Rulebook" (theme-v5.css, Look der V5-Regelbücher, voreingestellt) oder "Klassisch" (nur theme.css). Hell/Dunkel gilt für beide.
+function styleLabel() { return document.documentElement.dataset.style === "rulebook" ? "Rulebook" : "Klassisch"; }
 function toggleStyle(btn) {
-  if (document.documentElement.dataset.style === "rulebook") { delete document.documentElement.dataset.style; store("kbn-style", null); }
-  else { document.documentElement.dataset.style = "rulebook"; store("kbn-style", "rulebook"); }
+  if (document.documentElement.dataset.style === "rulebook") { delete document.documentElement.dataset.style; store("kbn-style", "classic"); }
+  else { document.documentElement.dataset.style = "rulebook"; store("kbn-style", null); }
   btn.textContent = "Stil: " + styleLabel();
 }
 
@@ -61,7 +61,7 @@ function renderWho() {
   const who = document.getElementById("who");
   const themeBtn = h("button", { class: "hbtn", type: "button", title: "Hell / Dunkel / Automatisch" }, "Theme: " + themeLabel());
   themeBtn.addEventListener("click", () => cycleTheme(themeBtn));
-  const styleBtn = h("button", { class: "hbtn", type: "button", title: "Standard / Rulebook (Look der V5-Regelbücher)" }, "Stil: " + styleLabel());
+  const styleBtn = h("button", { class: "hbtn", type: "button", title: "Rulebook (Look der V5-Regelbücher) / Klassisch" }, "Stil: " + styleLabel());
   styleBtn.addEventListener("click", () => toggleStyle(styleBtn));
   if (!S.user) { who.replaceChildren(styleBtn, themeBtn); return; }
   who.replaceChildren(

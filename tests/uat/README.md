@@ -6,7 +6,7 @@ Umfangreiche Abnahmetests für die Website. Sie laufen lokal und ändern nichts 
 |---|---|---|---|
 | Rechte | `npm run rls` | alle Rollen (anonym, ohne Profil, Spieler, ST) lesen, anlegen, ändern, löschen, dazu Konfiguration der Datenbank. Läuft auf PGlite (PostgreSQL) mit allen Migrationen aus `supabase/migrations` | 267 von 267 |
 | Edge Function | `npm run function` | `notion-proxy` mit gespieltem Notion und Supabase | 24 von 24 |
-| Browser | `npm run ui` | alle Bereiche, beide Rollen, Handy, Barrierefreiheit, Kontrast, Sicherheit, Modi (Chrome, Attrappe von Supabase ohne RLS aus `tests/browser/fake-supabase.js`) | 177 von 177 |
+| Browser | `npm run ui` | alle Bereiche, beide Rollen, Handy, Barrierefreiheit, Kontrast, Sicherheit, Modi (Chrome, Attrappe von Supabase ohne RLS aus `tests/browser/fake-supabase.js`) | 178 von 178 |
 
 ## Voraussetzungen
 - Node.js 24 (TypeScript-Dateien laufen direkt) und Chrome. Pfad zu Chrome per `CHROME` setzen, zum Beispiel `CHROME="C:/Program Files/Google/Chrome/Application/chrome.exe"`. Ohne `CHROME` nutzt Playwright seinen eigenen Browser (`npx playwright install chromium`).

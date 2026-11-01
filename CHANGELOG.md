@@ -3,6 +3,10 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.13.1 – 01.11.2026
+- **Rulebook ist jetzt voreingestellt:** Die Seite startet für alle im Look der V5-Regelbücher. Der bisherige Look heißt „Klassisch“ und bleibt mit dem Knopf „Stil: Rulebook/Klassisch“ in der Kopfzeile wählbar (Browser-Speicher `kbn-style` = `classic`). Wer nichts gewählt hat, bekommt Rulebook, auch wenn der Browser den Speicher sperrt.
+- **Tests:** U248 bis U252 angepasst (Voreinstellung, Umschalten auf Klassisch, Merken nach dem Neuladen). Der Test-Harness setzt für die übrigen Tests `classic`, damit sie weiter den bisherigen Look prüfen.
+
 ## 1.13.0 – 01.11.2026
 - **Neuer Stil „Rulebook“:** Zweites Erscheinungsbild im Look der V5-Regelbücher (Vorlage: Camarilla-Band): helles Papier bzw. Fast-Schwarz, Karmesinrot als Akzent, Titel in Bodoni Moda (Didone), Fließtext in EB Garamond, gesperrte Versalien in Montserrat für Knöpfe, Navigation, Beschriftungen und Abzeichen, Haarlinien statt Schatten, rote Reiter an Karten und Artikeln, Zierlinie und Dreiecks-Ornament im Seitenkopf. Umschalten mit dem neuen Knopf „Stil“ in der Kopfzeile (auch auf der Anmeldeseite), die Wahl bleibt im Browser gespeichert. Hell, Dunkel und Auto gelten wie bisher für beide Stile. Standard bleibt der bisherige Stil.
 - **Schriften lokal:** Bodoni Moda, EB Garamond und Montserrat liegen als zugeschnittene WOFF2-Dateien in `web/fonts/` (SIL OFL 1.1, zusammen rund 420 KB, werden nur im Rulebook-Stil geladen). Kein Aufruf von Google.

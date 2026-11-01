@@ -10,7 +10,9 @@
 <script>
   // Theme (hell/dunkel) und Stil (Standard/Rulebook) vor dem ersten Rendern setzen (kein Aufblitzen)
   try { const t = localStorage.getItem("kbn-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (_) {}
-  try { if (localStorage.getItem("kbn-style") === "rulebook") document.documentElement.dataset.style = "rulebook"; } catch (_) {}
+  // Standard ist "rulebook"; nur wer "Klassisch" gewählt hat (kbn-style = "classic"), bekommt den alten Look
+  let kbnStyle = null; try { kbnStyle = localStorage.getItem("kbn-style"); } catch (_) {}
+  if (kbnStyle !== "classic") document.documentElement.dataset.style = "rulebook";
 </script>
 </head>
 <body>

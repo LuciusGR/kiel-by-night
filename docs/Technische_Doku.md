@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 01.11.2026 · gilt für Website-Version 1.13.0 (siehe `CHANGELOG.md`)
+Stand: 01.11.2026 · gilt für Website-Version 1.13.1 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -265,12 +265,12 @@ Der Tab „Anleitung“ (`#manual`, für Spieler und ST) enthält keinen eigenen
 
 ### 4.13 Stil „Rulebook“
 
-Zweites, wählbares Erscheinungsbild neben dem Standardstil. `theme-v5.css` wird nach `theme.css` geladen und wirkt nur, wenn `<html data-style="rulebook">` gesetzt ist. Es überschreibt dieselben Variablen (`--paper`, `--surface`, `--ink`, `--sea` …) und ergänzt Schriften und Bausteine. Alle Selektoren beginnen mit `:root[data-style="rulebook"]`, der Standardstil bleibt unverändert.
+Voreingestelltes Erscheinungsbild, neben dem der bisherige Look („Klassisch“, nur `theme.css`) wählbar bleibt. `theme-v5.css` wird nach `theme.css` geladen und wirkt nur, wenn `<html data-style="rulebook">` gesetzt ist. Es überschreibt dieselben Variablen (`--paper`, `--surface`, `--ink`, `--sea` …) und ergänzt Schriften und Bausteine. Alle Selektoren beginnen mit `:root[data-style="rulebook"]`, `theme.css` bleibt unverändert und ist der Look „Klassisch“.
 
-- **Umschalten:** Knopf „Stil: Standard/Rulebook“ in der Kopfzeile (`toggleStyle()` in `app.js`, auch vor der Anmeldung sichtbar). Die Wahl steht im `localStorage` unter `kbn-style` (`rulebook` oder nicht vorhanden). Das Skript im `<head>` von `index.html` setzt das Attribut vor dem ersten Rendern (kein Aufblitzen). Hell/Dunkel (`data-theme`) ist unabhängig davon: Das Stylesheet hat die Blöcke hell, dunkel (System, `prefers-color-scheme`) und erzwungen dunkel.
+- **Umschalten:** Knopf „Stil: Rulebook/Klassisch“ in der Kopfzeile (`toggleStyle()` in `app.js`, auch vor der Anmeldung sichtbar). Die Wahl steht im `localStorage` unter `kbn-style`: nicht vorhanden = Rulebook (Voreinstellung, auch wenn `localStorage` gesperrt ist), `classic` = Klassisch. Das Skript im `<head>` von `index.html` setzt `data-style="rulebook"` vor dem ersten Rendern (kein Aufblitzen), außer bei `classic`. Hell/Dunkel (`data-theme`) ist unabhängig davon: Das Stylesheet hat die Blöcke hell, dunkel (System, `prefers-color-scheme`) und erzwungen dunkel.
 - **Karten:** `lib.js` beobachtet neben `data-theme` auch `data-style`, damit die Cytoscape-Karten ihre Farben (`tok()`) neu lesen.
 - **Look:** Vorlage sind die V5-Regelbücher. Papierweiß (hell) bzw. Fast-Schwarz (dunkel), Karmesinrot als Akzent (`--sea`), Gold nur sparsam (`--brass`), Titel in Bodoni Moda (Didone, kursiv bei Namen und Marke), Fließtext in EB Garamond, Beschriftungen als gesperrte Versalien in Montserrat (`--f-label`), Haarlinien statt Schatten und Rundungen (`--r: 2px`), rote Reiter an Karten und Artikeln, Zierlinie unter dem Seitenkopf und das Ornament aus verschränkten Dreiecken (`--orn`, SVG als Data-URI) rechts im Seitenkopf, sofern dort keine Knöpfe stehen.
-- **Schriften:** `web/fonts/BodoniModa-var.woff2`, `BodoniModa-Italic-var.woff2`, `EBGaramond-var.woff2`, `EBGaramond-Italic-var.woff2`, `Montserrat-var.woff2` (variable Schriften, SIL OFL 1.1, auf Latein zugeschnitten, zusammen rund 420 KB). Sie liegen auf der eigenen Domain, es gibt keine Verbindung zu Google. Der Browser lädt eine Schrift erst, wenn Text sie benutzt, im Standardstil werden sie also nicht geholt. Lizenzhinweise in `web/fonts/LICENSE.md`.
+- **Schriften:** `web/fonts/BodoniModa-var.woff2`, `BodoniModa-Italic-var.woff2`, `EBGaramond-var.woff2`, `EBGaramond-Italic-var.woff2`, `Montserrat-var.woff2` (variable Schriften, SIL OFL 1.1, auf Latein zugeschnitten, zusammen rund 420 KB). Sie liegen auf der eigenen Domain, es gibt keine Verbindung zu Google. Der Browser lädt eine Schrift erst, wenn Text sie benutzt, im Stil „Klassisch“ werden sie also nicht geholt. Lizenzhinweise in `web/fonts/LICENSE.md`.
 - **Pflege:** Neue Bausteine mit festen Farben oder Schriften brauchen im Rulebook-Stil nur dann eine Regel, wenn sie Variablen umgehen. Kontrast prüfen (Tests U250a und U250b).
 
 ## 10. Tests
@@ -281,7 +281,7 @@ Zweites, wählbares Erscheinungsbild neben dem Standardstil. `theme-v5.css` wird
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 267 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 177 Fälle, Stand 01.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 267 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 178 Fälle, Stand 01.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -301,6 +301,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **01.11.2026 (Version 1.13.1):** Rulebook ist voreingestellt, der alte Look heißt „Klassisch“ (`kbn-style` = `classic`). `<head>`-Skript, `toggleStyle()`, Tests U248 bis U252 angepasst, Test-Harness setzt standardmäßig `classic`.
 - **01.11.2026 (Version 1.13.0):** Stil „Rulebook“ (`css/theme-v5.css`, Knopf „Stil“ in `app.js`, `data-style` und `kbn-style`, `lib.js` beobachtet `data-style`, fünf lokale WOFF2-Schriften, Abschnitt 4.13). Kopfzeile bricht am Handy um (`.who-box`). Tests U248 bis U252.
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung und `LEGAL` in `config.js` entfernt; `legal.js` zeigt nur noch den Markenhinweis in der Fußzeile.
 - **24.10.2026 (Version 1.12.0):** Fußzeile mit Datenschutz und Markenhinweis (kein Impressum) (`legal.js`, `LEGAL` in `config.js`). Schriften nach `web/fonts/`, Cytoscape und supabase-js nach `web/vendor/`; kein Google-Fonts- und kein jsDelivr-Aufruf mehr. Test U159 angepasst.

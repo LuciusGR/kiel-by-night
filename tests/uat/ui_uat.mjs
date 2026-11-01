@@ -36,7 +36,8 @@ async function openApp(role, hash = "start", o = {}) {
   page.on("pageerror", e => page.errors.push("pageerror: " + e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) page.errors.push("console: " + m.text().slice(0, 160)); });
   await page.exposeFunction("__log", s => page.logs.push(s));
-  await page.addInitScript(([r, lo, mode, extra]) => { window.__KBN_ROLE = r; if (lo) window.__KBN_LOGGED_OUT = true; if (mode) window.__NOTION_MODE = mode; if (extra) eval(extra); }, [role, !!o.loggedOut, o.notion || null, o.init || null]);
+  // Voreinstellung der Seite ist der Stil Rulebook. Die übrigen Tests prüfen den Look "Klassisch" (Texte unverändert), nur o.defaultStyle lässt die Voreinstellung stehen.
+  await page.addInitScript(([r, lo, mode, extra, keepStyle]) => { window.__KBN_ROLE = r; if (lo) window.__KBN_LOGGED_OUT = true; if (mode) window.__NOTION_MODE = mode; if (!keepStyle) try { localStorage.setItem("kbn-style", "classic"); } catch (_) {} if (extra) eval(extra); }, [role, !!o.loggedOut, o.notion || null, o.init || null, !!o.defaultStyle]);
   await page.route("**/*", async route => {
     const u = new URL(route.request().url());
     if (u.hostname === "kbn.test") {
@@ -1057,15 +1058,19 @@ T("U247", "Anleitung", "Das echte Handbuch bleibt ohne Rohzeichen (**, ](, |---)
 // =====================================================================
 const RB_INIT = "localStorage.setItem('kbn-style','rulebook')";
 const fontOf = (p, sel) => p.evaluate(sel => getComputedStyle(document.querySelector(sel)).fontFamily, sel);
-T("U248", "Stil Rulebook", "Knopf 'Stil' wechselt zwischen Standard und Rulebook, merkt sich die Wahl nach dem Neuladen und lässt sich zurückstellen (Schrift und Farbe ändern sich)", async () => {
-  const p = await openApp("player"); const btn = p.locator("#who button", { hasText: /^Stil:/ });
-  assert.equal(await btn.textContent(), "Stil: Standard"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined);
-  const sea0 = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()); assert.match(await fontOf(p, "main h2"), /Libre Caslon/);
-  await btn.click(); assert.equal(await btn.textContent(), "Stil: Rulebook"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook");
-  assert.match(await fontOf(p, "main h2"), /Bodoni Moda/); assert.match(await fontOf(p, "body"), /EB Garamond/); assert.notEqual(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()), sea0);
-  assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), "rulebook");
-  await p.reload(); await p.waitForTimeout(800); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.locator("#who button", { hasText: /^Stil:/ }).textContent(), "Stil: Rulebook");
-  await p.locator("#who button", { hasText: /^Stil:/ }).click(); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null); return p;
+T("U248", "Stil Rulebook", "Voreinstellung ist Rulebook (ohne Wahl); Knopf 'Stil' wechselt zu Klassisch und zurück, merkt sich die Wahl nach dem Neuladen (Schrift und Farbe ändern sich)", async () => {
+  const p = await openApp("player", "start", { defaultStyle: true }); const btn = () => p.locator("#who button", { hasText: /^Stil:/ });
+  assert.equal(await btn().textContent(), "Stil: Rulebook"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null, "nichts gespeichert, solange man nicht wählt");
+  assert.match(await fontOf(p, "main h2"), /Bodoni Moda/); assert.match(await fontOf(p, "body"), /EB Garamond/);
+  const sea0 = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim());
+  await btn().click(); assert.equal(await btn().textContent(), "Stil: Klassisch"); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined);
+  assert.match(await fontOf(p, "main h2"), /Libre Caslon/); assert.notEqual(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--sea").trim()), sea0); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), "classic");
+  await p.reload(); await p.waitForTimeout(800); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), undefined, "Klassisch bleibt nach dem Neuladen"); assert.equal(await btn().textContent(), "Stil: Klassisch");
+  await btn().click(); assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-style")), null); return p;
+});
+T("U248b", "Stil Rulebook", "Voreinstellung gilt auch bei gesperrtem Browser-Speicher und auf der Anmeldeseite", async () => {
+  const p = await openApp("st", "", { loggedOut: true, defaultStyle: true, init: "Object.defineProperty(window, 'localStorage', { get() { throw new Error('gesperrt'); } })" });
+  assert.equal(await p.evaluate(() => document.documentElement.dataset.style), "rulebook"); assert.equal(await p.locator("#who button", { hasText: /^Stil: Rulebook$/ }).count(), 1); return p;
 });
 T("U249", "Stil Rulebook", "Stil und Hell/Dunkel sind unabhängig: Rulebook gibt es hell und dunkel (Papier hell, nahezu schwarz im Dunkelmodus), vor der Anmeldung ist der Knopf schon da", async () => {
   const lo = await openApp("st", "", { loggedOut: true, init: RB_INIT }); assert.equal(await lo.locator("#who button", { hasText: /^Stil: Rulebook$/ }).count(), 1, "Knopf auch auf der Anmeldeseite"); await lo.close();
@@ -1099,12 +1104,12 @@ T("U251", "Stil Rulebook", "Handy (390 px): kein seitliches Scrollen in allen Be
   await p.evaluate(() => { location.hash = "#start"; }); await p.waitForTimeout(600); assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector(".head")).backgroundImage), "none", "Ornament fehlt am Handy, damit es keinen Text überdeckt");
   assert.deepEqual(bad, []); return p;
 });
-T("U252", "Stil Rulebook", "Schriften kommen von der eigenen Domain (woff2 lokal), keine Anfrage an Google oder andere Fremdserver; Standardstil lädt die neuen Schriften nicht", async () => {
+T("U252", "Stil Rulebook", "Schriften kommen von der eigenen Domain (woff2 lokal), keine Anfrage an Google oder andere Fremdserver; Klassisch lädt die Rulebook-Schriften nicht", async () => {
   const p = await openApp("player", "start", { init: RB_INIT, wait: 0 }); const seen = []; p.on("request", r => seen.push(new URL(r.url()))); await p.reload(); await p.waitForTimeout(1500);
   const names = seen.map(u => u.pathname); assert.ok(names.some(n => n.endsWith("/BodoniModa-var.woff2")), "Bodoni Moda geladen"); assert.ok(names.some(n => n.endsWith("/EBGaramond-var.woff2")), "EB Garamond geladen"); assert.ok(names.some(n => n.endsWith("/Montserrat-var.woff2")), "Montserrat geladen");
   const ext = [...new Set(seen.map(u => u.hostname))].filter(h => h !== "kbn.test" && !h.endsWith("supabase.co")); assert.deepEqual(ext, [], "Fremdserver: " + ext.join(", "));
   const q = await openApp("player", "start", { wait: 0 }); const seen2 = []; q.on("request", r => seen2.push(new URL(r.url()).pathname)); await q.reload(); await q.waitForTimeout(1200);
-  assert.ok(!seen2.some(n => /Bodoni|EBGaramond|Montserrat/.test(n)), "Standardstil lädt die Rulebook-Schriften nicht"); return p;
+  assert.ok(!seen2.some(n => /Bodoni|EBGaramond|Montserrat/.test(n)), "Klassisch lädt die Rulebook-Schriften nicht"); return p;
 });
 
 // =====================================================================
