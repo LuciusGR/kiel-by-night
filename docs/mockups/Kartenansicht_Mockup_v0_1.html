@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiel by Night Kartenansicht</title>
+<style>
+@font-face{font-family:"Bodoni Moda";font-style:normal;font-weight:400 900;font-display:swap;src:url("../../web/fonts/BodoniModa-var.woff2") format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-style:italic;font-weight:400 900;font-display:swap;src:url("../../web/fonts/BodoniModa-Italic-var.woff2") format("woff2")}
+@font-face{font-family:"EB Garamond";font-style:normal;font-weight:400 800;font-display:swap;src:url("../../web/fonts/EBGaramond-var.woff2") format("woff2")}
+@font-face{font-family:"EB Garamond";font-style:italic;font-weight:400 800;font-display:swap;src:url("../../web/fonts/EBGaramond-Italic-var.woff2") format("woff2")}
+@font-face{font-family:"Montserrat";font-style:normal;font-weight:100 900;font-display:swap;src:url("../../web/fonts/Montserrat-var.woff2") format("woff2")}
+</style>
+<style>
+/* Layout: schwarze Kopfzeile, darunter eine Arbeitsfläche aus Karte (links) und Detailfeld (rechts); Konzeptnotizen als Spalten darunter.
+   Stil und Tokens folgen dem Rulebook-Look der Website (web/css/theme-v5.css). */
+:root{
+  --bg:#ebe7df; --surface:#faf8f3; --raised:#ffffff; --ink:#17161a; --muted:#5c5852;
+  --line:#d8d1c4; --line2:#8f8678;
+  --sea:#9c1a2e; --sea-soft:#f1dfe0; --blood:#6a1020;
+  --brass:#8a6a22; --moss:#4c6b55; --plum:#5f4772; --teal:#1f7a7a; --rust:#a4501f; --slate:#4a5a8c; --olive:#6b6b1f; --grey:#8a949a;
+  --band:#0b0e13; --band-ink:#efe9dc; --band-muted:#a39d90;
+  --water:#cdd6d8; --water-ink:#6d8087; --land:#f4f0e7; --edge:#8f8678;
+  --ok:#2f6b45; --warn:#9a6a12;
+  --f-display:"Bodoni Moda","Libre Caslon Display",Georgia,"Times New Roman",serif;
+  --f-body:"EB Garamond",Georgia,"Times New Roman",serif;
+  --f-label:"Montserrat","Alegreya Sans",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#08080a; --surface:#111114; --raised:#18181c; --ink:#ece6da; --muted:#a29b8e;
+  --line:#2a2a30; --line2:#5a5a63;
+  --sea:#e0586d; --sea-soft:#2b1519; --blood:#e58a96;
+  --brass:#d2ab5e; --moss:#88ab92; --plum:#ad91c8; --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
+  --band:#050507; --band-ink:#efe9dc; --band-muted:#9a9488;
+  --water:#141c21; --water-ink:#5f7580; --land:#151518; --edge:#7a7a86;
+  --ok:#6fbf8a; --warn:#d9a441; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#08080a; --surface:#111114; --raised:#18181c; --ink:#ece6da; --muted:#a29b8e;
+  --line:#2a2a30; --line2:#5a5a63;
+  --sea:#e0586d; --sea-soft:#2b1519; --blood:#e58a96;
+  --brass:#d2ab5e; --moss:#88ab92; --plum:#ad91c8; --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
+  --band:#050507; --band-ink:#efe9dc; --band-muted:#9a9488;
+  --water:#141c21; --water-ink:#5f7580; --land:#151518; --edge:#7a7a86;
+  --ok:#6fbf8a; --warn:#d9a441; color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1.08rem;line-height:1.5;margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:500;margin:0;text-wrap:balance}
+p{margin:0}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+.eyebrow{font-family:var(--f-label);font-weight:600;font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:var(--sea)}
+.muted{color:var(--muted)}
+
+/* Kopfzeile */
+.band{background:var(--band);color:var(--band-ink);border-bottom:2px solid #8f1a2c}
+.band-in{max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;min-width:0}
+.brand h1{font-style:italic;font-size:1.7rem;color:var(--band-ink)}
+.brand span{font-family:var(--f-label);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--band-muted)}
+.stamp{font-family:var(--f-label);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;border:1px solid #d1384d;color:#f0a5b0;padding:4px 9px}
+.hbtn{font-family:var(--f-label);font-weight:600;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:var(--band-ink);border:1px solid #3a3a42;padding:5px 10px;cursor:pointer}
+.hbtn:hover{border-color:#d1384d}
+
+.wrap{max-width:1240px;margin:0 auto;padding-block:26px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:30px}
+
+/* Einleitung */
+.intro{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px 40px;align-items:end;padding-bottom:18px;border-bottom:1px solid var(--ink);position:relative}
+.intro::after{content:"";position:absolute;left:0;bottom:-3px;width:84px;border-top:4px solid var(--sea)}
+.intro h2{font-size:clamp(1.9rem,4.4vw,2.9rem);line-height:1.05}
+.intro p{font-style:italic;color:var(--muted);max-width:56ch}
+.intro .warn{font-style:normal;font-size:.95rem;margin-top:8px;border-left:3px solid var(--brass);padding-left:10px;color:var(--ink)}
+
+/* Werkzeugleiste */
+.tool{display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.grp{display:flex;align-items:center;gap:8px;min-width:0}
+.grp>.eyebrow{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--ink)}
+.seg button{font-family:var(--f-label);font-weight:600;font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;background:transparent;border:0;padding:8px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button:not([aria-pressed="true"]):hover{color:var(--sea)}
+.btn{font-family:var(--f-label);font-weight:600;font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;background:transparent;border:1px solid var(--ink);padding:7px 11px;cursor:pointer}
+.btn:hover{border-color:var(--sea);color:var(--sea)}
+.btn.small{font-size:.58rem;padding:5px 9px}
+.btn.primary{background:var(--sea);border-color:var(--sea);color:var(--surface)}
+input[type=search],select{background:var(--raised);border:1px solid var(--line2);padding:7px 9px;min-width:0;max-width:100%}
+input[type=search]{width:190px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-label);font-weight:500;font-size:.66rem;letter-spacing:.06em;background:var(--raised);border:1px solid var(--line2);padding:5px 9px;cursor:pointer}
+.chip[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid var(--surface)}
+#msg{min-height:1.5em;font-size:.95rem;color:var(--muted);font-style:italic}
+
+/* Arbeitsfläche */
+.work{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+.stagecol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.stage{position:relative;border:1px solid var(--ink);background:var(--surface)}
+.scroll{overflow-x:auto}
+svg#cv{display:block;width:100%;min-width:620px;height:auto;aspect-ratio:1000/700;user-select:none;touch-action:pan-y;background:var(--land)}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:30px;height:30px;background:var(--raised);border:1px solid var(--ink);cursor:pointer;font-family:var(--f-label);font-weight:600}
+.zoom button:hover{border-color:var(--sea);color:var(--sea)}
+.viewtag{position:absolute;left:10px;top:10px;font-family:var(--f-label);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;background:var(--raised);border:1px solid var(--line2);padding:4px 8px;color:var(--muted);pointer-events:none}
+
+/* SVG-Inhalt */
+#gMap,#gGrid,#gPins,#gDist{transition:opacity .45s}
+svg.view-graph #gMap,svg.view-graph #gPins,svg.view-graph #gDist{opacity:0;pointer-events:none}
+svg.view-map #gGrid{opacity:0}
+.land{fill:var(--land)} .water{fill:var(--water)} .canal{stroke:var(--water);fill:none;stroke-linecap:round}
+.wlabel{fill:var(--water-ink);font-family:var(--f-display);font-style:italic}
+.dist polygon{fill:transparent;stroke:var(--line2);stroke-width:1;stroke-dasharray:4 3;cursor:pointer;transition:fill .3s}
+.dist polygon:hover{fill:var(--sea-soft)}
+.dist polygon.sel{stroke:var(--sea);stroke-width:2;stroke-dasharray:none}
+.dist text{font-family:var(--f-label);font-weight:600;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;fill:var(--muted);text-anchor:middle;pointer-events:none}
+.nonames .dist text,.nonames .plabel,.nonames .tlabel{display:none}
+.pin{cursor:pointer}
+.pin circle.b{fill:var(--raised);stroke-width:2}
+.pin text.g{font-family:var(--f-label);font-weight:600;font-size:9px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pin .ring{fill:none;stroke:var(--sea);stroke-width:2;opacity:0}
+.pin.sel .ring{opacity:1}
+.plabel{font-family:var(--f-body);font-style:italic;font-size:11px;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.tok{cursor:pointer;outline:none}
+.edit .tok{cursor:grab}
+.edit .tok.drag{cursor:grabbing}
+.tok .shape{stroke:var(--surface);stroke-width:1.5}
+.tok.dead .shape{fill-opacity:.35;stroke:var(--muted);stroke-dasharray:3 2}
+.tok .pcring{fill:none;stroke:var(--ink);stroke-width:1.5}
+.tok.sel .shape{stroke:var(--sea);stroke-width:3}
+.tok:focus-visible .shape{stroke:var(--sea);stroke-width:3}
+.tlabel{font-family:var(--f-label);font-weight:600;font-size:10px;text-anchor:middle;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-linejoin:round;pointer-events:none}
+.tok.faded{opacity:.22}
+.tok.stonly .shape{stroke:var(--sea);stroke-dasharray:2 2}
+.edge line{stroke:var(--edge);stroke-width:1.2;opacity:.55}
+.edge polygon{fill:var(--edge);opacity:.55}
+.edge text{font-family:var(--f-body);font-style:italic;font-size:11px;fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-linejoin:round;display:none}
+.edge.hl line{stroke:var(--sea);stroke-width:2;opacity:1}
+.edge.hl polygon{fill:var(--sea);opacity:1}
+.edge.hl text{display:block}
+.scalebar line{stroke:var(--ink);stroke-width:1.5}
+.scalebar text,.north text{font-family:var(--f-label);font-size:8px;letter-spacing:.12em;fill:var(--muted);text-anchor:middle;text-transform:uppercase}
+.north path{fill:var(--ink)}
+
+/* Ablage */
+.tray{border:1px dashed var(--line2);background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,background .2s}
+.tray.over{border-color:var(--sea);background:var(--sea-soft)}
+.tray .row{display:flex;flex-wrap:wrap;gap:6px;min-height:34px;align-items:center}
+.tchip{display:inline-flex;align-items:center;gap:7px;background:var(--raised);border:1px solid var(--line2);padding:3px 10px 3px 5px;font-size:.95rem;cursor:pointer;touch-action:none}
+.edit .tchip{cursor:grab}
+.tchip.sel{border-color:var(--sea)}
+.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .lh{font-family:var(--f-label);font-weight:600;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sea)}
+
+/* Detailfeld */
+.panel{background:var(--surface);border:1px solid var(--ink);border-top:4px solid var(--sea);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h3{font-size:1.5rem;line-height:1.1}
+.panel h4{font-family:var(--f-label);font-weight:600;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--sea);margin:0;padding-top:10px;border-top:1px solid var(--line)}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font-family:var(--f-label);font-weight:600;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line2);padding:2px 7px;color:var(--muted)}
+.badge.st{border-color:var(--sea);color:var(--sea)}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.98rem}
+dl.kv dt{color:var(--muted)} dl.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.linkbtn{background:none;border:0;padding:0;color:var(--sea);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
+.conn{display:flex;flex-direction:column;gap:8px;font-size:.98rem}
+.conn .c>.muted{font-size:.88rem}
+.rowb{display:flex;flex-wrap:wrap;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-family:var(--f-label);font-weight:600;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* Konzeptnotizen */
+.notes h2{font-size:clamp(1.6rem,3.4vw,2.2rem);margin-bottom:6px}
+.notes>p.lead{font-style:italic;color:var(--muted);max-width:62ch;margin-bottom:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:22px 30px}
+.card{display:flex;flex-direction:column;gap:6px;min-width:0;padding-top:10px;border-top:1px solid var(--ink)}
+.card h3{font-size:1.25rem}
+.card p,.card li{font-size:1rem}
+.card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:3px}
+.card code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.84em;background:var(--raised);border:1px solid var(--line);padding:0 4px}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:.96rem}
+.tbl th{font-family:var(--f-label);font-weight:600;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--sea);text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--ink)}
+.tbl td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr.rec td:first-child{font-weight:600}
+.foot{font-size:.88rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--sea)}
+
+@media (max-width:960px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .intro{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion: reduce){ #gMap,#gGrid,#gPins,#gDist,.tray{transition:none} }
+</style>
+
+</head>
+<body>
+<div class="band"><div class="band-in">
+  <div class="brand"><h1>Kiel by Night</h1><span>Konzept · Kartenansicht · v0.1</span></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="stamp">Mockup · nicht in der Website</span>
+    <button class="hbtn" id="themeBtn" type="button">Theme</button>
+  </div>
+</div></div>
+
+<div class="wrap">
+  <section class="intro">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="eyebrow">Beziehungskarte · Erweiterung</span>
+      <h2>Wer ist mit wem verbunden, und wo in Kiel sitzen sie?</h2>
+    </div>
+    <div>
+      <p>Jede Figur bekommt zusätzlich zu ihrer Graph-Position einen Platz auf der Karte der Stadt. Der Umschalter wechselt zwischen beiden Ansichten, Figuren und Verbindungen bleiben dieselben.</p>
+      <p class="warn">Alle Figuren, Orte und Herrschaftsverhältnisse sind Beispieldaten. Die Kartenform ist schematisch gezeichnet und nicht aus Geodaten abgeleitet.</p>
+    </div>
+  </section>
+
+  <section class="tool" aria-label="Interaktives Mockup">
+    <div class="bar">
+      <div class="grp"><span class="eyebrow">Ansicht</span><div class="seg" id="segView" role="group" aria-label="Ansicht"></div></div>
+      <div class="grp"><span class="eyebrow">Modus</span><div class="seg" id="segMode" role="group" aria-label="Modus"></div></div>
+      <div class="grp"><span class="eyebrow">Perspektive</span><div class="seg" id="segRole" role="group" aria-label="Perspektive"></div></div>
+      <div class="grp"><input type="search" id="q" placeholder="Name suchen …" aria-label="Name suchen"></div>
+    </div>
+    <div class="bar">
+      <div class="grp"><span class="eyebrow">Ebenen</span><div class="chips" id="layerChips"></div></div>
+      <div class="grp"><span class="eyebrow">Linien</span><div class="seg" id="segEdges" role="group" aria-label="Beziehungslinien"></div></div>
+      <div class="grp"><span class="eyebrow">Typ</span><div class="chips" id="typeChips"></div></div>
+    </div>
+    <div id="msg" role="status" aria-live="polite"></div>
+
+    <div class="work">
+      <div class="stagecol">
+        <div class="stage" id="stage">
+          <span class="viewtag" id="viewtag"></span>
+          <div class="scroll">
+            <svg id="cv" class="view-map" viewBox="0 0 1000 700" role="img" aria-label="Karte von Kiel mit Figuren und Orten"></svg>
+          </div>
+          <div class="zoom"><button type="button" id="zIn" aria-label="Hineinzoomen">+</button><button type="button" id="zOut" aria-label="Herauszoomen">−</button><button type="button" id="zFit" aria-label="Ansicht zurücksetzen">⌂</button></div>
+        </div>
+        <div class="tray" id="tray" hidden>
+          <span class="eyebrow" id="trayTitle"></span>
+          <div class="row" id="trayRow"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <aside class="panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section class="notes">
+    <span class="eyebrow">Konzeptnotizen</span>
+    <h2>Was hinter dem Mockup steckt</h2>
+    <p class="lead">Ausführliche Fassung: <code>docs/Konzept_Kartenansicht_v0_1.md</code>. Hier die Punkte, die man im Mockup ausprobieren kann.</p>
+    <div class="cards">
+      <div class="card"><h3>Zwei Positionen je Figur</h3>
+        <p>Der Graph bleibt, wie er ist. Zusätzlich kennt jede Figur eine Kartenposition. Beim Umschalten gleiten die Figuren von der einen zur anderen, die Verbindungen laufen mit. Wer in der Karte nichts platziert hat, liegt in der Ablage.</p></div>
+      <div class="card"><h3>Drei Zustände der Verortung</h3>
+        <ul><li><b>Verankert:</b> an einem Ort (Elysium, Refugium, Jagdgebiet …). Mehrere Figuren am selben Ort sortieren sich im Kreis um die Markierung.</li>
+        <li><b>Frei:</b> irgendwo auf der Karte, der Stadtteil ergibt sich aus der Koordinate.</li>
+        <li><b>Nicht verortet:</b> liegt in der Ablage.</li></ul>
+        <p class="muted">Im Modus „Bearbeitung“ ziehen. Wird die Figur nahe an einem Ort losgelassen, rastet sie dort ein.</p></div>
+      <div class="card"><h3>Beziehungen auf der Karte</h3>
+        <p>Standard: nur die Linien der angewählten Figur, mit Beschriftung. Alternativ alle oder keine. Im Detailfeld steht die geschätzte Luftlinie zu jeder Verbindung, hilfreich bei Revierfragen und Reisezeit in einer Nacht.</p></div>
+      <div class="card"><h3>Herrschaft als Ebene</h3>
+        <p>Die Ebene „Herrschaft“ färbt Stadtteile nach Sekte, schraffiert sind umstrittene Gebiete. Der Storyteller stellt die Herrschaft je Stadtteil im Detailfeld um. Die Zuordnung im Mockup ist ausgedacht.</p></div>
+      <div class="card"><h3>Rechte und Karten</h3>
+        <p>Die ST-Karte kennt alle Notion-Figuren, die Spielerkarte nur das, was die Spieler selbst eingetragen haben. Verortungen werden je Karte getrennt gespeichert. Der Schalter „Perspektive“ zeigt, wie Spieler die ST-Karte nicht sehen würden: Figuren mit Vermerk „nur ST“ verschwinden samt Verbindungen.</p></div>
+      <div class="card"><h3>Offen für dich</h3>
+        <ul><li>Stadtplan-Look oder Schemaplan wie ein U-Bahn-Netz?</li>
+        <li>Soll „Herrschaft“ in Notion gepflegt werden oder nur hier?</li>
+        <li>Zeitschieber je Session als spätere Phase?</li>
+        <li>Bedienung am Handy: Antippen und Ablage, ohne Ziehen?</li></ul></div>
+    </div>
+    <div style="height:26px"></div>
+    <h3 style="font-size:1.3rem;margin-bottom:8px">Woher kommt die Karte?</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Option</th><th>Vorteil</th><th>Nachteil</th></tr></thead>
+      <tbody>
+        <tr><td>A · Eigene Schemakarte (SVG, wie hier)</td><td>Keine externen Aufrufe, Stil frei wählbar, sofort lesbar</td><td>Nicht maßstäblich, von Hand gezeichnet</td></tr>
+        <tr class="rec"><td>B · OSM-Daten einmalig vereinfachen, als SVG ins Repo</td><td>Echte Geometrie, keine externen Aufrufe im Betrieb, Stil frei wählbar</td><td>Einmalige Aufbereitung, Quellenangabe nötig</td></tr>
+        <tr><td>C · Live-Kacheln (z. B. Leaflet)</td><td>Zoombar bis zur Straße</td><td>Jeder Seitenaufruf fragt einen Kartenserver an. Das widerspricht dem Grundsatz von Version 1.12.0: Schriften und Bibliotheken liegen lokal</td></tr>
+      </tbody></table></div>
+    <p class="foot" style="margin-top:14px">Empfehlung: B. Kartendaten von OpenStreetMap stehen unter der ODbL und verlangen die Nennung „© OpenStreetMap-Mitwirkende“, Hinweise unter <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">openstreetmap.org/copyright</a>.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const el=(tag,attrs={},...kids)=>{const n=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))if(v!=null)n.setAttribute(k,v);for(const c of kids)if(c!=null)n.append(c);return n;};
+const h=(tag,attrs={},...kids)=>{const n=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v===true?"":v);}for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(c));return n;};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const KM=0.026; // geschätzter Maßstab: Kartenpunkte → km (Innenstadt–Holtenau ≈ 250 Punkte ≈ 6,5 km)
+
+/* ---------- Daten (Beispiele) ---------- */
+const OWNERS={camarilla:{name:"Camarilla",color:"--slate"},anarch:{name:"Anarchen",color:"--rust"},umstritten:{name:"Umstritten",color:"--brass"},frei:{name:"Ungeklärt",color:null}};
+const SHORE=[[1000,110],[700,140],[650,175],[665,230],[680,300],[668,380],[650,450],[625,520],[615,580],[585,612],[545,592],[520,520],[500,450],[495,380],[505,320],[520,260],[535,215],[545,185],[480,160],[400,120],[340,70],[310,30],[280,0]];
+const WATER_POLY=[[280,0],[1000,0],...SHORE];
+const DISTRICTS=[
+ {id:"schilksee",name:"Schilksee",owner:"frei",poly:[[290,40],[345,85],[395,125],[385,160],[330,150],[285,100]]},
+ {id:"friedrichsort",name:"Friedrichsort",owner:"frei",poly:[[420,168],[482,168],[540,192],[532,232],[452,236],[420,205]]},
+ {id:"holtenau",name:"Holtenau",owner:"umstritten",poly:[[430,242],[524,242],[510,298],[432,296]]},
+ {id:"wik",name:"Wik",owner:"umstritten",poly:[[438,306],[502,306],[492,372],[436,376]]},
+ {id:"duesternbrook",name:"Düsternbrook",owner:"camarilla",poly:[[430,384],[492,384],[498,452],[432,456]]},
+ {id:"innenstadt",name:"Innenstadt",owner:"camarilla",poly:[[430,464],[503,462],[514,520],[536,586],[480,598],[430,540]]},
+ {id:"sued",name:"Kiel-Süd",owner:"frei",poly:[[420,610],[540,606],[560,670],[430,690]]},
+ {id:"mettenhof",name:"Mettenhof",owner:"frei",poly:[[170,430],[340,425],[345,520],[175,525]]},
+ {id:"dietrichsdorf",name:"Neumühlen-Dietrichsdorf",owner:"frei",poly:[[664,196],[800,210],[790,284],[684,284]]},
+ {id:"wellingdorf",name:"Wellingdorf",owner:"frei",poly:[[683,290],[782,294],[772,356],[676,352]]},
+ {id:"ellerbek",name:"Ellerbek",owner:"anarch",poly:[[672,360],[768,364],[752,420],[664,418]]},
+ {id:"gaarden-ost",name:"Gaarden-Ost",owner:"anarch",poly:[[660,426],[752,430],[742,500],[640,496]]},
+ {id:"gaarden-sued",name:"Gaarden-Süd",owner:"anarch",poly:[[634,506],[726,506],[706,574],[622,572]]},
+];
+const KINDS={E:{name:"Elysium",color:"--brass"},R:{name:"Refugium",color:"--plum"},J:{name:"Jagdgebiet",color:"--rust"},T:{name:"Treffpunkt",color:"--teal"},K:{name:"Ereignisort",color:"--moss"}};
+const PLACES=[
+ {id:"schloss",name:"Kieler Schloss und Kiellinie",kind:"E",x:500,y:520,note:"Beispiel: Treffpunkt des Hofes."},
+ {id:"landtag",name:"Landeshaus am Düsternbrooker Weg",kind:"T",x:488,y:402,note:"Beispiel: Amtsgeschäfte und Hinterzimmer."},
+ {id:"uni",name:"Universität",kind:"J",x:458,y:440,note:"Beispiel: Studenten als Beute."},
+ {id:"schleuse",name:"Schleuse Holtenau",kind:"T",x:513,y:270,note:"Beispiel: Zugang vom Kanal."},
+ {id:"hbf",name:"Hauptbahnhof",kind:"J",x:520,y:572,note:"Beispiel: Durchreisende, wenig Zeugen."},
+ {id:"suedfriedhof",name:"Südfriedhof",kind:"R",x:470,y:640,note:"Beispiel: ruhiges Refugium."},
+ {id:"vineta",name:"Vinetaplatz",kind:"J",x:700,y:462,note:"Beispiel: Revier der Anarchen."},
+ {id:"hafen",name:"Ostuferhafen",kind:"T",x:665,y:545,note:"Beispiel: Umschlag, Schmuggel."},
+ {id:"schilksee-oz",name:"Olympiazentrum Schilksee",kind:"K",x:352,y:98,note:"Beispiel: Kieler Woche."},
+];
+const SECTS={Camarilla:"hexagon",Anarch:"triangle",Sabbat:"diamond","Unabhängig":"round-rectangle","Second Inquisition":"star","":"ellipse"};
+const TYPE_COL={Kindred:"--blood",Ghoul:"--brass",Sterblicher:"--slate",Wight:"--plum"};
+const NODES=[
+ {id:"pca",label:"SC A",full:"Spielercharakter A",type:"Kindred",sect:"Camarilla",pc:1,gx:470,gy:380,place:"suedfriedhof",desc:"Beispielfigur."},
+ {id:"pcb",label:"SC B",full:"Spielercharakter B",type:"Kindred",sect:"Anarch",pc:1,gx:570,gy:250,place:"vineta",desc:"Beispielfigur."},
+ {id:"pcc",label:"SC C",full:"Spielercharakter C",type:"Kindred",sect:"Camarilla",pc:1,gx:470,gy:530,place:null,geo:null,desc:"Beispielfigur. Noch nicht verortet."},
+ {id:"prinz",label:"Prinzipal",full:"Prinzipal",type:"Kindred",sect:"Camarilla",gx:250,gy:200,place:"schloss",desc:"Beispielfigur."},
+ {id:"senes",label:"Seneschall",full:"Seneschall",type:"Kindred",sect:"Camarilla",gx:160,gy:320,place:"landtag",desc:"Beispielfigur."},
+ {id:"harp",label:"Harpyie",full:"Harpyie",type:"Kindred",sect:"Camarilla",gx:350,gy:150,place:"schloss",desc:"Beispielfigur."},
+ {id:"scourge",label:"Scourge",full:"Scourge",type:"Kindred",sect:"Camarilla",gx:200,gy:440,place:null,geo:[468,345],desc:"Beispielfigur, streift frei durch die Wik."},
+ {id:"ghoul",label:"Ghoul",full:"Ghoul des Seneschalls",type:"Ghoul",sect:"Camarilla",gx:90,gy:430,place:"landtag",desc:"Beispielfigur."},
+ {id:"kommo",label:"Kommodore †",full:"Kommodore (tot)",type:"Kindred",sect:"Camarilla",dead:1,gx:400,gy:280,place:"schilksee-oz",desc:"Beispielfigur."},
+ {id:"sprech",label:"Sprecher",full:"Sprecher der Anarchen",type:"Kindred",sect:"Anarch",gx:780,gy:390,place:"vineta",desc:"Beispielfigur."},
+ {id:"barkeep",label:"Barkeeperin",full:"Barkeeperin in Gaarden",type:"Sterblicher",sect:"",gx:870,gy:270,place:"vineta",desc:"Beispielfigur."},
+ {id:"hafenm",label:"Hafenmeister",full:"Hafenmeister",type:"Sterblicher",sect:"",gx:800,gy:530,place:"hafen",desc:"Beispielfigur."},
+ {id:"journ",label:"Journalistin",full:"Journalistin",type:"Sterblicher",sect:"",gx:660,gy:450,place:"uni",desc:"Beispielfigur."},
+ {id:"wight",label:"Wight",full:"Wight im Südfriedhof",type:"Wight",sect:"",stOnly:1,gx:300,gy:600,place:"suedfriedhof",desc:"Beispielfigur, nur dem ST bekannt."},
+ {id:"sabbat",label:"Späher",full:"Sabbat-Späher",type:"Kindred",sect:"Sabbat",stOnly:1,gx:900,gy:130,place:null,geo:[735,165],desc:"Beispielfigur, nur dem ST bekannt."},
+ {id:"si",label:"Kontakt",full:"Second-Inquisition-Kontakt",type:"Sterblicher",sect:"Second Inquisition",stOnly:1,gx:700,gy:130,place:null,geo:null,desc:"Beispielfigur, nur dem ST bekannt. In der Ablage."},
+];
+const EDGES=[
+ ["prinz","senes","Vertrauter","mutual"],["prinz","harp","gebietet","directed"],["senes","ghoul","Herr von","directed"],["senes","scourge","stellt vor","directed"],
+ ["scourge","sprech","jagt","directed"],["sprech","barkeep","Informantin","mutual"],["hafenm","sprech","schuldet einen Gefallen","directed"],
+ ["pca","prinz","Schützling","directed"],["pcb","sprech","Kontakt","mutual"],["pcb","journ","Quelle","directed"],["pcc","wight","folgt einer Spur","directed"],
+ ["harp","journ","füttert Gerüchte","directed"],["kommo","prinz","Erzeuger von","directed"],["sabbat","hafenm","besticht","directed"],["si","journ","beobachtet","directed"],["pca","pcb","Coterie","undirected"],["pca","pcc","Coterie","undirected"],["pcb","pcc","Coterie","undirected"]
+].map((e,i)=>({id:"e"+i,a:e[0],b:e[1],label:e[2],dir:e[3]}));
+const N=Object.fromEntries(NODES.map(n=>[n.id,n])), P=Object.fromEntries(PLACES.map(p=>[p.id,p])), D=Object.fromEntries(DISTRICTS.map(d=>[d.id,d]));
+
+/* ---------- Zustand ---------- */
+const S={view:"map",mode:"view",role:"st",layers:{districts:true,pins:true,domain:false,names:true},edges:"sel",sel:null,hidden:new Set(),q:""};
+const pos={}; let anim=null;
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const roleOk=n=>!(S.role==="player"&&n.stOnly);
+const shown=n=>roleOk(n)&&!S.hidden.has(n.type);
+function pip(x,y,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;}
+const districtAt=(x,y)=>DISTRICTS.find(d=>pip(x,y,d.poly))||null;
+const inWater=(x,y)=>pip(x,y,WATER_POLY);
+function geoPos(n){
+  if(n.place){
+    const p=P[n.place], mem=NODES.filter(m=>m.place===n.place&&roleOk(m)), i=mem.indexOf(n), k=mem.length;
+    const a=(k===1?-50:-90+i*360/k)*Math.PI/180, r=k===1?26:k===2?32:k===3?36:40+(k-4)*4;
+    return [p.x+Math.cos(a)*r,p.y+Math.sin(a)*r];
+  }
+  return n.geo||null;
+}
+const nodeDistrict=n=>{const g=geoPos(n);return g?districtAt(g[0],g[1]):null;};
+const target=n=>{
+  if(S.view==="graph")return{x:n.gx,y:n.gy,o:shown(n)?1:0};
+  const g=geoPos(n),cur=pos[n.id];
+  if(!g)return{x:cur?cur.x:n.gx,y:cur?cur.y:n.gy,o:0};
+  return{x:g[0],y:g[1],o:shown(n)?1:0};
+};
+function retarget(){
+  const to={};for(const n of NODES)to[n.id]=target(n);
+  if(reduced){for(const n of NODES)pos[n.id]={...to[n.id]};draw();return;}
+  const from={};for(const n of NODES)from[n.id]={...pos[n.id]};
+  anim={t0:performance.now(),dur:620,from,to};requestAnimationFrame(step);
+}
+function step(t){
+  if(!anim)return;
+  const k=clamp((t-anim.t0)/anim.dur,0,1),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  for(const n of NODES){const a=anim.from[n.id],b=anim.to[n.id];pos[n.id]={x:a.x+(b.x-a.x)*e,y:a.y+(b.y-a.y)*e,o:a.o+(b.o-a.o)*e};}
+  draw();
+  if(k<1)requestAnimationFrame(step);else anim=null;
+}
+
+/* ---------- Szene aufbauen ---------- */
+const svg=$("cv");
+function smooth(pts){let d="";for(let i=0;i<pts.length-1;i++){const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+  d+=`C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]} `;}return d;}
+function shapeEl(shape,r,cls){
+  const ps=(arr)=>arr.map(p=>p.join(",")).join(" ");
+  switch(shape){
+    case"hexagon":return el("polygon",{class:cls,points:ps([0,1,2,3,4,5].map(k=>[Math.cos(k*Math.PI/3)*r*1.1,Math.sin(k*Math.PI/3)*r*1.1]))});
+    case"triangle":return el("polygon",{class:cls,points:ps([[0,-r*1.15],[r*1.1,r*.9],[-r*1.1,r*.9]])});
+    case"diamond":return el("polygon",{class:cls,points:ps([[0,-r*1.25],[r*1.25,0],[0,r*1.25],[-r*1.25,0]])});
+    case"round-rectangle":return el("rect",{class:cls,x:-r*1.1,y:-r*.88,width:r*2.2,height:r*1.76,rx:5});
+    case"star":{const pts=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr=k%2?r*.55:r*1.3;pts.push([Math.cos(a)*rr,Math.sin(a)*rr]);}return el("polygon",{class:cls,points:ps(pts)});}
+    default:return el("circle",{class:cls,r:r});
+  }
+}
+const fillOf=n=>`fill:var(${TYPE_COL[n.type]||"--grey"})`;
+function miniShape(n){const s=el("svg",{width:22,height:22,viewBox:"-13 -13 26 26","aria-hidden":"true"});const sh=shapeEl(SECTS[n.sect]||"ellipse",8,"shape");sh.setAttribute("style",fillOf(n)+";stroke:var(--surface);stroke-width:1");s.append(sh);if(n.pc)s.append(el("circle",{r:11,style:"fill:none;stroke:var(--ink);stroke-width:1.2"}));return s;}
+
+const gGrid=el("g",{id:"gGrid"}),gMap=el("g",{id:"gMap"}),gDist=el("g",{id:"gDist",class:"dist"}),gPins=el("g",{id:"gPins"}),gEdges=el("g",{id:"gEdges"}),gNodes=el("g",{id:"gNodes"});
+const defs=el("defs",{});
+defs.innerHTML='<pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--brass);opacity:.12"/><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--brass);stroke-width:2.5;opacity:.55"/></pattern><pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1.3" style="fill:var(--line2);opacity:.55"/></pattern>';
+gGrid.append(el("rect",{x:0,y:0,width:1000,height:700,fill:"url(#dots)",style:"pointer-events:none"}));
+const bg=el("rect",{id:"bg",x:-2000,y:-2000,width:5000,height:5000,fill:"transparent"});
+gMap.append(
+  el("path",{class:"water",d:"M280,0 L1000,0 L1000,110 "+smooth(SHORE)+"Z"}),
+  el("path",{id:"canalP",class:"canal",d:"M40,388 Q160,350 270,326 Q410,296 520,270",style:"stroke-width:11"}),
+  el("path",{class:"canal",d:"M668,262 Q760,250 880,300",style:"stroke-width:7"}),
+  el("text",{class:"wlabel",x:690,y:60,style:"font-size:26px;letter-spacing:.3em"},"Ostsee"),
+  el("text",{class:"wlabel",transform:"translate(600 410) rotate(-84)",style:"font-size:15px;letter-spacing:.35em"},"Kieler Förde"),
+  (()=>{const t=el("text",{class:"wlabel",style:"font-size:10px;letter-spacing:.2em"});t.append(el("textPath",{href:"#canalP",startOffset:"12%"},"Nord-Ostsee-Kanal"));return t;})(),
+  el("text",{class:"wlabel",x:800,y:268,style:"font-size:10px;letter-spacing:.15em"},"Schwentine"),
+  (()=>{const g=el("g",{class:"scalebar",transform:"translate(40 662)"});g.append(el("line",{x1:0,y1:0,x2:77,y2:0}),el("line",{x1:0,y1:-4,x2:0,y2:4}),el("line",{x1:77,y1:-4,x2:77,y2:4}),el("text",{x:38,y:16},"≈ 2 km · schematisch"));return g;})(),
+  (()=>{const g=el("g",{class:"north",transform:"translate(955 640)"});g.append(el("path",{d:"M0,-22 L7,6 L0,1 L-7,6 Z"}),el("text",{x:0,y:20},"N"));return g;})()
+);
+for(const d of DISTRICTS){
+  const poly=el("polygon",{points:d.poly.map(p=>p.join(",")).join(" "),"data-d":d.id});
+  const cx=d.poly.reduce((a,p)=>a+p[0],0)/d.poly.length,cy=d.poly.reduce((a,p)=>a+p[1],0)/d.poly.length;
+  const g=el("g",{});g.append(poly,el("text",{x:cx,y:cy+3},d.name));gDist.append(g);d.el=poly;
+  poly.addEventListener("click",ev=>{ev.stopPropagation();select({kind:"district",id:d.id});});
+}
+for(const p of PLACES){
+  const g=el("g",{class:"pin",transform:`translate(${p.x} ${p.y})`,tabindex:0,role:"button","aria-label":KINDS[p.kind].name+": "+p.name});
+  g.append(el("circle",{class:"ring",r:14}),el("circle",{class:"b",r:9,style:`stroke:var(${KINDS[p.kind].color})`}),el("text",{class:"g",style:`fill:var(${KINDS[p.kind].color})`},p.kind),el("text",{class:"plabel",x:-12,y:20,style:"text-anchor:end"},p.name.replace(" und Kiellinie","").replace(" am Düsternbrooker Weg","")));
+  g.addEventListener("click",ev=>{ev.stopPropagation();select({kind:"place",id:p.id});});
+  g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();select({kind:"place",id:p.id});}});
+  p.el=g;gPins.append(g);
+}
+for(const e of EDGES){
+  const g=el("g",{class:"edge"});e.line=el("line",{});e.ah1=el("polygon",{});e.ah2=el("polygon",{});e.txt=el("text",{},e.label);g.append(e.line,e.ah1,e.ah2,e.txt);e.el=g;gEdges.append(g);
+}
+for(const n of NODES){
+  pos[n.id]={x:n.gx,y:n.gy,o:1};
+  const g=el("g",{class:"tok"+(n.dead?" dead":"")+(n.stOnly?" stonly":""),"data-id":n.id,tabindex:0,role:"button","aria-label":n.full});
+  const sh=shapeEl(SECTS[n.sect]||"ellipse",11,"shape");sh.setAttribute("style",fillOf(n));
+  if(n.pc)g.append(el("circle",{class:"pcring",r:17}));
+  g.append(sh,el("text",{class:"tlabel",y:28},n.label));
+  g.addEventListener("pointerdown",ev=>tokDown(ev,n));
+  g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();select({kind:"node",id:n.id});}});
+  n.el=g;gNodes.append(g);
+}
+svg.append(defs,bg,gGrid,gMap,gDist,gPins,gEdges,gNodes);
+// Von Anfang an aus dem Zustand "Karte" starten
+for(const n of NODES){const t=target(n);pos[n.id]={...t};}
+
+/* ---------- Zeichnen ---------- */
+function neighbors(id){const s=new Set([id]);for(const e of EDGES){if(e.a===id)s.add(e.b);if(e.b===id)s.add(e.a);}return s;}
+function draw(){
+  svg.setAttribute("class",(S.view==="graph"?"view-graph":"view-map")+(S.mode==="edit"?" edit":"")+(S.layers.names?"":" nonames"));
+  const selNode=S.sel&&S.sel.kind==="node"?S.sel.id:null,nb=selNode?neighbors(selNode):null,q=S.q.trim().toLowerCase();
+  for(const n of NODES){
+    const p=pos[n.id];
+    n.el.setAttribute("transform",`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);
+    n.el.style.opacity=p.o<.02?0:"";n.el.style.pointerEvents=p.o<.5||!shown(n)||(S.view==="map"&&!geoPos(n))?"none":"";
+    n.el.style.display=p.o<.02?"none":"";
+    const match=!q||n.full.toLowerCase().includes(q)||n.label.toLowerCase().includes(q);
+    n.el.classList.toggle("faded",p.o>=.02&&((nb&&!nb.has(n.id))||!match));
+    n.el.classList.toggle("sel",selNode===n.id);
+  }
+  for(const e of EDGES){
+    const a=pos[e.a],b=pos[e.b],A=N[e.a],B=N[e.b];
+    const touches=selNode&&(e.a===selNode||e.b===selNode);
+    const vis=S.edges!=="off"&&a.o>.5&&b.o>.5&&shown(A)&&shown(B)&&(S.edges==="all"||touches);
+    e.el.style.display=vis?"":"none";if(!vis)continue;
+    e.el.classList.toggle("hl",!!touches);
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len,off=16;
+    const x1=a.x+ux*off,y1=a.y+uy*off,x2=b.x-ux*off,y2=b.y-uy*off;
+    e.line.setAttribute("x1",x1);e.line.setAttribute("y1",y1);e.line.setAttribute("x2",x2);e.line.setAttribute("y2",y2);
+    const head=(px,py,vx,vy)=>{const s=7,nx=-vy,ny=vx;return `${px},${py} ${px-vx*s*1.6+nx*s*.6},${py-vy*s*1.6+ny*s*.6} ${px-vx*s*1.6-nx*s*.6},${py-vy*s*1.6-ny*s*.6}`;};
+    e.ah1.setAttribute("points",e.dir!=="undirected"?head(x2,y2,ux,uy):"");
+    e.ah2.setAttribute("points",e.dir==="mutual"?head(x1,y1,-ux,-uy):"");
+    e.txt.setAttribute("x",(x1+x2)/2);e.txt.setAttribute("y",(y1+y2)/2-4);
+  }
+  gPins.style.display=S.layers.pins?"":"none";
+  for(const p of PLACES)p.el.classList.toggle("sel",S.sel&&S.sel.kind==="place"&&S.sel.id===p.id);
+  gDist.style.display=S.layers.districts||S.layers.domain?"":"none";
+  for(const d of DISTRICTS){
+    const o=OWNERS[d.owner];
+    d.el.style.fill=S.layers.domain?(d.owner==="umstritten"?"url(#hatch)":(o.color?`color-mix(in srgb, var(${o.color}) 26%, transparent)`:"")):"";
+    d.el.style.strokeOpacity=S.layers.districts||S.layers.domain?"":"0";
+    d.el.classList.toggle("sel",S.sel&&S.sel.kind==="district"&&S.sel.id===d.id);
+  }
+  gDist.querySelectorAll("text").forEach(t=>t.style.display=S.layers.districts?"":"none");
+}
+
+/* ---------- Interaktion: Ziehen ---------- */
+const svgPt=ev=>{const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
+const msg=t=>{$("msg").textContent=t||"";};
+function nearestPin(x,y,max){let best=null,bd=max;for(const p of PLACES){const d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;best=p;}}return best;}
+function placeAt(n,x,y){
+  if(inWater(x,y)){msg("Dort ist Wasser. "+n.full+" bleibt an der bisherigen Stelle.");return false;}
+  const p=nearestPin(x,y,36);
+  if(p){n.place=p.id;n.geo=null;msg(n.full+" ist an „"+p.name+"“ verankert.");}
+  else{n.place=null;n.geo=[Math.round(clamp(x,0,1000)),Math.round(clamp(y,0,700))];const d=districtAt(x,y);msg(n.full+" steht frei"+(d?" in "+d.name:" außerhalb der Stadtteile")+".");}
+  return true;
+}
+const unplace=n=>{n.place=null;n.geo=null;msg(n.full+" liegt wieder in der Ablage.");};
+let drag=null;
+function tokDown(ev,n){
+  if(ev.button!==undefined&&ev.button!==0)return;
+  ev.stopPropagation();
+  drag={n,moved:false,sx:ev.clientX,sy:ev.clientY};
+  if(S.mode==="edit"){n.el.classList.add("drag");ev.preventDefault();}
+  window.addEventListener("pointermove",tokMove);window.addEventListener("pointerup",tokUp,{once:true});
+}
+function tokMove(ev){
+  if(!drag)return;
+  if(Math.hypot(ev.clientX-drag.sx,ev.clientY-drag.sy)>4)drag.moved=true;
+  if(S.mode!=="edit"||!drag.moved)return;
+  const pt=svgPt(ev);anim=null;pos[drag.n.id]={x:clamp(pt.x,0,1000),y:clamp(pt.y,0,700),o:1};draw();
+  const r=$("tray").getBoundingClientRect();$("tray").classList.toggle("over",S.view==="map"&&!$("tray").hidden&&ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom);
+}
+function tokUp(ev){
+  window.removeEventListener("pointermove",tokMove);
+  const d=drag;drag=null;if(!d)return;d.n.el.classList.remove("drag");$("tray").classList.remove("over");
+  if(S.mode==="edit"&&d.moved){
+    if(S.view==="graph"){const p=pos[d.n.id];d.n.gx=Math.round(p.x);d.n.gy=Math.round(p.y);msg(d.n.full+": Graph-Position geändert.");}
+    else{
+      const r=$("tray").getBoundingClientRect();
+      if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom)unplace(d.n);
+      else{const pt=svgPt(ev);placeAt(d.n,pt.x,pt.y);}
+    }
+    retarget();renderAll();
+  }else select({kind:"node",id:d.n.id});
+}
+function chipDown(ev,n){
+  if(S.mode!=="edit"){select({kind:"node",id:n.id});return;}
+  ev.preventDefault();
+  const ghost=h("div",{class:"ghost"},miniShape(n));document.body.append(ghost);
+  const mv=e=>{ghost.style.left=e.clientX+"px";ghost.style.top=e.clientY+"px";};mv(ev);
+  window.addEventListener("pointermove",mv);
+  window.addEventListener("pointerup",e=>{
+    window.removeEventListener("pointermove",mv);ghost.remove();
+    const r=svg.getBoundingClientRect();
+    if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){const pt=svgPt(e);if(placeAt(n,pt.x,pt.y)){pos[n.id]={x:pt.x,y:pt.y,o:0};retarget();renderAll();select({kind:"node",id:n.id});}}
+    else select({kind:"node",id:n.id});
+  },{once:true});
+}
+
+/* ---------- Zoom und Verschieben ---------- */
+const vb={x:0,y:0,w:1000,h:700};
+function applyVB(){vb.x=clamp(vb.x,0,1000-vb.w);vb.y=clamp(vb.y,0,700-vb.h);svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
+function zoomBy(f,cx=vb.x+vb.w/2,cy=vb.y+vb.h/2){const w=clamp(vb.w*f,250,1000),k=w/vb.w;vb.x=cx-(cx-vb.x)*k;vb.y=cy-(cy-vb.y)*k;vb.w=w;vb.h=w*.7;applyVB();}
+$("zIn").onclick=()=>zoomBy(.7);$("zOut").onclick=()=>zoomBy(1/.7);$("zFit").onclick=()=>{vb.x=0;vb.y=0;vb.w=1000;vb.h=700;applyVB();};
+svg.addEventListener("wheel",ev=>{if(!(ev.ctrlKey||ev.metaKey))return;ev.preventDefault();const p=svgPt(ev);zoomBy(ev.deltaY>0?1.12:1/1.12,p.x,p.y);},{passive:false});
+let pan=null;
+bg.addEventListener("pointerdown",ev=>{pan={sx:ev.clientX,sy:ev.clientY,vx:vb.x,vy:vb.y,moved:false};bg.setPointerCapture(ev.pointerId);});
+bg.addEventListener("pointermove",ev=>{if(!pan)return;const r=svg.getBoundingClientRect(),dx=(ev.clientX-pan.sx)*vb.w/r.width,dy=(ev.clientY-pan.sy)*vb.h/r.height;if(Math.hypot(ev.clientX-pan.sx,ev.clientY-pan.sy)>4)pan.moved=true;if(pan.moved){vb.x=pan.vx-dx;vb.y=pan.vy-dy;applyVB();}});
+bg.addEventListener("pointerup",()=>{if(pan&&!pan.moved)select(null);pan=null;});
+for(const g of [gMap,gGrid])g.addEventListener("click",()=>select(null));
+
+/* ---------- Auswahl und Detailfeld ---------- */
+function select(s){
+  S.sel=s;
+  if(s&&s.kind==="node"&&!roleOk(N[s.id]))S.sel=null;
+  renderPanel();renderTray();draw();
+}
+const fmtKm=(a,b)=>{const ga=geoPos(a),gb=geoPos(b);if(!ga||!gb)return "";return "≈ "+(Math.hypot(ga[0]-gb[0],ga[1]-gb[1])*KM).toFixed(1).replace(".",",")+" km";};
+const kv=rows=>h("dl",{class:"kv"},rows.filter(r=>r[1]!=null&&r[1]!=="").flatMap(([k,v])=>[h("dt",{},k),h("dd",{},v)]));
+function anchorSelect(n){
+  const s=h("select",{id:"anchorSel","aria-label":"Anker"},h("option",{value:""},"— kein Anker —"),...PLACES.map(p=>h("option",{value:p.id,selected:n.place===p.id?true:null},KINDS[p.kind].name+" · "+p.name)));
+  s.addEventListener("change",()=>{if(s.value){n.place=s.value;n.geo=null;}else{if(n.place){const g=geoPos(n);n.geo=g?[Math.round(g[0]),Math.round(g[1])]:null;}n.place=null;}retarget();renderAll();});
+  return s;
+}
+function renderPanel(){
+  const pn=$("panel");pn.replaceChildren();const s=S.sel;
+  if(!s){
+    const vis=NODES.filter(roleOk),placed=vis.filter(n=>geoPos(n)),anch=vis.filter(n=>n.place),free=placed.filter(n=>!n.place);
+    pn.append(h("span",{class:"eyebrow"},"Übersicht"),h("h3",{},"Nichts angewählt"),
+      h("p",{class:"muted"},"Figur, Ort oder Stadtteil anklicken. Die Suche blendet alle anderen Figuren aus."),
+      h("h4",{},"Verortung"),
+      kv([["Figuren",vis.length],["auf der Karte",placed.length+" davon "+anch.length+" verankert, "+free.length+" frei"],["in der Ablage",vis.length-placed.length]]),
+      h("h4",{},"Ausprobieren"),
+      h("p",{class:"muted",style:"font-size:.96rem"},"Oben auf „Bearbeitung“ schalten und eine Figur auf einen Ort oder in die Ablage ziehen. Danach zwischen Graph und Karte wechseln."));
+    return;
+  }
+  if(s.kind==="node"){
+    const n=N[s.id],d=nodeDistrict(n),g=geoPos(n);
+    pn.append(h("span",{class:"eyebrow"},n.type+(n.sect?" · "+n.sect:"")),h("h3",{},n.full),
+      h("div",{class:"badges"},n.pc?h("span",{class:"badge"},"Spielercharakter"):null,n.dead?h("span",{class:"badge"},"tot"):null,n.stOnly?h("span",{class:"badge st"},"nur ST"):null),
+      h("p",{class:"muted",style:"font-size:.98rem"},n.desc),
+      h("h4",{},"Verortung"),
+      kv([["Zustand",n.place?"verankert":(n.geo?"frei auf der Karte":"nicht verortet")],["Ort",n.place?KINDS[P[n.place].kind].name+" · "+P[n.place].name:""],["Stadtteil",g?(d?d.name:"außerhalb der Stadtteile"):""],["Herrschaft",d?OWNERS[d.owner].name:""],["Kartenpunkt",g?Math.round(g[0])+" · "+Math.round(g[1]):""]]));
+    if(S.mode==="edit")pn.append(h("div",{class:"field"},h("label",{for:"anchorSel"},"Anker setzen"),anchorSelect(n)),g?h("div",{class:"rowb"},h("button",{class:"btn small",type:"button",onclick:()=>{unplace(n);retarget();renderAll();}},"Von der Karte nehmen")):null);
+    const conn=EDGES.filter(e=>(e.a===n.id||e.b===n.id)&&roleOk(N[e.a])&&roleOk(N[e.b]));
+    pn.append(h("h4",{},"Verbindungen ("+conn.length+")"),h("div",{class:"conn"},...conn.map(e=>{
+      const o=N[e.a===n.id?e.b:e.a],arr=e.dir==="undirected"?"—":e.dir==="mutual"?"↔":(e.a===n.id?"→":"←"),dist=fmtKm(n,o);
+      return h("div",{class:"c"},arr+" ",h("button",{class:"linkbtn",type:"button",onclick:()=>select({kind:"node",id:o.id})},o.full),h("div",{class:"muted"},e.label+(dist?" · "+dist+" Luftlinie":"")));
+    })));
+  }else if(s.kind==="place"){
+    const p=P[s.id],d=districtAt(p.x,p.y),who=NODES.filter(n=>n.place===p.id&&roleOk(n));
+    pn.append(h("span",{class:"eyebrow"},KINDS[p.kind].name),h("h3",{},p.name),h("p",{class:"muted",style:"font-size:.98rem"},p.note),
+      kv([["Stadtteil",d?d.name:""],["Herrschaft",d?OWNERS[d.owner].name:""]]),
+      h("h4",{},"Anwesend ("+who.length+")"),
+      who.length?h("div",{class:"conn"},...who.map(n=>h("div",{class:"c"},h("button",{class:"linkbtn",type:"button",onclick:()=>select({kind:"node",id:n.id})},n.full),h("div",{class:"muted"},n.type+(n.sect?" · "+n.sect:""))))):h("p",{class:"muted"},"Niemand verankert."),
+      S.mode==="edit"?h("p",{class:"muted",style:"font-size:.92rem"},"Figuren aus der Ablage oder von der Karte auf die Markierung ziehen, damit sie hier einrasten."):null);
+  }else{
+    const d=D[s.id],inside=NODES.filter(n=>roleOk(n)&&nodeDistrict(n)===d);
+    pn.append(h("span",{class:"eyebrow"},"Stadtteil"),h("h3",{},d.name),kv([["Herrschaft",OWNERS[d.owner].name],["Orte",PLACES.filter(p=>districtAt(p.x,p.y)===d).map(p=>p.name).join(", ")||"keine"]]));
+    if(S.mode==="edit"){const sel=h("select",{id:"ownerSel","aria-label":"Herrschaft"},...Object.entries(OWNERS).map(([k,o])=>h("option",{value:k,selected:d.owner===k?true:null},o.name)));sel.addEventListener("change",()=>{d.owner=sel.value;msg("Herrschaft in "+d.name+": "+OWNERS[d.owner].name+" (nur im Mockup).");renderPanel();draw();});pn.append(h("div",{class:"field"},h("label",{for:"ownerSel"},"Herrschaft ändern"),sel));}
+    pn.append(h("h4",{},"Figuren hier ("+inside.length+")"),inside.length?h("div",{class:"conn"},...inside.map(n=>h("div",{class:"c"},h("button",{class:"linkbtn",type:"button",onclick:()=>select({kind:"node",id:n.id})},n.full)))):h("p",{class:"muted"},"Niemand."));
+  }
+}
+function renderTray(){
+  const tr=$("tray");tr.hidden=S.view!=="map";if(tr.hidden)return;
+  const un=NODES.filter(n=>roleOk(n)&&!geoPos(n));
+  $("trayTitle").textContent="Ablage · "+un.length+(un.length===1?" Figur nicht verortet":" Figuren nicht verortet");
+  $("trayRow").replaceChildren(...(un.length?un.map(n=>{const c=h("div",{class:"tchip"+(S.sel&&S.sel.id===n.id?" sel":""),role:"button",tabindex:0},miniShape(n),n.full);c.addEventListener("pointerdown",ev=>chipDown(ev,n));c.addEventListener("keydown",ev=>{if(ev.key==="Enter")select({kind:"node",id:n.id});});return c;}):[h("span",{class:"muted",style:"font-size:.95rem"},"Alle Figuren sind verortet. Zum Entfernen von der Karte hierher ziehen.")]));
+}
+
+/* ---------- Bedienelemente ---------- */
+function seg(id,items,get,set){const box=$(id);const paint=()=>box.replaceChildren(...items.map(([v,l])=>h("button",{type:"button","aria-pressed":String(get()===v),onclick:()=>{set(v);paint();}},l)));paint();return paint;}
+seg("segView",[["graph","Graph"],["map","Karte"]],()=>S.view,v=>{S.view=v;$("viewtag").textContent=v==="map"?"Karte · Kiel":"Graph";renderAll();retarget();});
+seg("segMode",[["view","Ansehen"],["edit","Bearbeitung"]],()=>S.mode,v=>{S.mode=v;msg(v==="edit"?"Figuren lassen sich jetzt ziehen. Auf der Karte rasten sie an Orten ein.":"");renderPanel();draw();});
+seg("segRole",[["st","Storyteller"],["player","Spieler"]],()=>S.role,v=>{S.role=v;if(S.sel&&S.sel.kind==="node"&&!roleOk(N[S.sel.id]))S.sel=null;renderAll();retarget();});
+seg("segEdges",[["sel","Auswahl"],["all","Alle"],["off","Aus"]],()=>S.edges,v=>{S.edges=v;draw();});
+function layerChips(){
+  $("layerChips").replaceChildren(...[["districts","Stadtteile"],["pins","Orte"],["domain","Herrschaft"],["names","Namen"]].map(([k,l])=>h("button",{type:"button",class:"chip","aria-pressed":String(S.layers[k]),onclick:()=>{S.layers[k]=!S.layers[k];layerChips();draw();}},l)));
+}
+function typeChips(){
+  $("typeChips").replaceChildren(...Object.keys(TYPE_COL).map(t=>h("button",{type:"button",class:"chip","aria-pressed":String(!S.hidden.has(t)),onclick:()=>{S.hidden.has(t)?S.hidden.delete(t):S.hidden.add(t);typeChips();renderAll();retarget();}},h("span",{class:"dot",style:`background:var(${TYPE_COL[t]})`}),t)));
+}
+$("q").addEventListener("input",ev=>{S.q=ev.target.value;const q=S.q.trim().toLowerCase();if(q){const m=NODES.filter(n=>shown(n)&&n.full.toLowerCase().includes(q));if(m.length===1)S.sel={kind:"node",id:m[0].id};}renderPanel();renderTray();draw();});
+function legend(){
+  const lg=$("legend");lg.replaceChildren(
+    h("span",{class:"lh"},"Form = Sekte"),...Object.entries(SECTS).filter(([k])=>k!=="Unabhängig").map(([k,v])=>h("span",{},miniShape({sect:k,type:""}),k||"ohne")),
+    h("span",{class:"lh"},"Farbe = Typ"),...Object.keys(TYPE_COL).map(t=>h("span",{},h("i",{class:"dot",style:`background:var(${TYPE_COL[t]})`}),t)),
+    h("span",{class:"lh"},"Orte"),...Object.entries(KINDS).map(([k,v])=>h("span",{},h("b",{style:`color:var(${v.color});font-family:var(--f-label);font-size:.7rem`},k),v.name)),
+    h("span",{},"Doppelring = Spielercharakter · gestrichelt rot = nur ST"));
+}
+function renderAll(){renderPanel();renderTray();draw();$("viewtag").textContent=S.view==="map"?"Karte · Kiel":"Graph";}
+$("themeBtn").addEventListener("click",()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;r.dataset.theme=dark?"light":"dark";});
+layerChips();typeChips();legend();renderAll();
+})();
+</script>
+</body>
+</html>
