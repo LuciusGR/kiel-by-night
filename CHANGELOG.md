@@ -5,7 +5,6 @@ Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`)
 
 ## 1.15.0 – 12.11.2026
 Zweite Runde nach der Durchsicht: alles, was zur Bestnote fehlte und sich ohne die Gruppe bauen ließ. **Eine Migration** (`20261112120000_guards_history_v1_15.sql`) und **eine neue Edge Function** (`account-admin`). Die Seite läuft auch ohne beide, dann fehlen Wiki-Verlauf, Live-Aktualisierung, der Schutz in der Datenbank und das Anlegen von Konten in der Seite.
-- **Farben der Karten:** Sterbliche sind grün (eigener Ton `--mortal`). Im Stil Rulebook waren sie karmesinrot und von Kindred kaum zu unterscheiden. Orte sind dafür blau, Organisationen violett. Gilt für Spielerkarte und Beziehungskarte.
 - **Übersicht:** nächste Session mit Wochentag und Countdown, „Neu seit deinem letzten Besuch“ mit Schild und „Als gelesen markieren“, für den ST „Offene Punkte“ (fehlende Zusammenfassungen, Titel, Chronik, offene Szenen, Vorrat).
 - **Charakterbogen:** Würfeln nach V5 mit Hunger-Würfeln, Messy Critical, Bestial Failure, Willenskraft-Neuwurf und Rouse Check (`web/js/dice.js`). Vorteile, Hintergründe und Nachteile als Einträge mit Punkten. XP-Verlauf. Porträt aus den Dokumenten. Clan-Vorschläge. Sprungmarken zu den Abschnitten.
 - **Gleichzeitiges Bearbeiten:** Bogen, Session-Notizen, private Notizen und Wiki-Seiten speichern nur, wenn der Eintrag seit dem Laden unverändert ist, sonst fragt die Seite nach (`saveChecked()`).
@@ -18,6 +17,9 @@ Zweite Runde nach der Durchsicht: alles, was zur Bestnote fehlte und sich ohne d
 - **Konten in der Seite:** Unter „Gruppe“ Konto anlegen und Passwort setzen (Edge Function `account-admin`, nur ST, Service-Schlüssel bleibt in der Function).
 - **Kleinigkeiten:** Ladebalken unter der Kopfzeile, Seitentitel je Bereich.
 - **Tests:** TESTSTAND
+
+## 1.14.1 – 12.11.2026
+- **Farben der Karten:** Sterbliche sind grün (eigener Ton `--mortal`, hell `#2f7d46`, dunkel `#6fcf8e`). Im Stil Rulebook waren sie karmesinrot und von Kindred kaum zu unterscheiden. Damit kein zweites Grün danebensteht, sind Orte blau (`--slate`) und Organisationen violett (`--plum`). Gilt für die Spielerkarte und die Beziehungskarte des Storytellers, samt Filter-Knöpfen. Keine Migration.
 
 ## 1.14.0 – 12.11.2026
 Ergebnis einer Durchsicht der Seite aus Sicht der Spieler und des Storytellers. Keine Migration, keine Änderung an Rechten.

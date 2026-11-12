@@ -248,6 +248,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 ## 14. Änderungen an diesem Handbuch
 
 - **12.11.2026 (Version 1.15.0):** Übersicht mit nächster Session, „Neu seit deinem letzten Besuch“ und offenen Punkten für den ST (Abschnitt 3). Bogen mit Sprungmarken, Porträt, Vorteilen mit Punkten, XP-Verlauf und Würfeln (Abschnitt 4). Formatierung, Rückfrage bei gleichzeitigem Bearbeiten, „Rückgängig“ und Live-Aktualisierung (Abschnitt 5). Karte mit Einblendung am Handy, Knotenliste, neuen Farben und Schutz der Spielercharaktere (Abschnitt 7). Wiki-Verlauf (Abschnitt 8). Storyteller: Reiter gebündelt, Spielabend, Fäden, „Mit Angaben …“, XP vergeben, Konto anlegen, Passwort setzen, Sicherung (Abschnitt 10).
+- **12.11.2026 (Version 1.14.1):** Neue Farben auf beiden Karten: Sterbliche grün, Orte blau, Organisationen violett (Abschnitt 7).
 - **12.11.2026 (Version 1.14.0):** Wischen zwischen den Bereichen am Handy, Kopfzeile am Handy mit „Menü“, Zurück-Taste und eigene Adressen für Einträge, Bereich Suche, Entwürfe für ungespeicherten Text, Verweise in Notizen, größere Tippflächen (Abschnitte 1, 2, 2a, 5, 6, 8). Für den Storyteller: fremde Notizen bearbeiten, Charaktere anlegen, zuordnen und löschen, Tab „Gruppe“ (Abschnitt 10).
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
 - **24.10.2026 (Version 1.12.0):** Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
