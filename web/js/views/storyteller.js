@@ -58,6 +58,7 @@ async function stPrivate(root) {
 // entstehen weiterhin im Supabase-Dashboard, das kann die Seite aus Sicherheitsgründen nicht.
 async function stGroup(root) {
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let profOpen = false; // aufgeklappter Abschnitt bleibt nach dem Speichern offen
   async function draw() {
     try { await loadProfiles(); } catch (_) { root.replaceChildren(h("div", { class: "notice bad" }, "Profile konnten nicht geladen werden.")); return; }
     const people = [...S.profiles.values()].sort((a, b) => (a.role === "st" ? 0 : 1) - (b.role === "st" ? 0 : 1) || String(a.display_name).localeCompare(String(b.display_name), "de"));
@@ -114,7 +115,7 @@ async function stGroup(root) {
             try { await accountCall({ action: "create", username: user, password: naPw.value, display_name: naName.value.trim(), role: naRole.value }); toast("Konto „" + user + "“ angelegt."); await draw(); }
             catch (e) { toast(e.message, true); }
           } }, "Konto anlegen"))),
-      h("details", { class: "panel", "data-admin": "newprofile" }, h("summary", { class: "muted", style: "cursor:pointer" }, "Profil zu einem vorhandenen Konto anlegen (User-ID)"), h("div", { class: "stack", style: "margin-top:10px" },
+      h("details", { class: "panel", "data-admin": "newprofile", open: profOpen ? true : null, ontoggle: ev => { profOpen = ev.target.open; } }, h("summary", { class: "muted", style: "cursor:pointer" }, "Profil zu einem vorhandenen Konto anlegen (User-ID)"), h("div", { class: "stack", style: "margin-top:10px" },
         h("p", { class: "muted" }, "Für Konten, die im Supabase-Dashboard angelegt wurden (Authentication, Users, „Add user“ mit „Auto Confirm User“, Adresse benutzername@kbn.invalid). Trage die dort angezeigte User-ID (UID) ein. Erst mit Profil ist die Person Mitglied."),
         h("div", { class: "row" }, h("div", { class: "field", style: "flex:2 1 300px" }, h("label", { for: "np-uid" }, "User-ID (UID)"), uid), h("div", { class: "field" }, h("label", { for: "np-name" }, "Anzeigename"), nn), h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "np-role" }, "Rolle"), nr),
           h("button", { class: "btn primary", type: "button", onclick: async () => {

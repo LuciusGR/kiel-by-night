@@ -269,7 +269,8 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 - **Keepalive:** `keepalive.yml` ruft montags und donnerstags (05:23 UTC) `POST /rest/v1/rpc/ping` auf, damit Supabase das Free-Projekt nicht nach 7 Tagen pausiert. Manuell startbar (Actions → Run workflow). GitHub deaktiviert geplante Workflows nach 60 Tagen ohne Repo-Aktivität, dann in *Actions* wieder einschalten.
 - **Notion pflegen:** Änderungen in den Datenbanken NPCs und Beziehungen erscheinen nach „Aus Notion neu laden“ auf der ST-Karte. Neue Felder müssen in `index.ts` (Zuordnung) und `storyteller.js` (`buildGraph`) ergänzt werden.
 - **Datenänderungen per SQL** im SQL-Editor, immer mit Blick auf die Profile und Fremdschlüssel (Löschen eines Profils löscht dessen Notizen und Dokument-Einträge).
-- **Sicherung:** Im Free-Plan gibt es keine automatische Wiederherstellung (nicht geprüft). Wichtige Inhalte regelmäßig exportieren.
+- **Sicherung:** Im Free-Plan gibt es keine automatische Wiederherstellung (nicht geprüft). Der Storyteller lädt unter „Gruppe“ eine Sicherung als JSON herunter (alle Tabellen, ohne Dateien, Abschnitt 4.2). Das regelmäßig tun und die Datei sicher ablegen.
+- **Version 1.15.0 in Betrieb nehmen (einmalig):** (1) Stand nach `main` bringen, Pages veröffentlicht die Seite. (2) Migration einspielen: `node tools/db-migrate.mjs apply 20261112120000_guards_history_v1_15 --dry-run`, dann ohne `--dry-run` (Abschnitt 4.11), oder die Datei im SQL-Editor ausführen. Danach im Dashboard prüfen: 68 Policies, `wiki_page_versions` ohne Rechte für `anon`. (3) Edge Function `account-admin` anlegen (Abschnitt 4.14). Die Reihenfolge ist unkritisch: Die Seite läuft ohne Migration und ohne Function, es fehlen dann nur Wiki-Verlauf, Live-Aktualisierung, der Datenbank-Schutz der Spielercharakter-Knoten und das Anlegen von Konten in der Seite.
 
 ### 4.12 Anleitung
 
@@ -310,7 +311,7 @@ Edge Function `supabase/functions/account-admin/index.ts`, `verify_jwt = false`,
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, `account-admin`: 13 Fälle, Browser: BROWSERZAHL Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, `account-admin`: 13 Fälle, Browser: 209 Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 

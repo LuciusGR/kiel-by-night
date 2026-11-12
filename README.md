@@ -11,6 +11,7 @@ web/                      Frontend ohne Build-Schritt (ES-Module, supabase-js + 
   js/views/*.js           ein Modul pro Bereich; map.js = gemeinsame Kartenansicht
 supabase/migrations/      Schema, RLS, Storage, Startdaten (in dieser Reihenfolge)
 supabase/functions/notion-proxy/   liest Notion (nur ST), cached in notion_cache
+supabase/functions/account-admin/  legt Konten an und setzt Passwörter (nur ST)
 .github/workflows/        pages.yml (Deploy), keepalive.yml (Ping gegen die 7-Tage-Pause)
 docs/                     Technische Doku, Benutzerhandbuch (lebend), Setup-Anleitung, Review (versioniert)
 tests/                    RLS-, Edge-Function- und Browser-Tests
@@ -28,6 +29,8 @@ Siehe `docs/Setup_Anleitung_v1_1.md`.
 ## Tests (lokal)
 - `tests/run_tests.sh`: wendet alle Migrationen auf ein lokales Postgres 16 mit nachgebautem Supabase-Kern an und prüft die Rechte. Das braucht `postgresql-16`.
 - `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts`: testet die Edge Function gegen einen Mock von Notion und Supabase.
+- `node tests/dice_test.mjs`: Würfelregeln nach V5 (`web/js/dice.js`).
+- `tests/uat/`: umfangreiche Abnahmetests (Rechte, Edge Functions, Browser), siehe `tests/uat/README.md`.
 - `tests/browser/`: Playwright-Smoke-Test aller Bereiche mit In-Memory-Supabase. Hinweise stehen in `tests/browser/README.md`.
 
 ## Rechte (Kurzfassung)
@@ -36,7 +39,7 @@ Siehe `docs/Setup_Anleitung_v1_1.md`.
 | Charakterbögen | alle | Besitzer + ST |
 | Session-Notizen | alle | eigener Abschnitt; ST: alle ändern, löschen, im Namen anderer anlegen |
 | Private Notizen | Besitzer + ST | Besitzer; ST: alle ändern, löschen, anlegen |
-| Spielerkarte | alle | alle |
+| Spielerkarte | alle | alle; Knoten von Spielercharakteren löscht nur der ST |
 | ST-Karte, Notion-Cache, ST-Positionen | ST | ST (Cache auch direkt änderbar und löschbar) |
 | Wiki | alle (ST-Notizen nur ST) | alle; Kategorien umbenennen oder löschen nur ST; Seiten löschen: Ersteller + ST |
 | Dokumente | alle (Entwürfe nur ST) | alle hochladen; löschen: Uploader + ST; freigeben: ST |

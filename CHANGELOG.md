@@ -16,7 +16,7 @@ Zweite Runde nach der Durchsicht: alles, was zur Bestnote fehlte und sich ohne d
 - **Storyteller:** In der Kopfleiste steht nur noch „Storyteller“, dahinter Beziehungskarte, Szenen, Spielabend, Private Spielernotizen und Gruppe. Neu: **Spielabend** (eine Szene groß, Status und Weiterblättern, Coterie mit Hunger, Health und Willpower zum Anklicken, eigene Notizen), **Fäden**-Übersicht über alle Szenen, Fäden oben auf der Szenenkarte, Reihenfolge per Ziehen, „Mit Angaben …“ beim Übertragen auf die Spielerkarte, XP vergeben, Schild „Zusammenfassung fehlt“, Zeitleiste wahlweise von Anfang an, Sicherung als JSON, Szenen-Entwurf sichert auch die NPC-Zeilen.
 - **Konten in der Seite:** Unter „Gruppe“ Konto anlegen und Passwort setzen (Edge Function `account-admin`, nur ST, Service-Schlüssel bleibt in der Function).
 - **Kleinigkeiten:** Ladebalken unter der Kopfzeile, Seitentitel je Bereich.
-- **Tests:** TESTSTAND
+- **Tests:** Browser 209 Fälle (neu U273 bis U290; U04, U220 und U270 angepasst), Rechte 288 Fälle (neu R340 bis R360, R195 jetzt 68 Policies, R199 jetzt 7 Realtime-Tabellen), `account-admin` 13 Fälle (`npm run account`), Würfelregeln 7 Fälle (`node tests/dice_test.mjs`), `notion-proxy` unverändert 24.
 
 ## 1.14.1 – 12.11.2026
 - **Farben der Karten:** Sterbliche sind grün (eigener Ton `--mortal`, hell `#2f7d46`, dunkel `#6fcf8e`). Im Stil Rulebook waren sie karmesinrot und von Kindred kaum zu unterscheiden. Damit kein zweites Grün danebensteht, sind Orte blau (`--slate`) und Organisationen violett (`--plum`). Gilt für die Spielerkarte und die Beziehungskarte des Storytellers, samt Filter-Knöpfen. Keine Migration.
