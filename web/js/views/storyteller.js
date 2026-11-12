@@ -1,6 +1,7 @@
 // Kiel by Night · Storyteller-Bereich: ST-Karte aus Notion (über Edge Function notion-proxy) + private Spielernotizen
-import { h, toast, head, fmtDate, fmtDateTime } from "../lib.js";
-import { sb, S, go, registerView, personName, charOf } from "../core.js";
+import { h, toast, errMsg, head, guard, confirmBtn, fmtDate, fmtDateTime } from "../lib.js";
+import { sb, S, go, registerView, personName, charOf, loadProfiles } from "../core.js";
+import { richText } from "../wikilinks.js";
 import { MapView, shapeForSekte, normType } from "./map.js";
 import { savePositions, loadPositions } from "./playermap.js";
 import { sceneMentions } from "./scenes.js";
@@ -10,26 +11,94 @@ registerView("st", async m => {
   if (!S.isST) { m.append(h("div", { class: "notice bad" }, "Dieser Bereich ist nur für den Storyteller.")); return; }
   const tab = (S.arg && S.arg.tab) || "map";
   const tg = h("div", { class: "toggle", role: "group", "aria-label": "Storyteller-Bereich" },
-    ...[["map", "Beziehungskarte"], ["private", "Private Spielernotizen"]].map(([k, l]) => h("button", { type: "button", "aria-pressed": String(tab === k), onclick: () => go("st", { tab: k }) }, l)));
+    ...[["map", "Beziehungskarte"], ["private", "Private Spielernotizen"], ["group", "Gruppe"]].map(([k, l]) => h("button", { type: "button", "aria-pressed": String(tab === k), onclick: () => go("st", { tab: k }) }, l)));
   const body = h("div", {});
   m.append(head("Storyteller", "Nur für dich sichtbar. Die Karte liest aus Notion (NPCs, Beziehungen) und wird zwischengespeichert; „Aus Notion neu laden“ holt den aktuellen Stand.", tg), body);
   if (tab === "private") return stPrivate(body);
+  if (tab === "group") return stGroup(body);
   MapView(body, notionSource(S.arg && S.arg.focus));
 });
 
+// Private Notizen aller Spieler: lesen, ändern, löschen (Rechte seit Migration st_admin_v1_1)
 async function stPrivate(root) {
-  const { data, error } = await sb.from("private_notes").select("*").order("updated_at", { ascending: false });
-  if (error) { root.append(h("div", { class: "notice bad" }, "Private Notizen konnten nicht geladen werden.")); return; }
-  const players = [...S.profiles.values()].filter(p => p.role !== "st");
-  if (!players.length) { root.append(h("div", { class: "empty" }, "Noch keine Spielerkonten.")); return; }
-  for (const p of players) {
-    const c = charOf(p.id);
-    const mine = data.filter(n => n.owner_id === p.id);
-    root.append(h("div", { class: "panel stack", style: "margin-bottom:14px" },
-      h("h3", {}, (c ? c.name : personName(p.id)) + " ", h("span", { class: "muted", style: "font-size:1rem" }, personName(p.id))),
-      ...(mine.length ? mine.map(x => h("details", {}, h("summary", { style: "cursor:pointer" }, (x.title || "Ohne Titel") + " · " + fmtDate(x.updated_at)), h("div", { class: "pre", style: "margin-top:6px" }, x.body)))
-        : [h("p", { class: "muted" }, "Keine privaten Notizen.")])));
+  let data = [], editing = null;
+  async function load() {
+    const r = await sb.from("private_notes").select("*").order("updated_at", { ascending: false });
+    if (r.error) { root.replaceChildren(h("div", { class: "notice bad" }, "Private Notizen konnten nicht geladen werden.")); return false; }
+    data = r.data; return true;
   }
+  function note(x) {
+    if (editing !== x.id) return h("details", { "data-note": x.id }, h("summary", { style: "cursor:pointer" }, (x.title || "Ohne Titel") + " · " + fmtDate(x.updated_at)),
+      richText(x.body, { style: "margin-top:6px" }),
+      h("div", { style: "margin-top:8px" }, h("button", { class: "btn small", type: "button", onclick: () => { editing = x.id; draw(); } }, "Bearbeiten")));
+    const t = h("input", { type: "text", id: "pn-title", value: x.title || "" }), b = h("textarea", { id: "pn-body" }, x.body || "");
+    return h("div", { class: "panel stack", "data-note-edit": x.id },
+      h("div", { class: "notice" }, "Du änderst als Storyteller eine private Notiz. Die Person sieht die Änderung."),
+      h("div", { class: "field" }, h("label", { for: "pn-title" }, "Titel"), t), h("div", { class: "field" }, h("label", { for: "pn-body" }, "Text"), b),
+      h("div", { class: "row" },
+        h("button", { class: "btn primary", type: "button", onclick: async () => { await guard(sb.from("private_notes").update({ title: t.value, body: b.value }).eq("id", x.id), "Gespeichert."); editing = null; if (await load()) draw(); } }, "Speichern"),
+        h("button", { class: "btn", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen"),
+        confirmBtn("Löschen", async () => { await guard(sb.from("private_notes").delete().eq("id", x.id), "Gelöscht."); editing = null; if (await load()) draw(); })));
+  }
+  function draw() {
+    const players = [...S.profiles.values()].filter(p => p.role !== "st");
+    if (!players.length) { root.replaceChildren(h("div", { class: "empty" }, "Noch keine Spielerkonten.")); return; }
+    root.replaceChildren(...players.map(p => {
+      const c = charOf(p.id), mine = data.filter(n => n.owner_id === p.id);
+      return h("div", { class: "panel stack", style: "margin-bottom:14px" },
+        h("h3", {}, (c ? c.name : personName(p.id)) + " ", h("span", { class: "muted", style: "font-size:1rem" }, personName(p.id))),
+        ...(mine.length ? mine.map(note) : [h("p", { class: "muted" }, "Keine privaten Notizen.")]));
+    }));
+  }
+  if (await load()) draw();
+}
+
+// Gruppe: Anzeigenamen und Rollen pflegen, Profil für ein neues Konto anlegen. Konten selbst (Benutzername, Passwort)
+// entstehen weiterhin im Supabase-Dashboard, das kann die Seite aus Sicherheitsgründen nicht.
+async function stGroup(root) {
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  async function draw() {
+    try { await loadProfiles(); } catch (_) { root.replaceChildren(h("div", { class: "notice bad" }, "Profile konnten nicht geladen werden.")); return; }
+    const people = [...S.profiles.values()].sort((a, b) => (a.role === "st" ? 0 : 1) - (b.role === "st" ? 0 : 1) || String(a.display_name).localeCompare(String(b.display_name), "de"));
+    const row = p => {
+      const self = p.id === S.user.id, c = charOf(p.id);
+      const name = h("input", { type: "text", value: p.display_name || "", "aria-label": "Anzeigename" });
+      const role = h("select", { "aria-label": "Rolle", disabled: self ? true : null, title: self ? "Die eigene Rolle lässt sich nicht ändern" : null },
+        h("option", { value: "player", selected: p.role !== "st" ? true : null }, "Spieler"), h("option", { value: "st", selected: p.role === "st" ? true : null }, "Storyteller"));
+      return h("div", { class: "row", "data-profile": p.id, style: "align-items:flex-end" },
+        h("div", { class: "field" }, h("label", {}, "Anzeigename" + (self ? " (du)" : "")), name),
+        h("div", { class: "field", style: "flex:0 1 170px" }, h("label", {}, "Rolle"), role),
+        h("div", { class: "field" }, h("label", {}, "Charakter"), h("div", { class: "muted", style: "padding:7px 0" }, c ? c.name : "keiner zugeordnet")),
+        h("button", { class: "btn", type: "button", onclick: async () => {
+          const patch = {};
+          if (name.value.trim() !== (p.display_name || "")) patch.display_name = name.value.trim();
+          if (!self && role.value !== p.role) patch.role = role.value;
+          if (!Object.keys(patch).length) { toast("Nichts geändert."); return; }
+          await guard(sb.from("profiles").update(patch).eq("id", p.id), "Gespeichert.");
+          await draw();
+        } }, "Speichern"));
+    };
+    const uid = h("input", { type: "text", id: "np-uid", placeholder: "36 Zeichen, z. B. 1a2b3c4d-0000-4000-8000-123456789abc", autocomplete: "off", spellcheck: "false" });
+    const nn = h("input", { type: "text", id: "np-name", placeholder: "Vorname" });
+    const nr = h("select", { id: "np-role" }, h("option", { value: "player" }, "Spieler"), h("option", { value: "st" }, "Storyteller"));
+    root.replaceChildren(
+      h("div", { class: "panel stack", style: "margin-bottom:14px" }, h("h3", {}, "Mitglieder"),
+        h("p", { class: "muted" }, "Den Charakter einer Person ordnest du im Bogen unter „Verwaltung“ zu."), ...people.map(row)),
+      h("div", { class: "panel stack", "data-admin": "newprofile" }, h("h3", {}, "Profil für ein neues Konto anlegen"),
+        h("p", { class: "muted" }, "Das Konto (Benutzername und Passwort) legst du zuerst im Supabase-Dashboard an: Authentication, Users, „Add user“ mit „Auto Confirm User“, Adresse benutzername@kbn.invalid. Trage danach die dort angezeigte User-ID (UID) hier ein. Erst mit Profil ist die Person Mitglied."),
+        h("div", { class: "row" }, h("div", { class: "field", style: "flex:2 1 300px" }, h("label", { for: "np-uid" }, "User-ID (UID)"), uid), h("div", { class: "field" }, h("label", { for: "np-name" }, "Anzeigename"), nn), h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "np-role" }, "Rolle"), nr),
+          h("button", { class: "btn primary", type: "button", onclick: async () => {
+            const id = uid.value.trim().toLowerCase();
+            if (!UUID.test(id)) { toast("Die User-ID hat nicht die Form einer UID (36 Zeichen mit Bindestrichen).", true); return; }
+            if (!nn.value.trim()) { toast("Bitte einen Anzeigenamen eintragen.", true); return; }
+            if (S.profiles.has(id)) { toast("Für dieses Konto gibt es schon ein Profil.", true); return; }
+            const { error } = await sb.from("profiles").insert({ id, display_name: nn.value.trim(), role: nr.value });
+            if (error) { toast(error.code === "23503" ? "Zu dieser User-ID gibt es kein Konto. UID im Supabase-Dashboard prüfen." : errMsg(error), true); return; }
+            toast("Profil angelegt."); await draw();
+          } }, "Profil anlegen")),
+        h("p", { class: "muted" }, "Profile löschen geht hier bewusst nicht: Mit einem Profil verschwinden alle Notizen und Dokumente der Person.")));
+  }
+  await draw();
 }
 
 // ---------- Notion → Graph ----------

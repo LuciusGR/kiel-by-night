@@ -1,6 +1,6 @@
 // Kiel by Night · Szenenkarten (nur Storyteller): Karten je Session oder im Vorrat, Import aus JSON mit Vorschau, NPC-Verknüpfung zur ST-Karte
-import { h, toast, guard, confirmBtn } from "../lib.js";
-import { sb, go } from "../core.js";
+import { h, toast, guard, confirmBtn, bindDraft } from "../lib.js";
+import { sb, go, draftKey } from "../core.js";
 
 export const SCENE_FORMAT = "kbn-scenes/1";
 export const STATUS = { open: "Offen", played: "Gespielt", skipped: "Übersprungen", postponed: "Verschoben" };
@@ -215,7 +215,8 @@ export function sceneBoard(opts) {
 
   // ---------- Bearbeiten / Neu ----------
   function editor(sc) {
-    const f = (id, label, val, tag = "input") => h("div", { class: "field" }, h("label", { for: id }, label), tag === "input" ? h("input", { type: "text", id, value: val || "" }) : h("textarea", { id }, val || ""));
+    const F = {};
+    const f = (id, label, val, tag = "input") => { F[id] = tag === "input" ? h("input", { type: "text", id, value: val || "" }) : h("textarea", { id }, val || ""); return h("div", { class: "field" }, h("label", { for: id }, label), F[id]); };
     const npcRows = h("div", { class: "stack" });
     const rows = [];
     const addRow = (n = {}) => {
@@ -226,7 +227,11 @@ export function sceneBoard(opts) {
     };
     (sc.npcs || []).forEach(addRow);
     const get = id => document.getElementById(id).value;
-    return h("div", { class: "panel stack" }, h("h3", {}, sc.id ? "Szene bearbeiten" : "Neue Szene"),
+    const head3 = h("h3", {}, sc.id ? "Szene bearbeiten" : "Neue Szene");
+    // Entwurf sichert die Textfelder (ohne NPC-Zeilen und Chronik-Auswahl); der Hinweis wird nach dem Aufbau eingesetzt
+    let draft = { clear() {} };
+    queueMicrotask(() => { draft = bindDraft(draftKey("scene", sc.id || "new:" + (home == null ? "pool" : home)), F); if (draft.notice) head3.after(draft.notice); });
+    return h("div", { class: "panel stack" }, head3,
       f("sc-title", "Titel", sc.title), h("div", { class: "field" }, h("label", { for: "sc-chron" }, "Chronik"), chronSelect("sc-chron", sc.id ? sc.chronicle_id : defaultChron())), f("sc-place", "Ort", sc.place), f("sc-mood", "Grundstimmung", sc.mood), f("sc-goal", "Ziel", sc.goal), f("sc-ant", "Gegenspieler", sc.antagonist),
       h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"), npcRows, h("button", { class: "btn small", type: "button", style: "margin-top:8px", onclick: () => addRow() }, "NPC hinzufügen")),
       f("sc-out", "Mögliche Ausgänge (eine Zeile je Ausgang)", (sc.outcomes || []).join("\n"), "ta"), f("sc-thr", "Fäden (durch Komma getrennt)", (sc.threads || []).join(", ")),
@@ -249,9 +254,9 @@ export function sceneBoard(opts) {
             if (npcs.length) await guard(sb.from("scene_npcs").insert(npcs.map(n => ({ scene_id: sc.id, ...n }))));
             toast("Gespeichert.");
           } else { await insertScene(home, { ...fields, npcs }, (await maxPosition(home)) + 1); toast("Szene angelegt."); }
-          editing = null; await refresh();
+          draft.clear(); editing = null; await refresh();
         } }, "Speichern"),
-        h("button", { class: "btn", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen")));
+        h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); editing = null; draw(); } }, "Abbrechen")));
   }
 
   // ---------- Import ----------

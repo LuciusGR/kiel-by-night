@@ -97,3 +97,60 @@ export function head(title, text, ...right) {
 }
 
 export const splitTags = s => String(s || "").split(",").map(x => x.trim().replace(/^#/, "")).filter(Boolean);
+
+// ---------- Entwürfe ----------
+// Ungespeicherter Text aus Editoren (Session-Notiz, Wiki-Seite, private Notiz, Szene) bleibt in diesem Browser liegen,
+// bis er gespeichert oder verworfen wird. Wer den Editor verlässt, findet den Text beim nächsten Öffnen wieder.
+const DRAFT = "kbn-draft:";
+export const drafts = {
+  get(key) { try { const v = JSON.parse(store(DRAFT + key) || "null"); return v && typeof v === "object" ? v : null; } catch (_) { return null; } },
+  set(key, val) { store(DRAFT + key, JSON.stringify({ ...val, _ts: Date.now() })); },
+  clear(key) { store(DRAFT + key, null); },
+  has(key) { return !!this.get(key); },
+};
+const bound = new Set();
+let draftWatch = null;
+function watchDrafts() {
+  if (draftWatch || typeof MutationObserver === "undefined") return;
+  draftWatch = new MutationObserver(() => {
+    for (const b of [...bound]) {
+      if (b.anchor.isConnected) { b.seen = true; continue; }
+      if (!b.seen) continue; // noch nicht in die Seite eingesetzt
+      bound.delete(b);
+      if (!b.done && b.dirty()) toast("Dein Text ist als Entwurf gesichert. Er steht wieder da, sobald du die Bearbeitung erneut öffnest.");
+    }
+  });
+  draftWatch.observe(document.body, { childList: true, subtree: true });
+}
+// fields: { name: Eingabefeld }. Liefert { notice, clear }: notice ist ein Hinweis mit "Verwerfen", wenn ein Entwurf
+// wiederhergestellt wurde (sonst null). clear() nach Speichern oder Abbrechen aufrufen.
+export function bindDraft(key, fields) {
+  watchDrafts();
+  const names = Object.keys(fields), read = () => Object.fromEntries(names.map(n => [n, fields[n].value]));
+  const original = read();
+  const b = { anchor: fields[names[0]], done: false, dirty: () => names.some(n => fields[n].value !== original[n]) };
+  let notice = null;
+  const saved = drafts.get(key);
+  if (saved && names.some(n => typeof saved[n] === "string" && saved[n] !== original[n])) {
+    for (const n of names) if (typeof saved[n] === "string") fields[n].value = saved[n];
+    notice = h("div", { class: "notice draft-notice", role: "status" }, "Ungespeicherter Entwurf vom " + fmtDateTime(saved._ts) + " wiederhergestellt. ",
+      h("button", { class: "btn small", type: "button", onclick: () => { for (const n of names) fields[n].value = original[n]; drafts.clear(key); notice.remove(); } }, "Entwurf verwerfen"));
+  } else if (saved) drafts.clear(key);
+  const onInput = () => { if (b.done) return; if (b.dirty()) drafts.set(key, read()); else drafts.clear(key); };
+  for (const n of names) { fields[n].addEventListener("input", onInput); fields[n].addEventListener("change", onInput); }
+  bound.add(b);
+  return { notice, clear() { b.done = true; bound.delete(b); drafts.clear(key); } };
+}
+
+// ---------- Schmale Bildschirme ----------
+// Liegt ein Detailbereich unter der Liste oder Karte (einspaltig), dorthin scrollen, damit die Auswahl sichtbar wird.
+export function revealOnNarrow(el, maxWidth, block = "start") {
+  try {
+    if (!el || !matchMedia("(max-width:" + maxWidth + "px)").matches) return;
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => el.scrollIntoView({ block, behavior: calm ? "auto" : "smooth" }));
+  } catch (_) {}
+}
+
+// Wiki-Schreibweise aus Kurztexten entfernen: "[[Prinz]]" wird "Prinz"
+export const plainLinks = s => String(s || "").replace(/\[\[([^\]]+)\]\]/g, "$1");

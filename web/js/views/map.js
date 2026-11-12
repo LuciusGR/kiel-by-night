@@ -1,7 +1,7 @@
 // Kiel by Night · Kartenansicht (gemeinsam für Spielerkarte und ST-Karte)
 // Backlog umgesetzt: A1 schneller Zoom · A2 Positionen dauerhaft (inkl. Erstanordnung) · A4 gleich große Knoten
 //                    A5 Form je Sekte (nur ST-Karte, sonst Kreis) · A7 unterscheidbare Farben
-import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
+import { h, toast, tok, themeListeners, confirmBtn, splitTags, revealOnNarrow } from "../lib.js";
 import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
@@ -189,8 +189,8 @@ export function MapView(root, src) {
       const placed = cy.nodes().filter(n => !!positions[n.id()]).length;
       if (placed < cy.nodes().length * 0.6) relayout(false, true);      // Erstanordnung wird gespeichert
       else { const fresh = placeMissing(); cy.fit(undefined, 30); capZoom(); if (fresh.length) queuePos(fresh); }
-      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
-      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
+      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); revealOnNarrow(panel, 900, "nearest"); });
+      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); revealOnNarrow(panel, 900, "nearest"); });
       cy.on("tap", ev => { if (ev.target === cy) { sel = null; resultsOn = false; highlight(); drawPanel(); } });
       cy.on("dragfree", "node", ev => { const n = ev.target; queuePos([[n.id(), n.position("x"), n.position("y")]]); });
     } else {

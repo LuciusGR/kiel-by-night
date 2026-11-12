@@ -1,6 +1,6 @@
 // Kiel by Night · Übersicht: Charakterkarten + letzte Änderungen
 // "Letzte Änderungen" liest direkt aus den Tabellen. RLS blendet ST-Seiten und Entwürfe für Spieler aus.
-import { h, head, fmtShort } from "../lib.js";
+import { h, head, fmtShort, plainLinks } from "../lib.js";
 import { sb, S, go, registerView, loadChars, authorName } from "../core.js";
 import { pcCard } from "./characters.js";
 
@@ -20,8 +20,8 @@ registerView("start", async m => {
   ]);
   const items = [
     ...(wiki.data || []).map(d => ({ ts: d.updated_at, kind: "Wiki", text: d.title, who: d.updated_by, go: () => go("wiki", { cat: d.category_id, page: d.id }) })),
-    ...(docs.data || []).map(d => ({ ts: d.created_at, kind: d.draft ? "Entwurf" : "Dokument", text: d.title, who: d.uploader_id, go: () => go("docs") })),
-    ...(notes.data || []).map(d => ({ ts: d.updated_at, kind: "Session " + d.session_number, text: (d.body || "").split("\n")[0].slice(0, 90) || "Notiz", who: d.author_id, go: () => go("sessions", { session: d.session_number }) })),
+    ...(docs.data || []).map(d => ({ ts: d.created_at, kind: d.draft ? "Entwurf" : "Dokument", text: d.title, who: d.uploader_id, go: () => go("docs", { focus: d.id }) })),
+    ...(notes.data || []).map(d => ({ ts: d.updated_at, kind: "Session " + d.session_number, text: plainLinks((d.body || "").split("\n")[0]).slice(0, 90) || "Notiz", who: d.author_id, go: () => go("sessions", { session: d.session_number }) })),
   ].filter(x => x.ts).sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts)).slice(0, 12);
 
   const errs = [wiki.error, docs.error, notes.error].filter(Boolean);

@@ -31,7 +31,7 @@ const results = [];
 const live = [];
 
 async function openApp(role, hash = "start", o = {}) {
-  const page = await browser.newPage({ viewport: o.viewport || { width: 1280, height: 900 }, colorScheme: o.scheme || "light", acceptDownloads: false });
+  const page = await browser.newPage({ viewport: o.viewport || { width: 1280, height: 900 }, colorScheme: o.scheme || "light", acceptDownloads: false, hasTouch: !!o.touch });
   page.errors = []; page.logs = [];
   page.on("pageerror", e => page.errors.push("pageerror: " + e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) page.errors.push("console: " + m.text().slice(0, 160)); });
@@ -129,13 +129,13 @@ T("U03", "Anmeldung", "Konto ohne Profil: klare Meldung, kein Zugriff auf Inhalt
   assert.match(t, /kein Profil/); assert.equal(await p.locator("#nav button").count(), 0);
   return p;
 });
-T("U04", "Navigation", "ST sieht 9 Bereiche plus Storyteller, aber nicht Privat", async () => {
+T("U04", "Navigation", "ST sieht 10 Bereiche plus Storyteller, aber nicht Privat", async () => {
   const p = await openApp("st"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Anleitung", "Storyteller"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Suche", "Anleitung", "Storyteller"]); return p;
 });
-T("U05", "Navigation", "Spieler sieht 8 Bereiche plus Privat, aber nicht Storyteller", async () => {
+T("U05", "Navigation", "Spieler sieht 9 Bereiche plus Privat, aber nicht Storyteller", async () => {
   const p = await openApp("player"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Anleitung", "Privat"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Suche", "Anleitung", "Privat"]); return p;
 });
 T("U06", "Navigation", "Kopfzeile zeigt Rolle und Namen", async () => {
   const a = await openApp("st"); assert.match(await a.locator("#who").innerText(), /Storyteller · Roland/); await a.close();
@@ -327,7 +327,7 @@ T("U43", "Charaktere", "Bogen eines gelöschten/unbekannten Eintrags zeigt Hinwe
 // =====================================================================
 T("U50", "Sessions", "Session 1 mit Titel, Datum und Notiz der Spielerin wird angezeigt", async () => {
   const p = await openApp("player", "sessions"); assert.match(await p.locator(".sessions-list").innerText(), /Session 1 · Auftakt/);
-  assert.match(await p.locator(".entry").innerText(), /Wir trafen \[\[Prinz\]\]\./); assert.match(await p.locator(".entry .by").innerText(), /Feller/); return p;
+  assert.match(await p.locator(".entry").innerText(), /Wir trafen Prinz\./); assert.equal(await p.locator(".entry .wlink").innerText(), "Prinz", "Verweis ist ein Link ins Wiki"); assert.match(await p.locator(".entry .by").innerText(), /Feller/); return p;
 });
 T("U51", "Sessions", "Neue Notiz anlegen (Session 2) erscheint in der Liste", async () => {
   const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Neue Notiz" }).click(); assert.equal(await p.inputValue("#note-session"), "1");
@@ -339,9 +339,10 @@ T("U52", "Sessions", "Ungültige Session-Nummer wird abgewiesen", async () => {
   for (const v of ["0", "-1", "1.5", ""]) { await p.fill("#note-session", v); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Session-Nummer/); await p.waitForTimeout(150); }
   assert.equal((await db(p, "session_notes")).length, 1); return p;
 });
-T("U53", "Sessions", "Fremde Notizen haben keinen Bearbeiten-Knopf, eigene schon", async () => {
-  const a = await openApp("st", "sessions"); assert.equal(await a.locator(".entry button", { hasText: "Bearbeiten" }).count(), 0); await a.close();
-  const b = await openApp("player", "sessions"); assert.equal(await b.locator(".entry button", { hasText: "Bearbeiten" }).count(), 1); return b;
+T("U53", "Sessions", "Spieler: fremde Notizen ohne Bearbeiten-Knopf, eigene mit; Storyteller: Knopf an jeder Notiz", async () => {
+  const a = await openApp("st", "sessions"); assert.equal(await a.locator(".entry button", { hasText: "Bearbeiten" }).count(), 1, "ST bearbeitet die Notiz der Spielerin"); await a.close();
+  const b = await openApp("player", "start"); await b.evaluate(() => window.__db.session_notes.push({ id: "st-note", session_number: 1, author_id: "11111111-1111-1111-1111-111111111111", body: "Notiz des ST", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }));
+  await nav(b, "Sessions"); assert.equal(await b.locator(".entry").count(), 2); assert.equal(await b.locator(".entry button", { hasText: "Bearbeiten" }).count(), 1); return b;
 });
 T("U54", "Sessions", "'Nur meine' zeigt nur eigene Notizen, 'Alle' kehrt zurück", async () => {
   const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Nur meine" }).click();
@@ -950,7 +951,7 @@ for (const role of ["st", "player"]) {
 }
 T("U153", "Barrierefreiheit", "Dokument hat lang=de, Titel, genau eine h1, main-Bereich und Navigation mit Beschriftung", async () => {
   const p = await openApp("player"); const r = await p.evaluate(() => ({ lang: document.documentElement.lang, title: document.title, h1: document.querySelectorAll("h1").length, main: document.querySelectorAll("main").length, nav: document.querySelector("nav")?.getAttribute("aria-label") }));
-  assert.deepEqual(r, { lang: "de", title: "Kiel by Night", h1: 1, main: 1, nav: "Bereiche" }); return p;
+  assert.deepEqual(r, { lang: "de", title: "Übersicht · Kiel by Night", h1: 1, main: 1, nav: "Bereiche" }); return p;
 });
 T("U154", "Barrierefreiheit", "Tastatur: Tab erreicht Navigation und Fokus ist sichtbar (focus-visible Outline)", async () => {
   const p = await openApp("player"); await p.keyboard.press("Tab"); await p.keyboard.press("Tab"); await p.keyboard.press("Tab"); await p.keyboard.press("Tab"); await p.keyboard.press("Tab");
@@ -1110,6 +1111,154 @@ T("U252", "Stil Rulebook", "Schriften kommen von der eigenen Domain (woff2 lokal
   const ext = [...new Set(seen.map(u => u.hostname))].filter(h => h !== "kbn.test" && !h.endsWith("supabase.co")); assert.deepEqual(ext, [], "Fremdserver: " + ext.join(", "));
   const q = await openApp("player", "start", { wait: 0 }); const seen2 = []; q.on("request", r => seen2.push(new URL(r.url()).pathname)); await q.reload(); await q.waitForTimeout(1200);
   assert.ok(!seen2.some(n => /Bodoni|EBGaramond|Montserrat/.test(n)), "Klassisch lädt die Rulebook-Schriften nicht"); return p;
+});
+
+// =====================================================================
+// V · Version 1.14: Handy-Kopfzeile, Wischen, Verlauf, Entwürfe, Suche, Verweise, ST-Verwaltung
+// =====================================================================
+const PHONE = { width: 390, height: 800 };
+const hashOf = p => p.evaluate(() => location.hash);
+const curTab = p => p.evaluate(() => [location.hash, document.querySelector('#nav [aria-current="page"]').textContent]);
+const draftKeys = p => p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith("kbn-draft:")).length);
+// Wischgeste über echte Touch-Ereignisse (CDP); y2 für schräge oder senkrechte Bewegungen
+const swipe = async (p, x1, x2, y1 = 500, y2 = y1) => {
+  const c = await p.context().newCDPSession(p), pt = (x, y) => [{ x, y, id: 1 }];
+  await c.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(x1, y1) });
+  for (let i = 1; i <= 5; i++) await c.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(x1 + (x2 - x1) * i / 5, y1 + (y2 - y1) * i / 5) });
+  await c.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(600);
+};
+T("U260", "Handy 390 px", "Kopfzeile ist einzeilig (höchstens 110 px), Konto-Knöpfe liegen hinter 'Menü', das Menü schließt bei Klick außerhalb und Escape; am Desktop gibt es kein Menü", async () => {
+  const p = await openApp("player", "start", { viewport: PHONE, defaultStyle: true });
+  const hgt = await p.evaluate(() => document.querySelector("header.top").getBoundingClientRect().height); assert.ok(hgt <= 110, "Höhe der Kopfzeile " + hgt);
+  assert.equal(await p.locator("#who-items").isVisible(), false); await p.locator(".who-toggle").click(); assert.equal(await p.locator(".who-toggle").getAttribute("aria-expanded"), "true");
+  for (const n of ["Passwort", "Abmelden", "Theme"]) assert.ok(await p.locator("#who-items button", { hasText: new RegExp(n, "i") }).isVisible(), n + " im Menü");
+  assert.match(await p.locator("#who-items").innerText(), /Spieler · Anna/i);
+  await p.mouse.click(60, 600); assert.equal(await p.locator("#who-items").isVisible(), false, "Klick außerhalb schließt");
+  await p.locator(".who-toggle").click(); await p.keyboard.press("Escape"); assert.equal(await p.locator("#who-items").isVisible(), false, "Escape schließt");
+  await p.locator(".who-toggle").click(); await p.locator("#who-items button", { hasText: /Passwort/i }).click(); assert.equal(await p.locator("dialog[open]").count(), 1); assert.equal(await p.locator("#who-items").isVisible(), false);
+  const d = await openApp("player"); assert.equal(await d.locator(".who-toggle").isVisible(), false); assert.ok(await d.locator("#who button", { hasText: "Abmelden" }).isVisible()); await d.close(); return p;
+});
+T("U261", "Handy 390 px", "Wischen nach links öffnet den nächsten Reiter, nach rechts den vorigen; am ersten und letzten Reiter passiert nichts, der aktuelle Reiter bleibt in der Leiste sichtbar", async () => {
+  const p = await openApp("player", "start", { viewport: PHONE, touch: true });
+  await swipe(p, 300, 80); assert.deepEqual(await curTab(p), ["#chars", "Charaktere"]);
+  await swipe(p, 300, 80); assert.deepEqual(await curTab(p), ["#chronicles", "Chroniken"]);
+  await swipe(p, 80, 300); assert.deepEqual(await curTab(p), ["#chars", "Charaktere"]);
+  await swipe(p, 80, 300); await swipe(p, 80, 300); assert.deepEqual(await curTab(p), ["#start", "Übersicht"], "am ersten Reiter kein Wechsel");
+  await p.evaluate(() => { location.hash = "#private"; }); await p.waitForTimeout(500); await swipe(p, 300, 80); assert.deepEqual(await curTab(p), ["#private", "Privat"], "am letzten Reiter kein Wechsel");
+  assert.ok(await p.evaluate(() => { const n = document.getElementById("nav").getBoundingClientRect(), b = document.querySelector('#nav [aria-current="page"]').getBoundingClientRect(); return b.left >= n.left - 1 && b.right <= n.right + 1; }), "aktueller Reiter sichtbar");
+  await swipe(p, 80, 300); assert.equal((await curTab(p))[1], "Anleitung"); await p.goBack(); await p.waitForTimeout(400); assert.equal((await curTab(p))[1], "Privat", "Wischen steht im Verlauf wie ein Antippen"); return p;
+});
+T("U262", "Handy 390 px", "Kein Wechsel beim Wischen auf der Karte, in einem Eingabefeld, bei kurzer oder senkrechter Bewegung, am Bildschirmrand und bei offenem Dialog", async () => {
+  const p = await openApp("player", "map", { viewport: PHONE, touch: true, wait: 1500 });
+  const box = await p.locator(".map-canvas").boundingBox(); await swipe(p, 300, 80, Math.min(box.y + 150, 760)); assert.equal(await hashOf(p), "#map", "Karte");
+  await p.evaluate(() => { location.hash = "#wiki"; }); await p.waitForTimeout(600);
+  const ib = await p.locator("#wiki-search").boundingBox(); await swipe(p, 300, 80, ib.y + ib.height / 2); assert.equal(await hashOf(p), "#wiki", "Eingabefeld");
+  const nb = await p.locator("#nav").boundingBox(); await swipe(p, 300, 80, nb.y + nb.height / 2); assert.equal(await hashOf(p), "#wiki", "Reiterleiste");
+  await swipe(p, 200, 160, 700); assert.equal(await hashOf(p), "#wiki", "zu kurz");
+  await swipe(p, 300, 200, 300, 700); assert.equal(await hashOf(p), "#wiki", "senkrecht");
+  await swipe(p, 8, 300, 700); assert.equal(await hashOf(p), "#wiki", "Start am Bildschirmrand");
+  await p.locator(".who-toggle").click(); await p.locator("#who-items button", { hasText: "Passwort" }).click(); await swipe(p, 80, 300, 700); assert.equal(await hashOf(p), "#wiki", "Dialog offen"); return p;
+});
+T("U263", "Navigation", "Zurück- und Vor-Taste wechseln zwischen den Bereichen; Bogen, Wiki-Seite und Session haben eine eigene Adresse; eine Session-Adresse übersteht das Neuladen", async () => {
+  const p = await openApp("player"); await nav(p, "Wiki"); await nav(p, "Dokumente"); await p.goBack(); await p.waitForTimeout(400);
+  assert.deepEqual(await curTab(p), ["#wiki", "Wiki"]); assert.match(await p.locator("main h2").first().innerText(), /Wiki/); await p.goForward(); await p.waitForTimeout(400); assert.equal(await hashOf(p), "#docs");
+  await nav(p, "Charaktere"); await p.locator("button.pc").first().click(); await p.waitForTimeout(400); assert.match(await hashOf(p), /^#chars\/[0-9a-f-]{36}$/); assert.match(await p.locator("main h2").innerText(), /Feller/);
+  await p.goBack(); await p.waitForTimeout(400); assert.equal(await hashOf(p), "#chars"); assert.equal(await p.locator("button.pc").count(), 3);
+  await nav(p, "Wiki"); await p.locator(".wiki-grid .list button", { hasText: "Prinz" }).click(); await p.waitForTimeout(300); const wh = await hashOf(p); assert.match(wh, /^#wiki\/[0-9a-f-]{36}$/);
+  await nav(p, "Übersicht"); await p.evaluate(h => { location.hash = h; }, wh); await p.waitForTimeout(500); assert.equal(await p.locator("article h2").innerText(), "Prinz", "Adresse öffnet die Wiki-Seite");
+  assert.equal(await p.title(), "Wiki · Kiel by Night");
+  const q = await openApp("player", "sessions/1"); const open = () => q.evaluate(() => [location.hash, document.querySelector("details.session-item[open]")?.dataset.session]);
+  assert.deepEqual(await open(), ["#sessions/1", "1"]); await q.reload(); await q.waitForTimeout(800); assert.deepEqual(await open(), ["#sessions/1", "1"]); await q.close();
+  const r = await openApp("player", "chars/00000000-0000-4000-8000-000000000000"); assert.match(await r.locator("main").innerText(), /Dieser Bogen existiert nicht/); await r.getByRole("button", { name: "← Alle Charaktere" }).click(); await r.waitForTimeout(300); assert.equal(await hashOf(r), "#chars"); await r.close(); return p;
+});
+T("U264", "Sessions", "Ungespeicherter Notiztext bleibt als Entwurf erhalten (Wechsel des Bereichs, Neuladen), Hinweis und 'Entwurf verwerfen'; nach Speichern oder Abbrechen ist der Entwurf weg", async () => {
+  const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Weiteren Abschnitt schreiben" }).click(); await p.fill("#note-body", "Entwurfstext");
+  await nav(p, "Wiki"); await waitToast(p, /als Entwurf gesichert/); assert.equal((await db(p, "session_notes")).length, 1, "nichts gespeichert");
+  await nav(p, "Sessions"); assert.equal(await p.locator("details.session-item [data-draft]:not([hidden])").count(), 1, "Schild Entwurf an der Session");
+  await p.getByRole("button", { name: "Entwurf fortsetzen" }).click(); assert.equal(await p.inputValue("#note-body"), "Entwurfstext"); assert.match(await p.locator(".draft-notice").innerText(), /Entwurf vom .* wiederhergestellt/);
+  await p.reload(); await p.waitForTimeout(800); await p.getByRole("button", { name: "Entwurf fortsetzen" }).click(); assert.equal(await p.inputValue("#note-body"), "Entwurfstext", "übersteht Neuladen");
+  await p.getByRole("button", { name: "Entwurf verwerfen" }).click(); assert.equal(await p.inputValue("#note-body"), ""); assert.equal(await p.locator(".draft-notice").count(), 0); assert.equal(await draftKeys(p), 0);
+  await p.fill("#note-body", "Jetzt richtig"); assert.equal(await draftKeys(p), 1); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Notiz angelegt\./); assert.equal(await draftKeys(p), 0); assert.equal((await db(p, "session_notes")).length, 2);
+  await p.locator(".entry button", { hasText: "Bearbeiten" }).first().click(); await p.fill("#note-body", "geändert"); assert.equal(await draftKeys(p), 1); await p.getByRole("button", { name: "Abbrechen" }).click(); assert.equal(await draftKeys(p), 0, "Abbrechen verwirft"); return p;
+});
+T("U265", "Wiki", "Entwürfe im Wiki und in privaten Notizen: Text einer neuen Seite und einer bearbeiteten Notiz steht nach dem Verlassen wieder da", async () => {
+  const p = await openApp("player", "wiki"); await p.getByRole("button", { name: "Neue Seite" }).click(); await p.fill("#wp-title", "Hafen"); await p.fill("#wp-body", "Kräne und Nebel");
+  await nav(p, "Dokumente"); await waitToast(p, /als Entwurf gesichert/); await nav(p, "Wiki"); await p.getByRole("button", { name: "Neue Seite" }).click();
+  assert.equal(await p.inputValue("#wp-title"), "Hafen"); assert.equal(await p.inputValue("#wp-body"), "Kräne und Nebel"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Seite angelegt\./); assert.equal(await draftKeys(p), 0);
+  assert.equal((await db(p, "wiki_pages")).length, 2);
+  await nav(p, "Privat"); await p.locator(".split .list button", { hasText: "Verdacht" }).click(); await p.getByRole("button", { name: "Bearbeiten" }).click(); await p.fill("#rec-body", "Der Prinz lügt nicht.");
+  await nav(p, "Übersicht"); await nav(p, "Privat"); await p.locator(".split .list button", { hasText: "Verdacht" }).click(); await p.getByRole("button", { name: "Bearbeiten" }).click(); assert.equal(await p.inputValue("#rec-body"), "Der Prinz lügt nicht.");
+  await p.getByRole("button", { name: "Abbrechen" }).click(); assert.equal(await draftKeys(p), 0); assert.equal((await db(p, "private_notes"))[0].body, "Der Prinz lügt."); return p;
+});
+T("U266", "Sessions", "Verweise [[Titel]] in Session-Notizen führen ins Wiki, fehlende Seiten sind markiert, 'Letzte Änderungen' zeigt keine Klammern", async () => {
+  const p = await openApp("player", "start"); assert.ok(!/\[\[/.test(await p.locator(".feed").innerText()), "keine Klammern in der Übersicht"); assert.match(await p.locator(".feed").innerText(), /Wir trafen Prinz\./);
+  await nav(p, "Sessions"); await p.getByRole("button", { name: "Neue Notiz" }).click(); await p.fill("#note-body", "Siehe [[Nirgendwo]] und [[prinz]]."); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Notiz angelegt\./); await p.waitForTimeout(300);
+  assert.equal(await p.locator(".entry .wlink.missing").innerText(), "Nirgendwo"); assert.equal(await p.locator(".entry button.wlink").count(), 2, "Groß- und Kleinschreibung egal");
+  await p.locator(".entry button.wlink").first().click(); await p.waitForTimeout(400); assert.match(await hashOf(p), /^#wiki\//); assert.equal(await p.locator("article h2").innerText(), "Prinz"); return p;
+});
+T("U267", "Suche", "Suche findet über alle Bereiche, gruppiert und mit Hervorhebung; Sprung zum Treffer und zurück zur Trefferliste; Szenen findet nur der Storyteller", async () => {
+  const scene = () => window.__db.scenes.push({ id: "sc1", session_number: null, position: 1, title: "Hinterhalt am Kai", place: "Kai", mood: "", goal: "", antagonist: "", outcomes: [], threads: [], body: "", details: "", status: "open" });
+  const p = await openApp("player", "start"); await p.evaluate(scene); await nav(p, "Suche"); await p.fill("#search-q", "prinz"); await p.waitForTimeout(500);
+  const groups = () => p.locator("[data-group]").evaluateAll(e => e.map(x => x.dataset.group));
+  assert.deepEqual(await groups(), ["Sessions", "Session-Notizen", "Wiki", "Spielerkarte", "Private Notizen"]); assert.ok(await p.locator("mark").count() >= 3); assert.equal(await hashOf(p), "#search/prinz");
+  await p.locator('[data-group="Wiki"] .hit .linkbtn').click(); await p.waitForTimeout(400); assert.match(await hashOf(p), /^#wiki\//); await p.goBack(); await p.waitForTimeout(600);
+  assert.equal(await p.inputValue("#search-q"), "prinz"); assert.ok(await p.locator(".hit").count() >= 4, "Trefferliste steht wieder da");
+  await p.fill("#search-q", "prinz lügt"); await p.waitForTimeout(400); assert.deepEqual(await groups(), ["Private Notizen"], "alle Wörter müssen vorkommen");
+  await p.fill("#search-q", "x"); await p.waitForTimeout(400); assert.match(await p.locator("main .empty").innerText(), /Mindestens zwei Zeichen/);
+  await p.fill("#search-q", "zzzz"); await p.waitForTimeout(400); assert.match(await p.locator("main .empty").innerText(), /Nichts gefunden/);
+  await p.fill("#search-q", "Hinterhalt"); await p.waitForTimeout(400); assert.match(await p.locator("main .empty").innerText(), /Nichts gefunden/, "Spieler findet keine Szenen");
+  const s = await openApp("st", "start"); await s.evaluate(scene); await nav(s, "Suche"); await s.fill("#search-q", "Hinterhalt"); await s.waitForTimeout(500);
+  assert.deepEqual(await s.locator("[data-group]").evaluateAll(e => e.map(x => x.dataset.group)), ["Szenen"]); await s.locator(".hit .linkbtn").click(); await s.waitForTimeout(400); assert.equal(await hashOf(s), "#scenes"); await s.close(); return p;
+});
+T("U268", "Storyteller", "ST bearbeitet und löscht eine fremde Session-Notiz, der Abschnitt bleibt beim Autor", async () => {
+  const p = await openApp("st", "sessions"); await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); assert.match(await p.locator(".session-item .notice").first().innerText(), /als Storyteller den Abschnitt von .*Feller/);
+  await p.fill("#note-body", "Vom ST korrigiert"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
+  let n = await db(p, "session_notes"); assert.equal(n[0].body, "Vom ST korrigiert"); assert.equal(n[0].author_id, "22222222-2222-2222-2222-222222222222");
+  await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.locator(".session-item .confirm button", { hasText: /^Löschen$/ }).first().click(); await p.getByRole("button", { name: "Ja, löschen" }).click(); await waitToast(p, /Gelöscht\./);
+  assert.equal((await db(p, "session_notes")).length, 0); return p;
+});
+T("U269", "Storyteller", "ST legt einen Charakter an, ordnet ihn einem Spieler zu und löscht ihn; Spieler sehen weder 'Neuer Charakter' noch die Verwaltung", async () => {
+  const p = await openApp("st", "chars"); await p.getByRole("button", { name: "Neuer Charakter" }).click(); await p.getByRole("button", { name: "Anlegen" }).click(); await waitToast(p, /Namen eintragen/);
+  await p.fill("#nc-name", "Marta Voss"); await p.fill("#nc-clan", "Nosferatu"); await p.getByRole("button", { name: "Anlegen" }).click(); await waitToast(p, /Charakter angelegt\./); await p.waitForTimeout(300);
+  assert.equal(await p.locator("main h2").innerText(), "Marta Voss"); let c = (await db(p, "characters")).find(x => x.name === "Marta Voss"); assert.equal(c.clan, "Nosferatu"); assert.equal(c.owner_id, null); assert.equal(c.sort, 4);
+  await p.locator("[data-admin=char] summary").click(); await p.selectOption("#ca-owner", { label: "Anna" }); await p.getByRole("button", { name: "Zuordnung speichern" }).click(); await waitToast(p, /Zuordnung gespeichert\./);
+  assert.equal((await db(p, "characters")).find(x => x.name === "Marta Voss").owner_id, "22222222-2222-2222-2222-222222222222");
+  await p.locator("[data-admin=char] summary").click(); await p.getByRole("button", { name: "Charakter löschen" }).click(); await p.getByRole("button", { name: "Ja, charakter löschen" }).click(); await waitToast(p, /Charakter gelöscht\./);
+  assert.equal((await db(p, "characters")).length, 3); assert.equal(await hashOf(p), "#chars");
+  const q = await openApp("player", "chars"); assert.equal(await q.getByRole("button", { name: "Neuer Charakter" }).count(), 0); await q.locator("button.pc").first().click(); await q.waitForTimeout(300); assert.equal(await q.locator("[data-admin]").count(), 0); await q.close(); return p;
+});
+T("U270", "Storyteller", "Gruppe: Anzeigename und Rolle ändern, eigene Rolle gesperrt, Profil für ein neues Konto anlegen (User-ID wird geprüft); Spieler haben keinen Zugriff", async () => {
+  const p = await openApp("st", "st/group"); const ST = "11111111-1111-1111-1111-111111111111", P1 = "22222222-2222-2222-2222-222222222222";
+  assert.equal(await p.locator("[data-profile]").count(), 2); assert.equal(await p.locator(`[data-profile="${ST}"] select`).isDisabled(), true, "eigene Rolle gesperrt");
+  const row = p.locator(`[data-profile="${P1}"]`); await row.locator("input").fill("Anja"); await row.locator("select").selectOption("st"); await row.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
+  let pr = (await db(p, "profiles")).find(x => x.id === P1); assert.equal(pr.display_name, "Anja"); assert.equal(pr.role, "st");
+  await p.locator(`[data-profile="${ST}"]`).getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Nichts geändert\./);
+  await p.fill("#np-uid", "keine-uid"); await p.fill("#np-name", "Damien"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /User-ID hat nicht die Form/);
+  await p.fill("#np-uid", "33333333-3333-4333-8333-333333333333"); await p.fill("#np-name", ""); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /Anzeigenamen eintragen/);
+  await p.fill("#np-name", "Damien"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /Profil angelegt\./); await p.waitForTimeout(300);
+  pr = (await db(p, "profiles")).find(x => x.id === "33333333-3333-4333-8333-333333333333"); assert.equal(pr.display_name, "Damien"); assert.equal(pr.role, "player"); assert.equal(await p.locator("[data-profile]").count(), 3);
+  await p.fill("#np-uid", "33333333-3333-4333-8333-333333333333"); await p.fill("#np-name", "Nochmal"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /schon ein Profil/);
+  assert.equal(await p.getByRole("button", { name: /Profil löschen|Entfernen/ }).count(), 0, "kein Löschen von Profilen");
+  const q = await openApp("player", "st/group"); assert.match(await q.locator("main").innerText(), /nur für den Storyteller/); assert.equal(await q.locator("[data-profile]").count(), 0); await q.close(); return p;
+});
+T("U271", "Storyteller", "ST ändert und löscht eine private Spielernotiz", async () => {
+  const p = await openApp("st", "st/private"); await p.locator("details[data-note] summary").click(); await p.locator("details[data-note] button", { hasText: "Bearbeiten" }).click();
+  await p.fill("#pn-title", "Verdacht (ST)"); await p.fill("#pn-body", "Ergänzt"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
+  const n = (await db(p, "private_notes"))[0]; assert.equal(n.title, "Verdacht (ST)"); assert.equal(n.body, "Ergänzt"); assert.equal(n.owner_id, "22222222-2222-2222-2222-222222222222");
+  await p.locator("details[data-note] summary").click(); await p.locator("details[data-note] button", { hasText: "Bearbeiten" }).click(); await p.locator("[data-note-edit] .confirm button").click(); await p.getByRole("button", { name: "Ja, löschen" }).click(); await waitToast(p, /Gelöscht\./);
+  assert.equal((await db(p, "private_notes")).length, 0); assert.match(await p.locator("main").innerText(), /Keine privaten Notizen/); return p;
+});
+T("U272", "Handy 390 px", "Tippflächen: Punkte und Kästchen des Bogens mindestens 28 px, Knöpfe mindestens 40 px; nach Antippen eines Knotens, einer Wiki-Seite und einer privaten Notiz liegt der Detailbereich im Sichtfeld", async () => {
+  const p = await openApp("player", "chars", { viewport: PHONE, defaultStyle: true }); await p.locator("button.pc").first().click(); await p.waitForTimeout(300); await p.getByRole("button", { name: "Bearbeitung" }).click();
+  const sz = sel => p.evaluate(sel => [...document.querySelectorAll(sel)].filter(e => e.offsetParent).map(e => { const r = e.getBoundingClientRect(); return Math.round(Math.min(r.width, r.height)); }), sel);
+  assert.ok((await sz(".dots button")).every(v => v >= 28), "Punkte"); assert.ok((await sz(".boxes button")).every(v => v >= 28), "Kästchen");
+  assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "Bogen läuft nicht über");
+  for (const v of ["sessions", "docs", "wiki", "map", "private"]) { await p.evaluate(v => { location.hash = "#" + v; }, v); await p.waitForTimeout(700); const low = await p.evaluate(() => [...document.querySelectorAll("main .btn, main .toggle button, main button.chip, header .hbtn")].filter(e => e.offsetParent && e.getBoundingClientRect().height < 39.5).map(e => e.textContent.trim().slice(0, 20))); assert.deepEqual(low, [], v + ": zu flache Knöpfe"); }
+  const inView = sel => p.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(), top = document.querySelector("header.top").getBoundingClientRect().bottom; return r.top >= top - 2 && r.top <= innerHeight - 120; }, sel);
+  await p.locator(".split .list button", { hasText: "Verdacht" }).click(); await p.waitForTimeout(900); assert.ok(await inView(".split > :last-child"), "private Notiz sichtbar");
+  await p.evaluate(() => { location.hash = "#map"; }); await p.waitForTimeout(1500); await p.evaluate(() => document.querySelector(".map-canvas").scrollIntoView({ block: "start" })); await p.waitForTimeout(300);
+  const pos = await p.evaluate(() => { const el = document.querySelector(".map-canvas"), n = el._cyreg.cy.nodes()[2], rp = n.renderedPosition(), r = el.getBoundingClientRect(); return { x: r.left + rp.x, y: r.top + rp.y }; });
+  await p.mouse.click(pos.x, pos.y); await p.waitForTimeout(1200); assert.match(await p.locator(".map-panel").innerText(), /Prinz Aniq/); assert.ok(await inView(".map-panel"), "Detailfeld der Karte sichtbar"); return p;
 });
 
 // =====================================================================

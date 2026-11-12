@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 01.11.2026 · gilt für Website-Version 1.13.2
+Stand: 12.11.2026 · gilt für Website-Version 1.14.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -18,19 +18,27 @@ In der Kopfzeile stehen oben rechts deine Rolle und dein Name sowie drei Knöpfe
 - **Passwort:** ändert dein Passwort (mindestens 8 Zeichen, zweimal eingeben).
 - **Abmelden.**
 
+**Am Handy** stehen diese drei Knöpfe hinter dem Knopf **Menü** oben rechts. So bleibt die Kopfzeile flach und der Inhalt hat mehr Platz. Ein Tipp außerhalb schließt das Menü wieder.
+
 Bitte ein **eigenes, langes Passwort** wählen, das nirgends sonst verwendet wird.
 
 ## 2. Aufbau der Seite
 
-Oben stehen die Bereiche: **Übersicht, Charaktere, Chroniken, Sessions, Spielerkarte, Wiki, Dokumente, Anleitung** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben.
+Oben stehen die Bereiche: **Übersicht, Charaktere, Chroniken, Sessions, Spielerkarte, Wiki, Dokumente, Suche, Anleitung** und, je nach Rolle, **Privat** (Spieler) oder **Storyteller** (ST). Der aktuelle Bereich ist hervorgehoben. Am Handy lässt sich die Leiste seitlich schieben, ein Verlauf am Rand zeigt, dass es weitergeht.
+
+**Wischen am Handy:** Ein Wisch nach links öffnet den nächsten Bereich, ein Wisch nach rechts den vorigen, genau so, als hättest du den Reiter angetippt. Am ersten und am letzten Bereich passiert nichts. Kein Wechsel, wenn du auf einer Karte wischst (dort verschiebt das die Karte), in einem Eingabefeld, in der Reiterleiste selbst oder ganz am Bildschirmrand (der gehört den Gesten des Browsers).
 
 Der Bereich **Anleitung** zeigt dieses Handbuch. Er lädt es bei jedem Öffnen frisch von GitHub, deshalb steht dort immer die aktuelle Fassung, auch nach Neuerungen der Seite. Links steht die Gliederung (am Handy unter „Inhalt“ eingeklappt), ein Klick springt zum Abschnitt. „Neu laden“ holt den Text noch einmal (GitHub hält eine geänderte Datei bis zu etwa 5 Minuten zurück). Ist GitHub nicht erreichbar, zeigt die Seite die zuletzt geladene Fassung mit Datum.
 
-Hinweis: Die Zurück-Taste des Browsers führt aus der Seite hinaus. Innerhalb der Seite navigierst du mit den Bereichen oben und den Knöpfen „← Alle Charaktere“ usw. Nach einem Neuladen (F5) steht wieder die Liste des Bereichs vor dir.
+**Zurück-Taste und Adressen:** Die Zurück-Taste des Browsers führt zum vorigen Bereich oder Eintrag. Ein geöffneter Bogen, eine Wiki-Seite, eine Session, eine Chronik und eine Suche haben eine eigene Adresse (zum Beispiel `…/#sessions/12`). Nach einem Neuladen (F5) stehst du wieder dort, und du kannst die Adresse als Lesezeichen speichern oder der Gruppe schicken. Wer nicht angemeldet ist, landet nach der Anmeldung auf dem Eintrag.
+
+## 2a. Suche
+
+Der Bereich **Suche** durchsucht alles auf einmal: Charaktere, Sessions und Zusammenfassungen, Session-Notizen, Wiki, Dokumente, die Spielerkarte und deine privaten Notizen. Ab zwei Zeichen erscheinen die Treffer nach Bereich sortiert, mit einem Ausschnitt und hervorgehobenem Suchwort. Mehrere Wörter müssen alle vorkommen. Ein Klick auf den Titel springt zum Eintrag, die Zurück-Taste bringt dich zur Trefferliste zurück. Du findest nur, was du auch sehen darfst. Der Storyteller findet zusätzlich Szenenkarten und die privaten Notizen der Spieler.
 
 ## 3. Übersicht
 
-Zeigt die Charakterkarten der Gruppe (Clan, Spielername, Hunger, Health) und darunter **Letzte Änderungen** aus Wiki, Dokumenten und Session-Notizen. Ein Klick auf einen Eintrag öffnet ihn direkt.
+Zeigt die Charakterkarten der Gruppe (Clan, Spielername, Hunger, Health) und darunter **Letzte Änderungen** aus Wiki, Dokumenten und Session-Notizen. Ein Klick auf einen Eintrag öffnet ihn direkt, bei Dokumenten wird das Dokument hervorgehoben.
 
 ## 4. Charaktere
 
@@ -55,7 +63,9 @@ Wichtig: Ändern zwei Personen gleichzeitig denselben Bogen, gilt der **letzte**
 ## 5. Sessions
 
 - Jede Session ist eine **aufklappbare Zeile** in der Liste (neueste oben). Ein Klick auf die Zeile zeigt ihren Inhalt direkt darunter, ein zweiter Klick schließt sie. Es ist immer höchstens eine Session offen, die Liste bleibt also auch bei vielen Sessions kurz. Beim Öffnen der Seite ist die neueste Session aufgeklappt. In der Zeile stehen Titel, Spieldatum, ob eine Zusammenfassung vorliegt und die Zahl der Notizen. **Jede Person schreibt ihren eigenen Abschnitt**, alle können mitlesen. Der eigene Abschnitt steht oben.
-- **Neue Notiz:** Session-Nummer und Text eingeben, „Speichern“. Mit „Eigenen Abschnitt schreiben“ legst du einen Abschnitt in der geöffneten Session an.
+- **Neue Notiz:** Session-Nummer und Text eingeben, „Speichern“. Mit „Eigenen Abschnitt schreiben“ legst du einen Abschnitt in der geöffneten Session an. Hast du dort schon einen, heißt der Knopf „Weiteren Abschnitt schreiben“.
+- **Entwurf:** Ungespeicherter Text geht nicht verloren. Verlässt du den Editor (andere Session, anderer Bereich, Neuladen), bleibt der Text in diesem Browser liegen. Die Session zeigt dann das Schild „Entwurf“, der Knopf heißt „Entwurf fortsetzen“. Beim Öffnen steht der Text wieder da, mit Datum und dem Knopf „Entwurf verwerfen“. Nach „Speichern“ oder „Abbrechen“ ist der Entwurf weg. Der Entwurf liegt nur auf diesem Gerät, andere sehen ihn nicht.
+- **Verweise:** `[[Seitentitel]]` in einer Notiz oder Zusammenfassung wird zum Link auf die Wiki-Seite. Fehlt die Seite, erscheint der Titel markiert („Seite existiert noch nicht“).
 - Eigene Notizen: „Bearbeiten“, dann ändern oder „Löschen“ (mit Rückfrage „Wirklich?“).
 - **Nur meine** zeigt alle eigenen Notizen, **Alle** kehrt zurück.
 - Titel und Spieldatum einer Session stehen unter „… — bearbeiten“ (aufklappen, „Speichern“).
@@ -72,7 +82,7 @@ Eine **Chronik** ist eine Geschichte, die ihr gemeinsam erzählt. Sie gliedert s
 
 ## 6. Privat (nur Spieler)
 
-Private Notizen mit Titel und Text. **Nur du und der Storyteller** sehen sie, die anderen Spieler nicht. Der ST sieht sie im Bereich Storyteller. „Neue private Notiz“, „Bearbeiten“, „Löschen“.
+Private Notizen mit Titel und Text. **Nur du und der Storyteller** sehen sie, die anderen Spieler nicht. Der ST sieht sie im Bereich Storyteller und kann sie dort auch ändern oder löschen. „Neue private Notiz“, „Bearbeiten“, „Löschen“. Verweise `[[Seitentitel]]` und Entwürfe funktionieren wie bei den Session-Notizen (Abschnitt 5).
 
 ## 7. Spielerkarte
 
@@ -83,7 +93,7 @@ Die gemeinsame Karte der Coterie: **Was ihr über Kiels Nächte wisst.** Alle be
 - **Bearbeitung:** zusätzlich „Person/Ort hinzufügen“, „Verbindung hinzufügen“, „Neu anordnen“, Knoten ziehen sowie „Bearbeiten“ und „Löschen“ im Detailfeld.
 
 Bedienung:
-- **Knoten antippen:** zeigt rechts Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen mit Beschriftung und Details. Die Beschriftung steht auch auf der Linie in der Karte (beim Hineinzoomen). Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
+- **Knoten antippen:** zeigt rechts (am Handy unter der Karte, die Seite scrollt von selbst dorthin) Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen mit Beschriftung und Details. Die Beschriftung steht auch auf der Linie in der Karte (beim Hineinzoomen). Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
 - **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
 - **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein.
 - **Sekte und Form:** Im Formular gibt es die Auswahl „Sekte“ (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition). Die Form des Knotens richtet sich danach (Legende über der Karte); beim Ändern der Auswahl wechselt die Form sofort, mit „Abbrechen“ springt sie zurück.
@@ -97,7 +107,8 @@ Bedienung:
 
 Gemeinsames Wissen der Gruppe in **Kategorien** mit **Seiten**.
 
-- **Neue Seite:** Titel (Pflicht), Kategorie, Tags (durch Komma, ohne #), Text. „Speichern“.
+- **Neue Seite:** Titel (Pflicht), Kategorie, Tags (durch Komma, ohne #), Text. „Speichern“. Ungespeicherter Text bleibt als Entwurf erhalten (wie in Abschnitt 5).
+- Am Handy steht der Artikel unter der Liste, die Seite scrollt nach der Auswahl von selbst dorthin.
 - **Verweise** auf andere Seiten schreibst du als `[[Seitentitel]]`. Vorhandene Seiten sind klickbar, fehlende erscheinen markiert („Seite existiert noch nicht“).
 - **Suche** und **Tags** grenzen die Liste der Kategorie ein.
 - **Kategorie hinzufügen:** alle dürfen neue Kategorien anlegen. Umbenennen und Löschen darf nur der ST (leere Kategorien).
@@ -118,14 +129,19 @@ Handouts, Karten, Bilder, Recherchen.
 
 ## 10. Für den Storyteller
 
-Du siehst und darfst **alles**: alle Bögen, Notizen (auch private und fremde Session-Notizen), Entwürfe, ST-Notizen. In der Datenbank darfst du außerdem fremde Notizen ändern oder löschen, Rollen und Profile verwalten (nicht die eigene Rolle und das eigene Profil). Die Seite bietet dafür noch keine Bedienelemente.
+Du siehst und darfst **alles**: alle Bögen, Notizen (auch private und fremde Session-Notizen), Entwürfe, ST-Notizen.
+
+- **Fremde Session-Notizen:** Jeder Abschnitt hat für dich den Knopf „Bearbeiten“ (ändern oder löschen). Ein Hinweis nennt, wessen Abschnitt du bearbeitest.
+- **Charaktere:** Im Bereich Charaktere legst du mit „Neuer Charakter“ einen Bogen an (Name, Clan, Spieler). Im Bogen steht unten „Verwaltung (nur Storyteller)“: Spieler zuordnen oder den Charakter löschen (mit Rückfrage).
+- **Gruppe, private Notizen:** siehe Storyteller-Bereich.
 
 ### Storyteller-Bereich
 - **Beziehungskarte:** zeigt NPCs und Beziehungen aus Notion (nur Lesen). Oben steht „Stand … (Cache)“ oder „(frisch)“. **„Aus Notion neu laden“** holt den aktuellen Stand.
   - **Formen** zeigen die Sekte: Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis. **Farben** zeigen das Wesen (Kindred, Ghoul, Sterblicher …). **Abgedunkelt** sind Tote, Spielercharaktere haben einen Doppelring. Grau „Ohne NPC-Eintrag“ sind Orte oder Gruppen, die nur in Beziehungen vorkommen.
   - **Knoten antippen:** Details aus Notion, „In Notion öffnen“ und **„Auf Spielerkarte“**. Das legt den Knoten auf der Spielerkarte an, **nur mit dem Namen, ohne Typ und ohne Beschreibung**. Den Typ (Kindred, Sterblicher, …) tragen die Spieler selbst ein, weil er nicht immer offensichtlich ist. Für Verbindungen gilt dasselbe ohne Beschriftung. Ein zweiter Klick legt nichts doppelt an.
   - Die Anordnung kannst du ziehen („Neu anordnen“ ordnet alles neu). Sie bleibt gespeichert.
-- **Private Spielernotizen:** zeigt die privaten Notizen jedes Spielers (nur Lesen).
+- **Private Spielernotizen:** zeigt die privaten Notizen jedes Spielers. Aufklappen, „Bearbeiten“, dann ändern oder löschen. Die Person sieht die Änderung.
+- **Gruppe:** Liste aller Mitglieder mit Anzeigename, Rolle und Charakter. Du änderst Anzeigenamen und Rollen („Speichern“ je Zeile). Die eigene Rolle ist gesperrt, damit du dich nicht aussperrst. Darunter legst du das **Profil für ein neues Konto** an (User-ID, Anzeigename, Rolle). Profile löschen geht hier bewusst nicht, weil damit alle Notizen und Dokumente der Person verschwinden.
 
 ### Szenenkarten
 
@@ -152,14 +168,14 @@ Du musst Szenen nicht vorab einer Session zuordnen. Der Tab **Szenen** (nur für
 - Auf der **Beziehungskarte** zeigt „Kommt vor in“ auch Szenen aus dem Vorrat (Vorrat · Titel).
 
 ### Konten und Spieler verwalten
-Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“). Danach fehlt noch das Profil und die Zuordnung zum Charakter. Das Vorgehen steht in der Technischen Dokumentation (Abschnitt 3). Jeder Spieler ändert sein Passwort selbst.
+Das Konto selbst (Benutzername und Passwort) legt der ST weiter im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“). Das kann die Seite aus Sicherheitsgründen nicht. Alles Weitere geht in der Seite: das Profil im Storyteller-Bereich unter „Gruppe“ (mit der User-ID aus dem Dashboard), den Charakter im Bogen unter „Verwaltung“. Jeder Spieler ändert sein Passwort selbst.
 
 ## 11. Wer darf was
 
 | Bereich | Spieler | Storyteller |
 |---|---|---|
 | Charakterbögen | alle sehen, eigenen ändern | alle sehen und ändern, anlegen, löschen |
-| Session-Notizen | alle lesen, eigene schreiben | alle ändern und löschen |
+| Session-Notizen | alle lesen, eigene schreiben | alle ändern und löschen (Knopf „Bearbeiten“ an jedem Abschnitt) |
 | Private Notizen | nur eigene | alle lesen, ändern, löschen |
 | Spielerkarte | alle bearbeiten | alle bearbeiten |
 | Beziehungskarte (Notion) | kein Zugriff | sehen und anordnen |
@@ -167,7 +183,8 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | Dokumente | hochladen, eigene umbenennen und löschen, mit Elementen der Spielerkarte verknüpfen | alles, Entwürfe, freigeben, umbenennen, zusätzlich mit Elementen der Storytellerkarte verknüpfen |
 | Chroniken, Kapitel, Zusammenfassungen | lesen (Entwürfe nicht) | alles anlegen, ändern, löschen |
 | Szenenkarten | kein Zugriff | alles |
-| Profile, Rollen | eigenen Anzeigenamen | alle verwalten (Datenbank) |
+| Profile, Rollen | eigenen Anzeigenamen | Anzeigenamen und Rollen ändern, Profile anlegen (Storyteller-Bereich, „Gruppe“) |
+| Suche | alles, was man sehen darf | zusätzlich Szenenkarten und private Notizen der Spieler |
 
 ## 12. Hilfe bei Problemen
 
@@ -181,6 +198,8 @@ Konten legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Pass
 | „Hinweis Notion: Cache nicht gespeichert“ (ST) | Meldung an den Admin der Seite. Die Karte funktioniert trotzdem. |
 | „Notion konnte nicht gelesen werden“ (ST) | Notion-Token oder Freigabe prüfen (Technische Dokumentation, Abschnitt 8). Der letzte Stand bleibt als Cache erhalten. |
 | Eine Änderung fehlt nach dem Schließen des Tabs | Nach dem Tippen kurz warten, bis „Gespeichert“ steht. |
+| Mein Notiztext ist weg | Die Notiz oder Seite erneut zum Bearbeiten öffnen („Entwurf fortsetzen“). Der Entwurf liegt nur in dem Browser, in dem du getippt hast. |
+| Wischen wechselt den Bereich nicht | Nicht auf der Karte, in einem Feld oder am Bildschirmrand ansetzen, zügig und waagerecht wischen. |
 
 ### Anmeldung: Meldung zur Verbindung
 
@@ -194,12 +213,13 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - Es werden **keine E-Mail-Adressen** gespeichert. Benutzernamen sind Pseudo-Adressen.
 - Private Notizen sieht der ST. Alles andere sehen alle Mitglieder.
 - Schriften und Skripte liegen auf der Seite selbst. Es werden keine Google Fonts und keine Skripte von Dritten geladen. Nur der Bereich „Anleitung“ lädt das Handbuch von GitHub.
-- Die Seite setzt keine Cookies. Im Browser liegen nur die Anmelde-Sitzung und die Wahl von hellem oder dunklem Aussehen.
+- Die Seite setzt keine Cookies. Im Browser liegen nur die Anmelde-Sitzung, die Wahl des Aussehens und Entwürfe von ungespeichertem Text (bis du speicherst oder verwirfst).
 - Die Seite ist ein inoffizielles Fan-Projekt und nicht mit den Rechteinhabern von Vampire: Die Maskerade verbunden.
 - Der Zugang ist nur für die Chronik-Gruppe vorgesehen. Die Seite ist nicht für Suchmaschinen gedacht (noindex).
 
 ## 14. Änderungen an diesem Handbuch
 
+- **12.11.2026 (Version 1.14.0):** Wischen zwischen den Bereichen am Handy, Kopfzeile am Handy mit „Menü“, Zurück-Taste und eigene Adressen für Einträge, Bereich Suche, Entwürfe für ungespeicherten Text, Verweise in Notizen, größere Tippflächen (Abschnitte 1, 2, 2a, 5, 6, 8). Für den Storyteller: fremde Notizen bearbeiten, Charaktere anlegen, zuordnen und löschen, Tab „Gruppe“ (Abschnitt 10).
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
 - **24.10.2026 (Version 1.12.0):** Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).
 - **01.11.2026 (Version 1.13.2):** Stil und Hell/Dunkel stehen in einem Knopf „Theme“, der sechs Darstellungen durchschaltet (Abschnitt 1).

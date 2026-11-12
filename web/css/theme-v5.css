@@ -114,3 +114,6 @@
 
 /* ---------- Fußzeile ---------- */
 :root[data-style="rulebook"] .site-foot{font-family:var(--f-label);font-size:.62rem;letter-spacing:.1em;border-top-color:var(--ink)}
+
+/* ---------- v1.14: Handy-Kopfzeile ---------- */
+@media (max-width:600px){:root[data-style="rulebook"] .brand h1{font-size:1.6rem}}

@@ -1,17 +1,22 @@
 // Kiel by Night · Session-Notizen: eine Seite pro Session, jede Person schreibt ihren eigenen Abschnitt
-import { h, toast, guard, head, fmtDate, confirmBtn } from "../lib.js";
-import { sb, S, registerView, authorName, personName } from "../core.js";
+import { h, toast, guard, head, fmtDate, confirmBtn, drafts, bindDraft } from "../lib.js";
+import { sb, S, registerView, setRoute, draftKey, authorName, personName } from "../core.js";
+import { richText } from "../wikilinks.js";
 import { sceneBlock, resetNpcCache } from "./scenes.js";
 
 registerView("sessions", async m => {
+  const route = (arg, push) => setRoute(arg, push, "sessions");
   let mine = !!(S.arg && S.arg.mine);
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
   const jump = cur != null;
   let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
   let fresh = null; // frisch angelegte Session: Titel/Datum gleich zum Ausfüllen offen
-  let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [];
+  let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [], badgePainters = [];
   resetNpcCache();
   const me = S.user.id;
+  // Entwürfe: ungespeicherter Text einer Notiz bleibt im Browser liegen (siehe lib.js)
+  const noteKey = n => n.id ? draftKey("note", n.id) : draftKey("note", "new", n.session_number);
+  const hasDraft = num => drafts.has(draftKey("note", "new", num)) || notes.some(x => x.session_number === num && drafts.has(draftKey("note", x.id)));
 
   const box = h("div", { class: "stack sessions-list" });
   const bAll = h("button", { type: "button", onclick: () => { mine = false; draw(); } }, "Alle");
@@ -46,7 +51,11 @@ registerView("sessions", async m => {
   function noteEditor(n) {
     const ta = h("textarea", { id: "note-body", placeholder: "Was ist passiert? Wer war dabei? Was ist offen?" }, n.body || "");
     const sn = h("input", { type: "number", id: "note-session", min: 1, value: n.session_number ?? "" });
+    const key = noteKey(n), draft = bindDraft(key, { body: ta });
+    const foreign = n.id && n.author_id !== me;
     return h("div", { class: "panel stack", style: "margin-top:12px" },
+      foreign ? h("div", { class: "notice" }, "Du bearbeitest als Storyteller den Abschnitt von " + authorName(n.author_id) + " (" + personName(n.author_id) + ").") : null,
+      draft.notice,
       h("div", { class: "row" }, h("div", { class: "field", style: "flex:0 1 120px" }, h("label", { for: "note-session" }, "Session Nr."), sn)),
       h("div", { class: "field" }, h("label", { for: "note-body" }, "Notiz"), ta),
       h("div", { class: "row" },
@@ -55,10 +64,10 @@ registerView("sessions", async m => {
           if (!Number.isInteger(session_number) || session_number < 1) { toast("Bitte eine Session-Nummer eintragen.", true); return; }
           if (n.id) await guard(sb.from("session_notes").update({ session_number, body: ta.value }).eq("id", n.id), "Gespeichert.");
           else await guard(sb.from("session_notes").insert({ session_number, body: ta.value }), "Notiz angelegt.");
-          editing = null; cur = session_number; await load(); draw();
+          draft.clear(); editing = null; cur = session_number; await load(); draw();
         } }, "Speichern"),
-        h("button", { class: "btn", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen"),
-        n.id ? confirmBtn("Löschen", async () => { await guard(sb.from("session_notes").delete().eq("id", n.id), "Gelöscht."); editing = null; await load(); draw(); }) : null));
+        h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); editing = null; draw(); } }, "Abbrechen"),
+        n.id ? confirmBtn("Löschen", async () => { await guard(sb.from("session_notes").delete().eq("id", n.id), "Gelöscht."); draft.clear(); editing = null; await load(); draw(); }) : null));
   }
 
   function metaEditor(num) {
@@ -82,7 +91,7 @@ registerView("sessions", async m => {
     const where = [chr && chr.title + (chap ? " · Kapitel " + chap.number + (chap.title ? " " + chap.title : "") : ""), i.ingame_date && "Ingame: " + i.ingame_date].filter(Boolean).join(" · ");
     const view = h("div", { class: "stack", style: "margin-top:10px" },
       where ? h("div", { class: "muted", "data-info": "where" }, where) : null,
-      i.summary ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 4px" }, "Zusammenfassung"), h("div", { class: "pre", "data-info": "summary" }, i.summary)) : null);
+      i.summary ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 4px" }, "Zusammenfassung"), richText(i.summary, { "data-info": "summary" })) : null);
     if (!S.isST) return view;
     const csel = h("select", { id: "si-chron" }, h("option", { value: "" }, "— keine Chronik —"), ...chrons.map(c => h("option", { value: c.id, selected: c.id === i.chronicle_id ? true : null }, c.title)));
     const ksel = h("select", { id: "si-chap" });
@@ -104,8 +113,8 @@ registerView("sessions", async m => {
   function entry(n) {
     return h("div", { class: "entry" },
       h("div", { class: "by" }, h("strong", {}, authorName(n.author_id)), h("span", { class: "muted" }, personName(n.author_id) + " · " + fmtDate(n.updated_at)),
-        n.author_id === me ? h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, "Bearbeiten") : null),
-      h("div", { class: "pre", style: "margin-top:6px" }, n.body));
+        n.author_id === me || S.isST ? h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, drafts.has(noteKey(n)) ? "Entwurf fortsetzen" : "Bearbeiten") : null),
+      richText(n.body, { style: "margin-top:6px" }));
   }
 
   // Inhalt einer aufgeklappten Session
@@ -116,7 +125,8 @@ registerView("sessions", async m => {
     for (const n of these) art.append(editing && editing.id === n.id ? noteEditor(editing) : entry(n));
     if (!these.length) art.append(h("p", { class: "muted", style: "margin-top:12px" }, "Zu dieser Session gibt es noch keine Notizen."));
     if (editing && !editing.id) art.append(noteEditor(editing));
-    else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: num, body: "" }; draw(); } }, "Eigenen Abschnitt schreiben")));
+    else if (!editing) art.append(h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { editing = { id: null, session_number: num, body: "" }; draw(); } },
+      drafts.has(draftKey("note", "new", num)) ? "Entwurf fortsetzen" : these.some(x => x.author_id === me) ? "Weiteren Abschnitt schreiben" : "Eigenen Abschnitt schreiben")));
     return [art, S.isST ? h("div", { style: "margin-top:16px" }, sceneBlock(num)) : null, S.isST ? deleteBlock(num) : null];
   }
 
@@ -140,18 +150,25 @@ registerView("sessions", async m => {
     const c = notes.filter(x => x.session_number === num).length, md = meta[num] || {}, i = info[num] || {};
     const det = h("details", { class: "panel session-item", "data-session": String(num), open: num === cur ? true : null });
     const body = h("div", { style: "margin-top:12px" });
+    const badge = h("span", { class: "badge", "data-draft": "1", title: "In diesem Browser liegt ungespeicherter Text" }, "Entwurf");
+    const paintBadge = () => { badge.hidden = !hasDraft(num); };
+    paintBadge();
     det.append(h("summary", { style: "cursor:pointer;display:flex;gap:4px 12px;flex-wrap:wrap;align-items:baseline" },
       h("strong", {}, "Session " + num + (md.title ? " · " + md.title : "")),
       h("span", { class: "muted" }, [md.play_date ? fmtDate(md.play_date) : "", i.summary ? "mit Zusammenfassung" : ""].filter(Boolean).join(" · ")),
+      badge,
       h("span", { class: "muted mono", style: "margin-left:auto" }, c + (c === 1 ? " Notiz" : " Notizen"))), body);
     if (num === cur) body.append(...sessionBody(num).filter(Boolean));
+    badgePainters.push(paintBadge);
     det.addEventListener("toggle", () => {
       if (det.open) {
         if (cur === num && body.firstChild) return;
         auto = false; cur = num; editing = null;
         for (const d of box.querySelectorAll("details.session-item[open]")) if (d !== det) d.open = false;
         body.replaceChildren(...sessionBody(num).filter(Boolean));
-      } else { body.replaceChildren(); if (cur === num) { cur = null; editing = null; } }
+        route({ session: num });
+      } else { body.replaceChildren(); if (cur === num) { cur = null; editing = null; route(null); } }
+      for (const f of badgePainters) f();
     });
     return det;
   }
@@ -163,7 +180,7 @@ registerView("sessions", async m => {
       const my = notes.filter(n => n.author_id === me).sort((a, b) => (b.session_number - a.session_number) || (Date.parse(b.updated_at) - Date.parse(a.updated_at)));
       box.replaceChildren(h("div", { class: "article" }, h("h3", {}, "Meine Notizen"),
         my.length ? my.map(n => h("div", { class: "entry" }, h("div", { class: "by" }, h("strong", {}, "Session " + n.session_number), h("span", { class: "muted" }, fmtDate(n.updated_at)),
-          h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, "Bearbeiten")), h("div", { class: "pre", style: "margin-top:6px" }, n.body)))
+          h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, drafts.has(noteKey(n)) ? "Entwurf fortsetzen" : "Bearbeiten")), richText(n.body, { style: "margin-top:6px" })))
           : h("p", { class: "muted", style: "margin-top:10px" }, "Du hast noch keine Notizen geschrieben.")));
       return;
     }
@@ -172,7 +189,9 @@ registerView("sessions", async m => {
       box.replaceChildren(h("div", { class: "empty" }, "Noch keine Sessions. Lege mit „Neue Notiz“ die erste an."), editing ? noteEditor(editing) : null);
       return;
     }
+    badgePainters = [];
     box.replaceChildren(...list.map(item));
+    if (!mine) route(cur != null ? { session: cur } : null);
     if (editing && !editing.id && !list.includes(editing.session_number)) box.prepend(noteEditor(editing));
   }
 

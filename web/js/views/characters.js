@@ -1,5 +1,5 @@
 // Kiel by Night · Charakterbögen (V5, Trait-Namen nach Corebook)
-import { h, toast, errMsg, head } from "../lib.js";
+import { h, toast, errMsg, head, guard, confirmBtn } from "../lib.js";
 import { sb, S, go, registerView, onCleanup, personName, loadChars } from "../core.js";
 
 export const ATTR = [["Körperlich", ["Strength", "Dexterity", "Stamina"]], ["Sozial", ["Charisma", "Manipulation", "Composure"]], ["Geistig", ["Intelligence", "Wits", "Resolve"]]];
@@ -38,17 +38,49 @@ export function pcCard(c) {
 registerView("chars", async m => {
   if (S.arg && S.arg.id) return viewSheet(m, S.arg.id);
   await loadChars();
-  m.append(head("Charaktere", "Alle Bögen sind für die ganze Gruppe sichtbar. Bearbeiten können die jeweilige Person und der Storyteller."));
+  const newBox = h("div", { style: "margin-bottom:16px" });
+  m.append(head("Charaktere", "Alle Bögen sind für die ganze Gruppe sichtbar. Bearbeiten können die jeweilige Person und der Storyteller.",
+    S.isST ? h("button", { class: "btn primary", type: "button", onclick: () => newBox.replaceChildren(newCharForm(() => newBox.replaceChildren())) }, "Neuer Charakter") : null), newBox);
   const cards = h("div", { class: "cards" });
   for (const c of S.chars) cards.append(pcCard(c));
   if (!S.chars.length) cards.append(h("div", { class: "empty" }, "Noch keine Charaktere."));
   m.append(cards);
 });
 
+// ---------- Verwaltung (nur Storyteller): anlegen, Spieler zuordnen, löschen ----------
+function ownerSelect(id, current) {
+  const people = [...S.profiles.values()].sort((a, b) => String(a.display_name).localeCompare(String(b.display_name), "de"));
+  return h("select", { id }, h("option", { value: "" }, "— ohne Spieler —"),
+    ...people.map(p => h("option", { value: p.id, selected: p.id === current ? true : null }, (p.display_name || "Ohne Namen") + (p.role === "st" ? " (Storyteller)" : ""))));
+}
+function newCharForm(close) {
+  const name = h("input", { type: "text", id: "nc-name", placeholder: "Name des Charakters" }), clan = h("input", { type: "text", id: "nc-clan", placeholder: "z. B. Toreador" });
+  const owner = ownerSelect("nc-owner", null);
+  return h("div", { class: "panel stack", "data-admin": "newchar" }, h("span", { class: "badge st", style: "align-self:flex-start" }, "Nur Storyteller"), h("h3", {}, "Neuer Charakter"),
+    h("div", { class: "row" }, h("div", { class: "field" }, h("label", { for: "nc-name" }, "Name"), name), h("div", { class: "field" }, h("label", { for: "nc-clan" }, "Clan"), clan), h("div", { class: "field" }, h("label", { for: "nc-owner" }, "Spieler"), owner)),
+    h("div", { class: "row" },
+      h("button", { class: "btn primary", type: "button", onclick: async () => {
+        if (!name.value.trim()) { toast("Bitte einen Namen eintragen.", true); return; }
+        const sort = S.chars.reduce((mx, c) => Math.max(mx, c.sort || 0), 0) + 1;
+        const r = await guard(sb.from("characters").insert({ name: name.value.trim(), clan: clan.value.trim(), owner_id: owner.value || null, sheet: {}, sort }).select("id").single(), "Charakter angelegt.");
+        await loadChars(); go("chars", { id: r.id });
+      } }, "Anlegen"),
+      h("button", { class: "btn", type: "button", onclick: close }, "Abbrechen")));
+}
+function charAdmin(c) {
+  const owner = ownerSelect("ca-owner", c.owner_id);
+  return h("details", { class: "panel", "data-admin": "char", style: "margin-top:18px" }, h("summary", { class: "muted", style: "cursor:pointer" }, "Verwaltung (nur Storyteller)"),
+    h("div", { class: "stack", style: "margin-top:10px" },
+      h("div", { class: "row" }, h("div", { class: "field", style: "flex:0 1 320px" }, h("label", { for: "ca-owner" }, "Gehört zu Spieler"), owner),
+        h("button", { class: "btn", type: "button", onclick: async () => { await guard(sb.from("characters").update({ owner_id: owner.value || null }).eq("id", c.id), "Zuordnung gespeichert."); await loadChars(); go("chars", { id: c.id }, { replace: true }); } }, "Zuordnung speichern")),
+      h("p", { class: "muted" }, "Löschen entfernt den Bogen endgültig. Notizen und Kartenknoten der Person bleiben erhalten."),
+      h("div", {}, confirmBtn("Charakter löschen", async () => { await guard(sb.from("characters").delete().eq("id", c.id), "Charakter gelöscht."); await loadChars(); go("chars", null, { replace: true }); }))));
+}
+
 async function viewSheet(m, id) {
   const { data: c, error } = await sb.from("characters").select("*").eq("id", id).maybeSingle();
   if (error) { m.append(h("div", { class: "notice bad" }, errMsg(error))); return; }
-  if (!c) { m.append(h("div", { class: "empty" }, "Dieser Bogen existiert nicht.")); return; }
+  if (!c) { m.append(h("p", {}, h("button", { class: "linkbtn", type: "button", onclick: () => go("chars") }, "← Alle Charaktere")), h("div", { class: "empty", style: "margin-top:12px" }, "Dieser Bogen existiert nicht.")); return; }
   const editable = canEdit(c);
   const data = { name: c.name, clan: c.clan };
   const sheet = normSheet(c.sheet);
@@ -89,6 +121,7 @@ async function viewSheet(m, id) {
 
   const draw = () => { title.textContent = data.name || "Unbenannt"; wrap.replaceChildren(sheetUI(data, sheet, isEdit(), save, draw)); };
   draw();
+  if (S.isST) m.append(charAdmin(c));
 }
 
 function dotsUI(val, max, editable, set, label) {

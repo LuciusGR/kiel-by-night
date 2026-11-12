@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 01.11.2026 · gilt für Website-Version 1.13.2 (siehe `CHANGELOG.md`)
+Stand: 12.11.2026 · gilt für Website-Version 1.14.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -69,25 +69,28 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 
 ### 4.1 Start und Router
 - `app.js` prüft `config.js`, holt die Sitzung, lädt Profile und Charaktere und ruft `go(view)`. Ohne Sitzung erscheint das Login-Formular. Ohne Profil erscheint „Für dieses Konto gibt es kein Profil“.
-- `core.js` hält den Zustand `S` (Nutzer, `isST`, Profile, Charaktere, aktuelle Ansicht, Aufräumfunktionen). `go()` ruft zuerst alle Aufräumfunktionen (zum Beispiel ausstehende Speicherungen) und rendert dann die Ansicht. Der Hash (`#chars`, `#map` …) wird mit `replaceState` gesetzt: **keine Zurück-Taste, keine Tiefen-Links**.
-- Gültige Ansichten: `start`, `chars`, `sessions`, `map`, `wiki`, `docs`, `private` (nur Spieler), `st` (nur ST).
+- `core.js` hält den Zustand `S` (Nutzer, `isST`, Profile, Charaktere, aktuelle Ansicht, Aufräumfunktionen). `go(view, arg, opts)` ruft zuerst alle Aufräumfunktionen (zum Beispiel ausstehende Speicherungen) und rendert dann die Ansicht.
+- **Adressen und Verlauf (seit 1.14.0):** Die Adresse hat die Form `#bereich` oder `#bereich/schlüssel`. `ROUTE_KEY` in `core.js` legt je Bereich fest, welches Feld von `S.arg` in der Adresse steht: `chars` und `chronicles` → `id`, `wiki` → `page`, `sessions` → `session`, `private` → `id`, `search` → `q`, `st` → `tab`, `scenes` → `mode`. `toHash()` und `parseHash()` wandeln um. `go()` legt mit `pushState` einen Verlaufseintrag an (`{ replace: true }` ersetzt ihn), `setRoute(arg, push)` führt die Adresse innerhalb eines Bereichs nach, ohne neu zu zeichnen (gewählte Wiki-Seite mit Verlaufseintrag, aufgeklappte Session und Suchbegriff ohne). `app.js` hört auf `popstate` und `hashchange` (`syncFromHash()`), vergleicht mit `S.route` und zeigt den Bereich zur Adresse. Beim Start wird die Adresse ausgewertet, ein Direktlink übersteht also Anmeldung und Neuladen. Andere Felder von `S.arg` (zum Beispiel `focus`) stehen nicht in der Adresse.
+- `renderNav()` setzt den Seitentitel („Wiki · Kiel by Night“), holt den aktuellen Reiter in die Mitte der Leiste und setzt die Klassen `more-left` und `more-right` (Verlauf am Rand, `navFade()`).
+- Gültige Ansichten: `start`, `chars`, `chronicles`, `sessions`, `scenes` (nur ST), `map`, `wiki`, `docs`, `search`, `manual`, `private` (nur Spieler), `st` (nur ST).
 
 ### 4.2 Ansichten (`web/js/views/`)
 
 | Datei | Bereich | Wichtiges |
 |---|---|---|
-| `overview.js` | Übersicht | Charakterkarten, „Letzte Änderungen“ aus Wiki, Dokumenten, Session-Notizen (RLS blendet Verstecktes aus) |
-| `characters.js` | Charaktere | V5-Bogen als ein JSON-Dokument (`characters.sheet`). **Modi Ansicht (Standard) und Bearbeitung**. Autospeichern 800 ms nach der letzten Eingabe, beim Zurückschalten oder Verlassen sofort |
-| `sessions.js` | Sessions | Liste aufklappbarer Zeilen (`details.session-item`), je Session eine. Höchstens eine ist offen, ihr Inhalt (Notizen, `infoBlock()`, Szenenblock) wird erst beim Aufklappen aufgebaut. Beim Start ist die neueste offen, `S.arg.session` öffnet eine bestimmte und scrollt dorthin. Jede Person schreibt einen eigenen Abschnitt. Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
+| `overview.js` | Übersicht | Charakterkarten, „Letzte Änderungen“ aus Wiki, Dokumenten, Session-Notizen (RLS blendet Verstecktes aus). Ausschnitte ohne Wiki-Klammern (`plainLinks()`) |
+| `characters.js` | Charaktere | V5-Bogen als ein JSON-Dokument (`characters.sheet`). **Modi Ansicht (Standard) und Bearbeitung**. Autospeichern 800 ms nach der letzten Eingabe, beim Zurückschalten oder Verlassen sofort. Nur ST: `newCharForm()` (anlegen) und `charAdmin()` (Spieler zuordnen, löschen) |
+| `search.js` | Suche | Lädt alle lesbaren Tabellen einmal und sucht im Browser (alle Wörter müssen vorkommen, ab zwei Zeichen). Treffer je Bereich mit Ausschnitt (`snippet()`), Sprung per `go()`. RLS entscheidet, was gefunden wird; `scenes` und `scene_npcs` lädt nur der ST |
+| `sessions.js` | Sessions | Liste aufklappbarer Zeilen (`details.session-item`), je Session eine. Höchstens eine ist offen, ihr Inhalt (Notizen, `infoBlock()`, Szenenblock) wird erst beim Aufklappen aufgebaut. Beim Start ist die neueste offen, `S.arg.session` öffnet eine bestimmte und scrollt dorthin. Jede Person schreibt einen eigenen Abschnitt, der ST bearbeitet alle (`entry()`). Text mit Verweisen (`richText()`), Entwürfe über `bindDraft()`, Schild „Entwurf“ je Zeile (`hasDraft()`). Titel und Spieldatum in `sessions`. Dazu `infoBlock()` (Chronik, Kapitel, Ingame-Datum, Zusammenfassung aus `session_info`) und für den ST der Szenenblock |
 | `chronicles.js` | Chroniken | Liste und Zeitleiste (Chronik → Kapitel → Sessions). Der ST legt an, bearbeitet, verwaltet Kapitel und ordnet Sessions zu. Lädt `chronicles`, `chapters`, `session_info`, `sessions`, `session_notes` |
 | `scenepool.js` | Szenen (nur ST) | Tab „Szenen“ (`#scenes`): Vorrat, Zugeordnet, Alle, Suche. Nutzt `sceneBoard()` aus `scenes.js`. Spieler bekommen nur einen Hinweis |
 | `scenes.js` | Szenenkarten (nur ST) | Block in der Session-Ansicht: Karten, Status, Reihenfolge, Bearbeiten, Import (`parseScenes`, Vorschau, NPC-Abgleich `matchNpc`), `sceneMentions` für die ST-Karte |
-| `private.js` | Privat | Private Notizen (Spieler); der ST liest sie im Storyteller-Bereich |
+| `private.js` | Privat | Private Notizen (Spieler), Adresse `#private/<id>`, Entwürfe; der ST liest und ändert sie im Storyteller-Bereich |
 | `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten. Detailfeld zeigt verknüpfte Dokumente (`nodeExtras`), `S.arg.focus` wählt einen Knoten aus |
 | `doclinks.js` | Dokument-Verknüpfungen | `docLinksBox(scope, key, label, canEdit)`: Liste der verknüpften Dokumente im Detailfeld eines Knotens, Auswahl und „Verknüpfen“ nur bei `canEdit` (Spielerkarte: Modus Bearbeitung; Storytellerkarte: immer) |
 | `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
-| `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend) und private Spielernotizen |
-| `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]` |
+| `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend), private Spielernotizen (`stPrivate()`: lesen, ändern, löschen) und Gruppe (`stGroup()`: Anzeigenamen und Rollen ändern, Profil anlegen; kein Löschen von Profilen, weil `session_notes`, `private_notes` und `documents` per `on delete cascade` mitgingen) |
+| `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]`, Adresse `#wiki/<Seiten-ID>` (`openPage()`), Entwürfe |
 | `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
 | `manual.js` | Anleitung | Zeigt `docs/Benutzerhandbuch.md` live aus GitHub (Abschnitt 4.12). Für alle Rollen |
 
@@ -112,6 +115,10 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - **Verknüpfungen mit Karten:** Tabelle `document_links` (`scope` `player` oder `st`, `node_key` = Knoten-ID der Spielerkarte bzw. Notion-ID des NPC, `label` = Name zum Zeitpunkt des Verknüpfens). Sprung von der Karte: `go("docs", { focus: <Dokument-ID> })`. Sprung vom Dokument: `go("map", { focus: <Knoten-ID> })` bzw. `go("st", { tab: "map", focus: <Notion-ID> })`. `docs.js` zeigt `st`-Verknüpfungen nur dem ST (zusätzlich zu RLS). Fehlt die Tabelle noch, bleibt die Liste leer.
 
 ### 4.6 Sonstiges
+- **Entwürfe (seit 1.14.0, `lib.js`):** `bindDraft(key, { name: Feld })` schreibt bei jeder Eingabe den Inhalt der Felder nach `localStorage` (`kbn-draft:<Konto-ID>:<Art>:<ID>`, Schlüssel aus `draftKey()` in `core.js`), stellt ihn beim nächsten Öffnen wieder her und liefert `{ notice, clear }`. `clear()` nach Speichern, Abbrechen oder Löschen. Ein `MutationObserver` meldet per Toast, wenn ein Editor mit ungespeichertem Text aus der Seite verschwindet. Genutzt in `sessions.js` (`note:<id>` bzw. `note:new:<Session>`), `wiki.js` (`wiki:<id>`, `wiki:new`), `private.js` (`priv:<id>`, `priv:new`) und im Szenen-Editor (`scene:<id>`, ohne NPC-Zeilen und Chronik-Auswahl). Entwürfe liegen nur im Browser, nie in der Datenbank.
+- **Verweise außerhalb des Wikis (`wikilinks.js`):** `richText(text, attrs)` zeigt Text sofort und ersetzt `[[Titel]]` nach dem Laden der Seitentitel (`wikiTitles()`, 60 Sekunden Cache, `forgetWikiTitles()` nach Änderungen im Wiki) durch einen Link `go("wiki", { page })`. Genutzt für Session-Notizen, Zusammenfassungen und private Notizen.
+- **Wischen (`swipe.js`):** `mountSwipe(nav)` hört auf Touch-Ereignisse am Fenster. Ein waagerechter Wisch (mindestens 70 px, höchstens 700 ms, waagerechter Anteil mindestens doppelt so groß wie der senkrechte) klickt den Nachbar-Reiter in `#nav` an. Ausgenommen: Start in `input`, `textarea`, `select`, `.map-canvas`, `nav.tabs`, `dialog`, in seitlich scrollbaren Elementen, in den äußeren 24 px des Bildschirms, bei markiertem Text oder offenem Dialog. Mit der Klasse `no-swipe` lässt sich ein Bereich ausnehmen. `html, body { overscroll-behavior-x: none }` verhindert, dass Chromium mit Touch beim seitlichen Überziehen zusätzlich „Zurück“ auslöst. Ein kurzes Einblenden (`swipe-next`, `swipe-prev`, nur Deckkraft, damit Cytoscape die Lage der Karte richtig misst) entfällt bei „Bewegung reduzieren“.
+- **Handy (`theme.css`, Block „v1.14“):** Unter 600 px steht die Kopfzeile in einer Zeile, Theme, Passwort und Abmelden liegen hinter „Menü“ (`.who-toggle`, `.who-items`, Klasse `open`, schließt bei Klick außerhalb, Escape und Bereichswechsel). `app.js` schreibt die Höhe der Kopfzeile als `--top-h` nach `:root` (`ResizeObserver`), Sprungziele nutzen sie als `scroll-margin-top`. `revealOnNarrow(el, maxWidth, block)` scrollt bei einspaltigem Layout zum Detailbereich (Karte 900 px, Wiki 1000 px, Privat 860 px). Unter 600 px oder bei `pointer:coarse` sind Knöpfe mindestens 40 px hoch, Punkte und Kästchen des Bogens 28 px.
 - Theme hell/dunkel/automatisch (`data-theme`, gemerkt in `localStorage` `kbn-theme`).
 - Fehlertexte aus PostgREST-Codes in `lib.js` (`errMsg`), Rückfragen vor Löschen (`confirmBtn`).
 
@@ -281,17 +288,19 @@ Voreingestelltes Erscheinungsbild, neben dem der bisherige Look („Klassisch“
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 267 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 178 Fälle, Stand 01.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 267 Fälle auf PGlite, Edge Function: 24 Fälle, Browser: 191 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
 - Letzter Speicherstand gewinnt bei gleichzeitigem Bearbeiten (Bogen, Wiki, Notizen).
-- Keine Zurück-Taste und keine Tiefen-Links; ein geöffneter Bogen ist nach Neuladen wieder die Liste.
+- Adressen gibt es für Bogen, Wiki-Seite, Session, Chronik, private Notiz, Suche und die Reiter von Storyteller und Szenen. Ein gewählter Kartenknoten oder ein hervorgehobenes Dokument steht nicht in der Adresse.
+- Entwürfe liegen nur im jeweiligen Browser. Ändert jemand anderes den Eintrag in der Zwischenzeit, überschreibt das Speichern des Entwurfs dessen Stand (wie bisher: letzter Speicherstand gewinnt).
+- Die Suche lädt alle lesbaren Tabellen in den Browser. Bei sehr vielen Notizen wird das Öffnen des Bereichs langsamer.
+- Konten (Benutzername, Passwort) legt weiterhin nur das Supabase-Dashboard an. Die Seite legt Profile an, löscht aber keine.
 - Schließt man den Tab in den 800 ms nach der letzten Eingabe, kann die Änderung fehlen.
 - Alle Mitglieder dürfen Spielerkarten-Knoten löschen, auch Spielercharakter-Knoten.
 - Keine Content-Security-Policy (GitHub Pages setzt keine Header). Schriften und Bibliotheken liegen lokal (`web/fonts/`, `web/vendor/`); ein Update von supabase-js oder Cytoscape heißt, die Datei in `vendor/` neu zu erzeugen.
 - Es gibt bewusst weder Impressum noch Datenschutzerklärung (Entscheidung des Betreibers). `web/js/legal.js` zeigt nur den Hinweis „Inoffizielles Fan-Projekt“ in der Fußzeile.
-- Die Oberfläche bietet dem ST noch kein Bearbeiten und Löschen fremder Notizen und keine Rollen- oder Profilverwaltung (die Rechte bestehen in der Datenbank).
 - Badge-Kontrast im Dunkelmodus knapp unter 4,5:1.
 - Der Tab „Anleitung“ hängt von `raw.githubusercontent.com` ab (bis etwa 5 Minuten Cache, Rückfall auf die zuletzt geladene Fassung im Browser). Wird das Repository privat gemacht oder der Branch umbenannt, zeigt der Tab nur noch die Fehlermeldung.
 
@@ -301,6 +310,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **12.11.2026 (Version 1.14.0):** Router mit Adressen und Verlauf (`ROUTE_KEY`, `toHash()`, `parseHash()`, `setRoute()`, `syncFromHash()`), Entwürfe (`bindDraft()`, `draftKey()`), Verweise außerhalb des Wikis (`wikilinks.js`), Suche (`search.js`), Wischen (`swipe.js`), Handy-Kopfzeile mit Menü, `--top-h`, `revealOnNarrow()`, größere Tippflächen, ST-Verwaltung in der Oberfläche (`newCharForm()`, `charAdmin()`, `stPrivate()`, `stGroup()`, Bearbeiten fremder Session-Notizen). Keine Migration, keine Änderung an Rechten. Abschnitte 4.1, 4.2, 4.6, 10 und 11.
 - **01.11.2026 (Version 1.13.2):** Der Stil-Knopf ist im Theme-Knopf aufgegangen (`cycleTheme()`, `MODES`, `applyMode()` in `app.js`, `toggleStyle()` entfällt). Test U07 neu gefasst, U248 und U248b angepasst, Kopfzeile zeigt wieder drei Knöpfe.
 - **01.11.2026 (Version 1.13.1):** Rulebook ist voreingestellt, der alte Look heißt „Klassisch“ (`kbn-style` = `classic`). `<head>`-Skript, `toggleStyle()`, Tests U248 bis U252 angepasst, Test-Harness setzt standardmäßig `classic`.
 - **01.11.2026 (Version 1.13.0):** Stil „Rulebook“ (`css/theme-v5.css`, Knopf „Stil“ in `app.js`, `data-style` und `kbn-style`, `lib.js` beobachtet `data-style`, fünf lokale WOFF2-Schriften, Abschnitt 4.13). Kopfzeile bricht am Handy um (`.who-box`). Tests U248 bis U252.

@@ -1,8 +1,9 @@
 // Kiel by Night · Start, Anmeldung, Navigation
 import { h, toast, errMsg, store, diagnoseNetwork } from "./lib.js";
-import { sb, S, go, loadProfiles, loadChars, setNavRenderer, personName } from "./core.js";
+import { sb, S, go, parseHash, loadProfiles, loadChars, setNavRenderer, personName } from "./core.js";
 import { SUPABASE_URL, APP_VERSION } from "./config.js";
 import { mountFooter } from "./legal.js";
+import { mountSwipe } from "./swipe.js";
 import "./views/overview.js";
 import "./views/characters.js";
 import "./views/chronicles.js";
@@ -12,11 +13,12 @@ import "./views/private.js";
 import "./views/playermap.js";
 import "./views/wiki.js";
 import "./views/docs.js";
+import "./views/search.js";
 import "./views/manual.js";
 import "./views/storyteller.js";
 
-const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"], ["manual", "Anleitung"]];
-const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "manual", "private", "st"]);
+const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"], ["search", "Suche"], ["manual", "Anleitung"]];
+const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "search", "manual", "private", "st"]);
 
 // Supabase Auth braucht eine E-Mail als Kennung. Die Gruppe meldet sich mit einem Benutzernamen an, intern wird
 // daraus name@kbn.invalid (".invalid" kann nie eine echte Adresse sein, es werden keine Mails verschickt).
@@ -31,12 +33,23 @@ export function toLoginEmail(input) {
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.replaceChildren();
-  if (!S.user) return;
+  closeWhoMenu();
+  if (!S.user) { document.title = "Kiel by Night"; return; }
   const items = [...NAV];
   if (S.isST) items.splice(4, 0, ["scenes", "Szenen"]); // Szenenvorrat, nur Storyteller
   if (!S.isST) items.push(["private", "Privat"]);
   for (const [v, l] of items) nav.append(h("button", { type: "button", "aria-current": S.view === v ? "page" : null, onclick: () => go(v) }, l));
   if (S.isST) nav.append(h("button", { type: "button", class: "st", "aria-current": S.view === "st" ? "page" : null, onclick: () => go("st") }, "Storyteller"));
+  // Am Handy scrollt die Reiterleiste seitlich: den aktuellen Reiter in die Mitte holen, Ränder mit Verlauf zeigen, dass es weitergeht
+  const cur = nav.querySelector('[aria-current="page"]');
+  if (cur) { nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; document.title = cur.textContent + " · Kiel by Night"; }
+  navFade();
+}
+function navFade() {
+  const nav = document.getElementById("nav"); if (!nav) return;
+  const max = nav.scrollWidth - nav.clientWidth;
+  nav.classList.toggle("more-left", nav.scrollLeft > 4);
+  nav.classList.toggle("more-right", nav.scrollLeft < max - 4);
 }
 setNavRenderer(renderNav);
 
@@ -60,17 +73,30 @@ function cycleTheme(btn) {
   btn.textContent = "Theme: " + themeLabel();
 }
 
+// Konto-Knöpfe: am Desktop stehen sie nebeneinander in der Kopfzeile, am Handy hinter dem Knopf "Menü" (spart Höhe)
+function closeWhoMenu() {
+  const who = document.getElementById("who"); if (!who) return;
+  who.classList.remove("open");
+  const t = who.querySelector(".who-toggle"); if (t) t.setAttribute("aria-expanded", "false");
+}
 function renderWho() {
   const who = document.getElementById("who");
   const themeBtn = h("button", { class: "hbtn", type: "button", title: "Darstellung durchschalten: Rulebook oder Klassisch, jeweils Auto, Hell, Dunkel" }, "Theme: " + themeLabel());
   themeBtn.addEventListener("click", () => cycleTheme(themeBtn));
-  if (!S.user) { who.replaceChildren(themeBtn); return; }
-  who.replaceChildren(
+  who.classList.remove("open");
+  if (!S.user) { who.classList.remove("has-menu"); who.replaceChildren(themeBtn); return; }
+  who.classList.add("has-menu");
+  const toggle = h("button", { class: "hbtn who-toggle", type: "button", "aria-expanded": "false", "aria-controls": "who-items", onclick: () => {
+    const open = who.classList.toggle("open"); toggle.setAttribute("aria-expanded", String(open));
+  } }, "Menü");
+  who.replaceChildren(toggle, h("div", { class: "who-items", id: "who-items" },
     h("span", {}, (S.isST ? "Storyteller" : "Spieler") + " · " + personName(S.user.id)),
     themeBtn,
-    h("button", { class: "hbtn", type: "button", onclick: passwordDialog }, "Passwort"),
-    h("button", { class: "hbtn", type: "button", onclick: async () => { await sb.auth.signOut(); location.hash = ""; location.reload(); } }, "Abmelden"));
+    h("button", { class: "hbtn", type: "button", onclick: () => { closeWhoMenu(); passwordDialog(); } }, "Passwort"),
+    h("button", { class: "hbtn", type: "button", onclick: async () => { await sb.auth.signOut(); location.hash = ""; location.reload(); } }, "Abmelden")));
 }
+document.addEventListener("click", ev => { const who = document.getElementById("who"); if (who && who.classList.contains("open") && !who.contains(ev.target)) closeWhoMenu(); });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeWhoMenu(); });
 
 function passwordDialog() {
   const p1 = h("input", { type: "password", id: "pw1", autocomplete: "new-password", minlength: "8" });
@@ -138,8 +164,8 @@ async function enterInner(user) {
   if (!S.profiles.has(user.id)) { renderLogin("Für dieses Konto gibt es kein Profil. Der Storyteller muss es anlegen."); return; }
   started = true;
   renderWho();
-  const t = (location.hash || "").slice(1);
-  go(VALID.has(t) ? t : "start");
+  const r = parseHash(location.hash);
+  if (VALID.has(r.view)) go(r.view, r.arg, { replace: true }); else go("start", null, { replace: true });
 }
 
 (async function boot() {
@@ -155,9 +181,20 @@ async function enterInner(user) {
     if (ev === "SIGNED_IN" && session && !started) enter(session.user);
     if (ev === "SIGNED_OUT") { started = false; S.user = null; renderNav(); renderWho(); renderLogin(); }
   });
-  window.addEventListener("hashchange", () => {
-    const t = location.hash.slice(1);
-    if (started && VALID.has(t) && t !== S.view) go(t);
-  });
+  // Zurück- und Vor-Taste des Browsers sowie von Hand geänderte Adressen: den Bereich zur Adresse zeigen
+  const syncFromHash = () => {
+    if (!started || location.hash === S.route) return;
+    const r = parseHash(location.hash);
+    if (VALID.has(r.view)) go(r.view, r.arg, { replace: true });
+  };
+  window.addEventListener("popstate", syncFromHash);
+  window.addEventListener("hashchange", syncFromHash);
+  // Höhe der festen Kopfzeile für Sprungziele (scroll-margin) bereitstellen
+  const top = document.querySelector("header.top");
+  const setTopH = () => document.documentElement.style.setProperty("--top-h", Math.round(top.getBoundingClientRect().height) + "px");
+  setTopH(); try { new ResizeObserver(setTopH).observe(top); } catch (_) {}
+  const nav = document.getElementById("nav");
+  nav.addEventListener("scroll", navFade, { passive: true }); window.addEventListener("resize", navFade);
+  mountSwipe(nav);
   console.info("Kiel by Night v" + APP_VERSION);
 })();

@@ -204,8 +204,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .toggle.wrap{flex-wrap:wrap}
 .toggle.wrap button{flex:1 1 auto}
 @media (max-width:600px){
-  .who-box{margin-left:0;width:100%;justify-content:flex-start}
-  .who-box>span:first-child{flex:1 0 100%}
   .panel{padding:12px}
   .session-item{padding:12px}
   .article{padding:14px}
@@ -221,11 +219,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .shape-legend svg{vertical-align:-3px;margin-right:4px}
 
 /* Anleitung (Handbuch live aus GitHub) */
-.toc{position:sticky;top:120px;max-height:calc(100vh - 140px);overflow:auto}
+.toc{position:sticky;top:calc(var(--top-h,110px) + 10px);max-height:calc(100vh - var(--top-h,110px) - 30px);overflow:auto}
 .toc summary{cursor:pointer;font-weight:500;margin-bottom:8px}
-.manual-body h3{margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);scroll-margin-top:130px}
+.manual-body h3{margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);scroll-margin-top:calc(var(--top-h,110px) + 12px)}
 .manual-body h3:first-child{margin-top:0}
-.manual-body h4{font-family:var(--f-body);font-weight:700;font-size:1.08rem;margin:20px 0 6px;scroll-margin-top:130px}
+.manual-body h4{font-family:var(--f-body);font-weight:700;font-size:1.08rem;margin:20px 0 6px;scroll-margin-top:calc(var(--top-h,110px) + 12px)}
 .manual-body p{margin:0 0 10px;max-width:72ch;overflow-wrap:anywhere}
 .manual-body ul,.manual-body ol{margin:0 0 12px;padding-left:1.4em;max-width:72ch}
 .manual-body li{margin:3px 0;overflow-wrap:anywhere}
@@ -249,3 +247,55 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 /* Fußzeile */
 .site-foot{max-width:1280px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 36px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
 .site-foot button{background:none;border:0;padding:0;color:var(--sea);text-decoration:underline;cursor:pointer;font-size:inherit}
+
+/* ---------- v1.14: Handy-Kopfzeile, Tippflächen, Wischen, Suche, Entwürfe ---------- */
+[hidden]{display:none!important}
+/* Seitliches Überziehen löst sonst in manchen Browsern "Zurück" aus und kollidiert mit dem Wischen zwischen den Reitern */
+html,body{overscroll-behavior-x:none}
+/* Sprungziele landen unter der festen Kopfzeile (Höhe setzt app.js als --top-h) */
+.map-panel,.wiki-grid>*,.split>*,.session-item,.doc{scroll-margin-top:calc(var(--top-h,110px) + 10px);scroll-margin-bottom:12px}
+
+/* Konto-Knöpfe: am Desktop nebeneinander, am Handy hinter "Menü" */
+.who-toggle{display:none}
+.who-items{display:contents}
+/* Reiterleiste: Verlauf am Rand zeigt, dass es seitlich weitergeht */
+nav.tabs.more-right{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+nav.tabs.more-left{-webkit-mask-image:linear-gradient(270deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(270deg,#000 calc(100% - 36px),transparent)}
+nav.tabs.more-left.more-right{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
+@media (max-width:600px){
+  .top-inner{padding-block:8px 0}
+  .brand{flex-wrap:nowrap;align-items:center;gap:10px}
+  .brand h1{font-size:1.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .brand .coords{display:none}
+  .who-box{position:relative;flex:0 0 auto;flex-wrap:nowrap}
+  .who-box.has-menu .who-toggle{display:inline-flex;align-items:center}
+  .who-box.has-menu .who-items{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:6;flex-direction:column;align-items:stretch;gap:10px;min-width:230px;padding:14px;background:var(--band);border:1px solid #3a3a42;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+  .who-box.has-menu.open .who-items{display:flex}
+  .who-box.has-menu .who-items .hbtn{text-align:left}
+  nav.tabs{margin-top:4px}
+}
+/* Finger statt Maus: Flächen mindestens 40 Pixel hoch, Punkte und Kästchen des Bogens größer */
+@media (max-width:600px),(pointer:coarse){
+  .btn,.btn.small,.hbtn,.toggle button,button.chip{min-height:40px}
+  .btn.small{padding-inline:12px}
+  .hbtn{padding-inline:12px}
+  .dots{gap:6px}
+  .dots button{width:28px;height:28px}
+  .boxes{gap:4px}
+  .boxes button{width:28px;height:28px}
+  .list button{padding-block:12px}
+  .feed .linkbtn,.hit .linkbtn{padding-block:8px}
+  .session-item>summary{min-height:28px}
+  details>summary{padding-block:6px}
+  .wlink{padding-block:4px}
+}
+/* Wischen zum nächsten oder vorigen Reiter: kurzes Einblenden. Bewusst ohne Verschieben, weil die Karte (Cytoscape) ihre Lage beim Aufbau misst */
+@media (prefers-reduced-motion:no-preference){
+  main.swipe-next,main.swipe-prev{animation:swipe-in .2s ease-out}
+  @keyframes swipe-in{from{opacity:.25}}
+}
+/* Suche */
+.hit{border-top:1px solid var(--line);padding-top:8px}
+.hit-text{font-size:.92rem;overflow-wrap:anywhere}
+mark{background:var(--sea-soft);color:inherit;padding:0 2px;border-radius:2px}
+.draft-notice{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
