@@ -4,7 +4,7 @@ import { h } from "../lib.js";
 import { go } from "../core.js";
 
 const TABS = [["map", "Beziehungskarte", () => go("st", { tab: "map" })], ["scenes", "Szenen", () => go("scenes")], ["play", "Spielabend", () => go("play")],
-  ["private", "Private Notizen", () => go("st", { tab: "private" })], ["group", "Gruppe", () => go("st", { tab: "group" })]];
+  ["private", "Private Spielernotizen", () => go("st", { tab: "private" })], ["group", "Gruppe", () => go("st", { tab: "group" })]];
 export const ST_VIEWS = new Set(["st", "scenes", "play"]);
 export function stTabs(active) {
   return h("div", { class: "toggle wrap st-tabs", role: "group", "aria-label": "Storyteller-Bereich" },

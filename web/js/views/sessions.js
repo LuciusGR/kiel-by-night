@@ -1,6 +1,6 @@
 // Kiel by Night · Session-Notizen: eine Seite pro Session, jede Person schreibt ihren eigenen Abschnitt
 import { h, toast, guard, head, fmtDate, confirmBtn, drafts, bindDraft } from "../lib.js";
-import { sb, S, registerView, setRoute, draftKey, authorName, personName, saveChecked, deleteWithUndo } from "../core.js";
+import { sb, S, registerView, setRoute, draftKey, authorName, personName, saveChecked, deleteWithUndo, watchTables } from "../core.js";
 import { richText } from "../wikilinks.js";
 import { sceneBlock, resetNpcCache } from "./scenes.js";
 
@@ -198,5 +198,15 @@ registerView("sessions", async m => {
 
   await load();
   draw();
+  // Live: Änderungen anderer erscheinen ohne Neuladen. Ist gerade ein Editor offen oder ein Feld in Arbeit, kommt nur ein Hinweis.
+  const sig = () => JSON.stringify([notes.map(n => [n.id, n.updated_at]), meta, info]);
+  const liveHint = h("div", { class: "notice live-hint", role: "status", hidden: true }, "Es gibt neue Änderungen von anderen. ",
+    h("button", { class: "btn small", type: "button", onclick: async () => { liveHint.hidden = true; await load(); draw(); } }, "Jetzt laden"));
+  box.before(liveHint);
+  watchTables("kbn-sessions", ["session_notes", "sessions", "session_info"], async () => {
+    const before = sig(); await load(); if (sig() === before) return;
+    const a = document.activeElement, busy = editing || (a && box.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+    if (busy) liveHint.hidden = false; else draw();
+  });
   if (jump) { const d = box.querySelector("details[open]"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "start" }); }
 });

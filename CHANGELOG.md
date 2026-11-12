@@ -3,6 +3,22 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.15.0 – 12.11.2026
+Zweite Runde nach der Durchsicht: alles, was zur Bestnote fehlte und sich ohne die Gruppe bauen ließ. **Eine Migration** (`20261112120000_guards_history_v1_15.sql`) und **eine neue Edge Function** (`account-admin`). Die Seite läuft auch ohne beide, dann fehlen Wiki-Verlauf, Live-Aktualisierung, der Schutz in der Datenbank und das Anlegen von Konten in der Seite.
+- **Farben der Karten:** Sterbliche sind grün (eigener Ton `--mortal`). Im Stil Rulebook waren sie karmesinrot und von Kindred kaum zu unterscheiden. Orte sind dafür blau, Organisationen violett. Gilt für Spielerkarte und Beziehungskarte.
+- **Übersicht:** nächste Session mit Wochentag und Countdown, „Neu seit deinem letzten Besuch“ mit Schild und „Als gelesen markieren“, für den ST „Offene Punkte“ (fehlende Zusammenfassungen, Titel, Chronik, offene Szenen, Vorrat).
+- **Charakterbogen:** Würfeln nach V5 mit Hunger-Würfeln, Messy Critical, Bestial Failure, Willenskraft-Neuwurf und Rouse Check (`web/js/dice.js`). Vorteile, Hintergründe und Nachteile als Einträge mit Punkten. XP-Verlauf. Porträt aus den Dokumenten. Clan-Vorschläge. Sprungmarken zu den Abschnitten.
+- **Gleichzeitiges Bearbeiten:** Bogen, Session-Notizen, private Notizen und Wiki-Seiten speichern nur, wenn der Eintrag seit dem Laden unverändert ist, sonst fragt die Seite nach (`saveChecked()`).
+- **Rückgängig:** Nach dem Löschen einer Notiz, privaten Notiz oder Wiki-Seite bietet die Meldung acht Sekunden „Rückgängig“ an.
+- **Formatierung:** `**fett**`, `*kursiv*`, Zwischenüberschriften (`# `) und Aufzählungspunkte (`- `) in Notizen, Zusammenfassungen und Wiki-Seiten, Zeilenumbrüche bleiben erhalten.
+- **Live:** Änderungen anderer an Session-Notizen, Sessions, Wiki-Seiten und (im Spielabend) Bögen erscheinen ohne Neuladen (braucht die Migration).
+- **Wiki-Verlauf:** frühere Stände ansehen und wiederherstellen, 30 je Seite (braucht die Migration).
+- **Karte:** Detailfeld am Handy als Einblendung über der Karte, alle Knoten als Liste für Tastatur und Screenreader, Bildvorschau verknüpfter Dokumente. Knoten von Spielercharakteren löscht nur der ST (Oberfläche sofort, Datenbank mit der Migration).
+- **Storyteller:** In der Kopfleiste steht nur noch „Storyteller“, dahinter Beziehungskarte, Szenen, Spielabend, Private Spielernotizen und Gruppe. Neu: **Spielabend** (eine Szene groß, Status und Weiterblättern, Coterie mit Hunger, Health und Willpower zum Anklicken, eigene Notizen), **Fäden**-Übersicht über alle Szenen, Fäden oben auf der Szenenkarte, Reihenfolge per Ziehen, „Mit Angaben …“ beim Übertragen auf die Spielerkarte, XP vergeben, Schild „Zusammenfassung fehlt“, Zeitleiste wahlweise von Anfang an, Sicherung als JSON, Szenen-Entwurf sichert auch die NPC-Zeilen.
+- **Konten in der Seite:** Unter „Gruppe“ Konto anlegen und Passwort setzen (Edge Function `account-admin`, nur ST, Service-Schlüssel bleibt in der Function).
+- **Kleinigkeiten:** Ladebalken unter der Kopfzeile, Seitentitel je Bereich.
+- **Tests:** TESTSTAND
+
 ## 1.14.0 – 12.11.2026
 Ergebnis einer Durchsicht der Seite aus Sicht der Spieler und des Storytellers. Keine Migration, keine Änderung an Rechten.
 - **Wischen am Handy:** Ein Wisch nach links oder rechts schaltet zum nächsten oder vorigen Reiter, so als wäre er angetippt worden (`web/js/swipe.js`). Kein Wechsel auf Karten, in Eingabefeldern, in der Reiterleiste, am Bildschirmrand, bei markiertem Text und bei offenem Dialog.

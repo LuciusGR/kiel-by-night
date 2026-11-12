@@ -129,8 +129,21 @@ export async function deleteWithUndo(table, row, after) {
   const { error } = await sb.from(table).delete().eq("id", row.id);
   if (error) { toast(errMsg(error), true); throw error; }
   toast("Gelöscht.", false, { label: "Rückgängig", run: async () => {
-    const r = await sb.from(table).insert(row);
+    let r = await sb.from(table).insert(row);
+    // Fremde Wiki-Seite (ST hat gelöscht): Anlegen verlangt den eigenen Namen als Ersteller
+    if (r.error && "created_by" in row && row.created_by !== S.user.id) r = await sb.from(table).insert({ ...row, created_by: S.user.id });
     if (r.error) { toast("Wiederherstellen ging nicht: " + errMsg(r.error), true); return; }
     toast("Wiederhergestellt."); if (after) await after();
   } });
+}
+
+// ---------- Live ----------
+// Meldet Änderungen anderer an den genannten Tabellen (Supabase Realtime, gebündelt nach 400 ms). Die Abmeldung
+// geschieht beim Verlassen des Bereichs. Ohne Realtime für die Tabelle kommt schlicht nie ein Ereignis.
+export function watchTables(name, tables, onChange) {
+  let t = null, ch = sb.channel(name);
+  const ping = () => { clearTimeout(t); t = setTimeout(() => { Promise.resolve(onChange()).catch(() => {}); }, 400); };
+  for (const table of tables) ch = ch.on("postgres_changes", { event: "*", schema: "public", table }, ping);
+  ch.subscribe();
+  onCleanup(() => { clearTimeout(t); try { sb.removeChannel(ch); } catch (_) {} });
 }

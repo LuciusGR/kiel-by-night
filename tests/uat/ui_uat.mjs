@@ -21,7 +21,9 @@ rep("upload: async () => ({ error: null })", "upload: async (p, f, o) => { (wind
 rep("signInWithPassword: async () => ({ error: { message: \"Invalid login credentials\" } }),", "signInWithPassword: async (a) => { (window.__signins = window.__signins || []).push(a); return window.__SIGNIN_NET ? { error: { message: 'Failed to fetch' } } : { error: { message: 'Invalid login credentials' } }; },");
 rep("signOut: async () => ({}), updateUser: async () => ({ error: null })", "signOut: async () => { window.__log && window.__log('signOut'); return {}; }, updateUser: async (a) => { window.__log && window.__log('updateUser'); return { error: null }; }");
 rep("functions: { invoke: async () => ({ data: { ...NOTION, fetched_at: now(), source: \"cache\" }, error: null }) }",
-  "functions: { invoke: async (n, o) => { (window.__invokes = window.__invokes || []).push({ n, o }); const m = window.__NOTION_MODE || 'ok'; if (m === 'error') return { data: null, error: { context: { json: async () => ({ error: 'notion_failed', message: 'Notion 401: unauthorized' }) } } }; return { data: { ...NOTION, fetched_at: now(), source: m === 'fresh' || (o && o.body && o.body.refresh) ? 'notion' : 'cache', warning: m === 'warn' ? 'Cache nicht gespeichert' : undefined }, error: null }; } }");
+  "functions: { invoke: async (n, o) => { (window.__invokes = window.__invokes || []).push({ n, o }); if (n === 'account-admin') return window.__ACCOUNT ? window.__ACCOUNT(o.body) : { data: null, error: { context: { status: 404, json: async () => ({ code: 'NOT_FOUND', message: 'Requested function was not found' }) } } }; const m = window.__NOTION_MODE || 'ok'; if (m === 'error') return { data: null, error: { context: { json: async () => ({ error: 'notion_failed', message: 'Notion 401: unauthorized' }) } } }; return { data: { ...NOTION, fetched_at: now(), source: m === 'fresh' || (o && o.body && o.body.refresh) ? 'notion' : 'cache', warning: m === 'warn' ? 'Cache nicht gespeichert' : undefined }, error: null }; } }");
+// Realtime: Abos merken, damit ein Test ein Ereignis auslösen kann (window.__rt.forEach(f => f()))
+rep("channel: () => { const c = { on: () => c, subscribe: () => c }; return c; },", "channel: () => { const c = { on: (ev, flt, cb) => { (window.__rt = window.__rt || []).push(cb); return c; }, subscribe: () => c }; return c; },");
 const cyto = fs.readFileSync(HERE + "/node_modules/cytoscape/dist/cytoscape.min.js", "utf8");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const MANUAL_FILE = fs.readFileSync(REPO + "/docs/Benutzerhandbuch.md", "utf8");
@@ -129,9 +131,9 @@ T("U03", "Anmeldung", "Konto ohne Profil: klare Meldung, kein Zugriff auf Inhalt
   assert.match(t, /kein Profil/); assert.equal(await p.locator("#nav button").count(), 0);
   return p;
 });
-T("U04", "Navigation", "ST sieht 10 Bereiche plus Storyteller, aber nicht Privat", async () => {
+T("U04", "Navigation", "ST sieht 9 Bereiche plus Storyteller (Szenen liegen im Storyteller-Bereich), aber nicht Privat", async () => {
   const p = await openApp("st"); const l = await p.locator("#nav button").allInnerTexts();
-  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Szenen", "Spielerkarte", "Wiki", "Dokumente", "Suche", "Anleitung", "Storyteller"]); return p;
+  assert.deepEqual(l, ["Übersicht", "Charaktere", "Chroniken", "Sessions", "Spielerkarte", "Wiki", "Dokumente", "Suche", "Anleitung", "Storyteller"]); return p;
 });
 T("U05", "Navigation", "Spieler sieht 9 Bereiche plus Privat, aber nicht Storyteller", async () => {
   const p = await openApp("player"); const l = await p.locator("#nav button").allInnerTexts();
@@ -877,7 +879,7 @@ const POOL = { format: "kbn-scenes/1", szenen: [
   { titel: "Gespräch im Elysium", ort: "Elysium", npcs: ["Mara"], faeden: ["Faden B"] }] };
 const poolTab = () => openApp("st", "scenes", { wait: 1000 });
 T("U220", "Szenen-Tab", "ST hat den Tab Szenen mit Vorrat; Spieler hat ihn nicht und bekommt auf #scenes nur einen Hinweis", async () => {
-  const a = await poolTab(); assert.ok((await a.locator("#nav button").allInnerTexts()).includes("Szenen")); assert.match(await a.locator("main h2").first().innerText(), /Szenen/); assert.match(await a.locator("section[aria-labelledby=scenes-h]").innerText(), /Der Vorrat ist leer/); await a.close();
+  const a = await poolTab(); assert.equal((await a.locator("#nav button").allInnerTexts()).includes("Szenen"), false, "kein eigener Reiter in der Kopfleiste"); assert.equal(await a.locator('#nav [aria-current="page"]').innerText(), "Storyteller"); assert.equal(await a.locator('.st-tabs button[aria-pressed="true"]').innerText(), "Szenen"); assert.match(await a.locator("main h2").first().innerText(), /Szenen/); assert.match(await a.locator("section[aria-labelledby=scenes-h]").innerText(), /Der Vorrat ist leer/); await a.close();
   const b = await openApp("player", "scenes"); assert.equal((await b.locator("#nav button").allInnerTexts()).includes("Szenen"), false); assert.match(await b.locator("main .notice.bad").innerText(), /nur für den Storyteller/); assert.equal(await b.getByRole("button", { name: "Szenen importieren" }).count(), 0); return b;
 });
 T("U221", "Szenen-Tab", "Import ohne Session-Angabe landet im Vorrat (keine Session), Datei mit Session-Nummer ebenfalls, mit Hinweis", async () => {
@@ -1233,7 +1235,7 @@ T("U270", "Storyteller", "Gruppe: Anzeigename und Rolle ändern, eigene Rolle ge
   const row = p.locator(`[data-profile="${P1}"]`); await row.locator("input").fill("Anja"); await row.locator("select").selectOption("st"); await row.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
   let pr = (await db(p, "profiles")).find(x => x.id === P1); assert.equal(pr.display_name, "Anja"); assert.equal(pr.role, "st");
   await p.locator(`[data-profile="${ST}"]`).getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Nichts geändert\./);
-  await p.fill("#np-uid", "keine-uid"); await p.fill("#np-name", "Damien"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /User-ID hat nicht die Form/);
+  await p.locator("[data-admin=newprofile] summary").click(); await p.fill("#np-uid", "keine-uid"); await p.fill("#np-name", "Damien"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /User-ID hat nicht die Form/);
   await p.fill("#np-uid", "33333333-3333-4333-8333-333333333333"); await p.fill("#np-name", ""); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /Anzeigenamen eintragen/);
   await p.fill("#np-name", "Damien"); await p.getByRole("button", { name: "Profil anlegen" }).click(); await waitToast(p, /Profil angelegt\./); await p.waitForTimeout(300);
   pr = (await db(p, "profiles")).find(x => x.id === "33333333-3333-4333-8333-333333333333"); assert.equal(pr.display_name, "Damien"); assert.equal(pr.role, "player"); assert.equal(await p.locator("[data-profile]").count(), 3);
@@ -1259,6 +1261,173 @@ T("U272", "Handy 390 px", "Tippflächen: Punkte und Kästchen des Bogens mindest
   await p.evaluate(() => { location.hash = "#map"; }); await p.waitForTimeout(1500); await p.evaluate(() => document.querySelector(".map-canvas").scrollIntoView({ block: "start" })); await p.waitForTimeout(300);
   const pos = await p.evaluate(() => { const el = document.querySelector(".map-canvas"), n = el._cyreg.cy.nodes()[2], rp = n.renderedPosition(), r = el.getBoundingClientRect(); return { x: r.left + rp.x, y: r.top + rp.y }; });
   await p.mouse.click(pos.x, pos.y); await p.waitForTimeout(1200); assert.match(await p.locator(".map-panel").innerText(), /Prinz Aniq/); assert.ok(await inView(".map-panel"), "Detailfeld der Karte sichtbar"); return p;
+});
+
+// =====================================================================
+// W · Version 1.15: Übersicht, Bogen, Texte, Karte, Storyteller-Bereich
+// =====================================================================
+const P1ID = "22222222-2222-2222-2222-222222222222", STID = "11111111-1111-1111-1111-111111111111";
+const DIE_INIT = "window.__die = 9; crypto.getRandomValues = a => { a[0] = window.__die; return a; };"; // 9 → Würfel zeigt 10, 0 → 1
+const pushScenes = () => { for (const [i, t, st] of [[1, "Audienz", "open"], [2, "Hinterhalt", "open"]]) window.__db.scenes.push({ id: "sc" + i, session_number: 1, position: i, title: t, place: "Kai", mood: "", goal: "", antagonist: "", outcomes: ["A"], threads: i === 1 ? ["Der Brief"] : ["Der Brief", "Die Ratten"], body: "Ablauf " + i, details: "", status: st }); };
+T("U273", "Übersicht", "Nächste Session mit Wochentag und Countdown; ohne Termin ein Hinweis; 'Offene Punkte' nur für den ST", async () => {
+  const p = await openApp("player", "start"); assert.equal(await p.locator('[data-next="none"]').count(), 1); assert.match(await p.locator(".next-session").innerText(), /Noch kein Termin/); assert.equal(await p.locator("[data-st-todo]").count(), 0);
+  const d = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10); await p.evaluate(d => window.__db.sessions.push({ number: 2, title: "Kieler Woche", play_date: d }), d); await nav(p, "Wiki"); await nav(p, "Übersicht");
+  const t = await p.locator('[data-next="2"]').innerText(); assert.match(t, /(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d\d\.\d\d\.\d{4}/); assert.match(t, /in 3 Tagen/i); assert.match(t, /Session 2 · Kieler Woche/);
+  await p.locator('[data-next="2"] .linkbtn').click(); await p.waitForTimeout(300); assert.equal(await hashOf(p), "#sessions/2");
+  const s = await openApp("st", "start"); await s.evaluate(pushScenes); await s.evaluate(() => window.__db.sessions.push({ number: 2, title: "", play_date: null })); await nav(s, "Wiki"); await nav(s, "Übersicht");
+  const todo = await s.locator("[data-todo]").evaluateAll(e => e.map(x => x.dataset.todo)); assert.deepEqual(todo, ["summary", "title", "chronicle"], "Session 2 ohne Zusammenfassung, Titel und Chronik (Szenen liegen in Session 1, nicht in der neuesten)");
+  assert.match(await s.locator('[data-next="none"]').innerText(), /Lege im Bereich Sessions/); await s.close(); return p;
+});
+T("U274", "Übersicht", "Neu seit dem letzten Besuch: Einträge anderer tragen 'Neu', eigene nicht; 'Als gelesen markieren' räumt auf", async () => {
+  const p = await openApp("player", "start", { init: "localStorage.setItem('kbn-seen:" + P1ID + "', '2020-01-01T00:00:00.000Z')" });
+  assert.equal(await p.locator("[data-new-count]").getAttribute("data-new-count"), "1", "nur das Dokument des ST ist neu, Wiki-Seite und Notiz sind eigene"); assert.equal(await p.locator(".feed .item.is-new").count(), 1);
+  assert.match(await p.locator(".feed").innerText(), /Neu seit deinem letzten Besuch am 01\.01\.2020/);
+  await p.getByRole("button", { name: "Als gelesen markieren" }).click(); await p.waitForTimeout(500); assert.equal(await p.locator("[data-new-count]").count(), 0); assert.equal(await p.locator(".feed .item.is-new").count(), 0);
+  const q = await openApp("player", "start"); assert.equal(await q.locator("[data-new-count]").count(), 0, "erster Besuch: nichts ist 'neu'"); await q.close(); return p;
+});
+T("U275", "Charaktere", "Würfeln: Pool aus Attribut und Modifikator, Hunger-Würfel aus dem Bogen, Messy Critical, Bestialischer Fehlschlag, Willenskraft-Neuwurf; geht in der Ansicht und ändert den Bogen nicht", async () => {
+  const p = await openApp("player", "chars", { init: DIE_INIT }); await p.locator(".pc", { hasText: "Lukas" }).click(); await p.waitForTimeout(300);
+  const dice = p.locator('[data-sec="Würfeln"]'); assert.match(await dice.locator("[data-dice-pool]").innerText(), /Pool 1 · davon 1 Hunger/);
+  await p.fill("#dice-mod", "3"); assert.match(await dice.locator("[data-dice-pool]").innerText(), /Pool 4 · davon 2 Hunger/);
+  await dice.locator(".btn.primary").click(); assert.equal(await dice.locator(".die").count(), 4); assert.equal(await dice.locator(".die.hunger").count(), 2); assert.equal(await dice.locator("[data-dice-verdict]").innerText(), "Messy Critical"); assert.match(await dice.locator("[data-dice-out]").innerText(), /8 Erfolge/);
+  await p.evaluate(() => { window.__die = 0; }); await p.fill("#dice-diff", "2"); await dice.locator(".btn.primary").click(); assert.equal(await dice.locator("[data-dice-verdict]").innerText(), "Bestialischer Fehlschlag"); assert.match(await dice.locator("[data-dice-out]").innerText(), /gegen Schwierigkeit 2 \(Differenz -2\)/);
+  await p.evaluate(() => { window.__die = 9; }); await dice.getByRole("button", { name: /Willenskraft/ }).click(); assert.equal(await dice.locator(".die.re").count(), 2, "zwei normale Würfel neu"); assert.equal(await dice.locator(".die.hunger.one").count(), 2, "Hunger-Würfel bleiben"); assert.equal(await dice.getByRole("button", { name: /Willenskraft/ }).count(), 0, "nur einmal je Wurf");
+  await dice.getByRole("button", { name: "Rouse Check" }).click(); assert.equal(await dice.locator("[data-dice-verdict]").innerText(), "Rouse Check bestanden");
+  await p.waitForTimeout(1200); assert.equal((await db(p, "characters"))[0].sheet.hunger, 2, "Bogen unverändert"); assert.equal(await p.locator(".save-state").innerText(), ""); return p;
+});
+T("U276", "Charaktere", "Vorteile mit Art und Punkten, XP-Verlauf rechnet XP mit und zurück, Sprungmarken, Clan-Vorschläge", async () => {
+  const p = await openApp("player", "chars"); await p.locator(".pc", { hasText: "Lukas" }).click(); await p.waitForTimeout(300); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click();
+  assert.deepEqual(await p.locator(".sheet-nav .chip").allInnerTexts(), ["Kopf", "Attribute", "Fertigkeiten", "Zustand", "Disziplinen", "Vorteile", "XP", "Notizen", "Würfeln"]); assert.equal(await p.locator("#f-clan").getAttribute("list"), "clan-list"); assert.ok(await p.locator("#clan-list option").count() >= 13);
+  await p.getByRole("button", { name: "Eintrag hinzufügen" }).click(); await p.fill("#merit-0", "Ressourcen"); await p.locator(".merit select").selectOption("Hintergrund"); await p.locator('.merit .dots button').nth(2).click(); await p.waitForTimeout(1200);
+  assert.deepEqual((await db(p, "characters"))[0].sheet.merits, [{ name: "Ressourcen", kind: "Hintergrund", dots: 3 }]); assert.match(await p.locator('[data-sec="Vorteile"]').innerText(), /Hintergrund: 3/);
+  await p.fill("#xl-amount", "3"); await p.fill("#xl-text", "Auspex 2"); await p.getByRole("button", { name: "Eintragen" }).click(); await p.selectOption("#xl-kind", "gained"); await p.fill("#xl-amount", "5"); await p.getByRole("button", { name: "Eintragen" }).click(); await p.waitForTimeout(1200);
+  let sh = (await db(p, "characters"))[0].sheet; assert.equal(sh.xpSpent, 3); assert.equal(sh.xpTotal, 5); assert.deepEqual(sh.xplog.map(x => x.n), [-3, 5]); assert.match(await p.locator('[data-sec="XP"]').innerText(), /Auspex 2/);
+  await p.locator('.xprow button[aria-label="XP-Eintrag entfernen"]').last().click(); await p.waitForTimeout(1200); sh = (await db(p, "characters"))[0].sheet; assert.equal(sh.xpSpent, 0, "Entfernen rechnet zurück"); assert.equal(sh.xplog.length, 1);
+  await p.locator(".sheet-nav .chip", { hasText: "XP" }).click(); await p.waitForTimeout(900); assert.ok(await p.evaluate(() => { const r = document.querySelector('[data-sec="XP"]').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight - 100; }), "Sprungmarke bringt den Abschnitt ins Bild"); return p;
+});
+T("U277", "Charaktere", "Gleichzeitiges Bearbeiten: Bogen speichert nicht über eine fremde Änderung (Hinweis, Überschreiben möglich); Notiz fragt vor dem Überschreiben nach", async () => {
+  const p = await openApp("player", "chars"); await p.locator(".pc", { hasText: "Lukas" }).click(); await p.waitForTimeout(300); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click();
+  await p.evaluate(() => { const c = window.__db.characters[0]; c.sheet = { ...c.sheet, hunger: 4 }; c.updated_at = new Date(Date.now() + 9000).toISOString(); });
+  await p.fill("#f-concept", "Mein Konzept"); await p.waitForTimeout(1300); assert.equal(await p.locator("[data-conflict]").count(), 1); assert.equal(await p.locator(".save-state").innerText(), "Nicht gespeichert"); assert.equal((await db(p, "characters"))[0].sheet.hunger, 4, "fremde Änderung steht noch");
+  await p.getByRole("button", { name: "Mit meinem Stand überschreiben" }).click(); await p.waitForTimeout(400); assert.equal(await p.locator("[data-conflict]").count(), 0); assert.equal((await db(p, "characters"))[0].sheet.concept, "Mein Konzept");
+  await nav(p, "Sessions"); await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.fill("#note-body", "Meine Fassung");
+  await p.evaluate(() => { const n = window.__db.session_notes[0]; n.body = "Fassung des ST"; n.updated_at = new Date(Date.now() + 9000).toISOString(); });
+  await p.getByRole("button", { name: "Speichern" }).click(); await p.waitForTimeout(300); assert.equal(await p.locator("dialog[data-ask][open]").count(), 1); await p.getByRole("button", { name: "Abbrechen" }).last().click();
+  assert.equal((await db(p, "session_notes"))[0].body, "Fassung des ST"); assert.equal(await p.inputValue("#note-body"), "Meine Fassung", "Text bleibt im Editor");
+  await p.getByRole("button", { name: "Speichern" }).click(); await p.getByRole("button", { name: "Mit meinem Text überschreiben" }).click(); await waitToast(p, /Gespeichert\./); assert.equal((await db(p, "session_notes"))[0].body, "Meine Fassung"); return p;
+});
+T("U278", "Sessions", "Rückgängig nach dem Löschen: Notiz, private Notiz und Wiki-Seite kommen unverändert zurück", async () => {
+  const p = await openApp("player", "sessions"); const note = (await db(p, "session_notes"))[0];
+  await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.locator(".session-item .confirm button").first().click(); await p.getByRole("button", { name: "Ja, löschen" }).click(); await waitToast(p, /Gelöscht\./);
+  assert.equal((await db(p, "session_notes")).length, 0); await p.locator(".toast-btn").click(); await waitToast(p, /Wiederhergestellt\./); const back = (await db(p, "session_notes"))[0]; assert.equal(back.id, note.id); assert.equal(back.body, note.body); assert.equal(await p.locator(".entry").count(), 1);
+  await nav(p, "Privat"); await p.locator(".split .list button", { hasText: "Verdacht" }).click(); await p.getByRole("button", { name: "Bearbeiten" }).click(); await p.locator(".split .confirm button").click(); await p.getByRole("button", { name: "Ja, löschen" }).click(); await p.waitForTimeout(200);
+  assert.equal((await db(p, "private_notes")).length, 0); await p.locator(".toast-btn").last().click(); await p.waitForTimeout(400); assert.equal((await db(p, "private_notes"))[0].title, "Verdacht");
+  await nav(p, "Wiki"); await p.locator(".wiki-grid .list button", { hasText: "Prinz" }).click(); await p.getByRole("button", { name: "Bearbeiten" }).click(); await p.locator(".wiki-grid .confirm button").click(); await p.getByRole("button", { name: "Ja, löschen" }).click(); await p.waitForTimeout(200);
+  assert.equal((await db(p, "wiki_pages")).length, 0); await p.locator(".toast-btn").last().click(); await p.waitForTimeout(500); assert.equal((await db(p, "wiki_pages"))[0].title, "Prinz"); assert.equal(await p.locator(".wiki-grid .list button", { hasText: "Prinz" }).count(), 1); return p;
+});
+T("U279", "Sessions", "Formatierung: fett, kursiv, Zwischenüberschrift und Aufzählung werden gesetzt, Zeilen bleiben, HTML bleibt Text", async () => {
+  const p = await openApp("player", "sessions"); await p.getByRole("button", { name: "Neue Notiz" }).click(); await p.fill("#note-body", "# Der Abend\n- erster **wichtiger** Punkt\n- zweiter *leiser* Punkt mit [[Prinz]]\nnormale Zeile\n<b>kein HTML</b> <img src=x onerror=alert(1)>\n2 * 3 * 4 bleibt"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Notiz angelegt\./); await p.waitForTimeout(300);
+  const e = p.locator(".entry").first(); assert.equal(await e.locator(".fmt-h").innerText(), "Der Abend"); assert.equal(await e.locator(".fmt-li").count(), 2); assert.equal(await e.locator("strong").last().innerText(), "wichtiger"); assert.equal(await e.locator("em").innerText(), "leiser"); assert.equal(await e.locator("button.wlink").innerText(), "Prinz");
+  const txt = await e.innerText(); assert.ok(!txt.includes("**") && !txt.includes("# Der")); assert.ok(txt.includes("<b>kein HTML</b>"), "HTML erscheint als Text"); assert.ok(txt.includes("2 * 3 * 4 bleibt"), "Rechenzeichen bleiben"); assert.equal(await e.locator("b, img").count(), 0);
+  await nav(p, "Wiki"); await p.getByRole("button", { name: "Neue Seite" }).click(); await p.fill("#wp-title", "Formate"); await p.fill("#wp-body", "## Abschnitt\n- **Punkt** siehe [[Prinz]]"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Seite angelegt\./);
+  assert.equal(await p.locator("article .fmt-h2").innerText(), "Abschnitt"); assert.equal(await p.locator("article .fmt-li strong").innerText(), "Punkt"); assert.equal(await p.locator("article button.wlink").innerText(), "Prinz"); return p;
+});
+T("U280", "Spielerkarte", "Handy: Detailfeld als Einblendung mit 'Schließen'; Liste aller Knoten wählt einen Knoten; Knoten von Spielercharakteren löscht nur der ST", async () => {
+  const p = await openApp("player", "map", { viewport: PHONE, wait: 1500 }); assert.equal(await p.locator(".node-list .list button").count(), 3); await p.locator(".node-list summary").click(); await p.locator(".node-list .list button", { hasText: "Prinz Aniq" }).click(); await p.waitForTimeout(600);
+  assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector(".map-panel")).position), "fixed"); assert.match(await p.locator(".map-panel").innerText(), /Prinz Aniq/);
+  assert.ok(await p.evaluate(() => { const r = document.querySelector(".map-panel").getBoundingClientRect(); return Math.abs(r.bottom - innerHeight) < 2 && r.height <= innerHeight * 0.6; }), "am unteren Rand, höchstens 60 % hoch");
+  await p.getByRole("button", { name: "Schließen" }).click(); assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector(".map-panel")).position), "static"); assert.match(await p.locator(".map-panel").innerText(), /antippen/);
+  const d = await openApp("player", "map", { wait: 1500 }); await d.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await d.locator(".node-list summary").click(); await d.locator(".node-list .list button", { hasText: "Lukas" }).click(); await d.waitForTimeout(400);
+  assert.equal(await d.evaluate(() => getComputedStyle(document.querySelector(".map-panel")).position), "static", "am Desktop bleibt das Feld neben der Karte"); assert.equal(await d.locator(".map-panel .confirm").count(), 0); assert.equal(await d.locator("[data-nodelete]").count(), 1);
+  await d.locator(".node-list .list button", { hasText: "Prinz Aniq" }).click(); await d.waitForTimeout(300); assert.equal(await d.locator(".map-panel .confirm").count(), 1, "andere Knoten bleiben löschbar"); await d.close();
+  const s = await openApp("st", "map", { wait: 1500 }); await s.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await s.locator(".node-list summary").click(); await s.locator(".node-list .list button", { hasText: "Lukas" }).click(); await s.waitForTimeout(300); assert.equal(await s.locator(".map-panel .confirm").count(), 1, "ST löscht auch Spielercharaktere"); await s.close(); return p;
+});
+T("U281", "ST-Karte", "Farben: Sterbliche sind grün (--mortal) und unterscheiden sich von Kindred, in beiden Stilen; die Legende nutzt dieselbe Farbe", async () => {
+  for (const style of [null, RB_INIT]) {
+    const p = await openApp("st", "st", { wait: 2500, init: style });
+    const r = await p.evaluate(() => { const cy = document.querySelector(".map-canvas")._cyreg.cy, col = t => cy.nodes().filter(n => n.data("type") === t)[0].style("background-color"); const hex = getComputedStyle(document.documentElement).getPropertyValue("--mortal").trim(); const n = parseInt(hex.slice(1), 16); return { mortal: col("Sterblicher"), kindred: col("Kindred"), tok: `rgb(${n >> 16},${(n >> 8) & 255},${n & 255})` }; });
+    assert.equal(r.mortal.replace(/\s/g, ""), r.tok); assert.notEqual(r.mortal, r.kindred); const [rr, gg, bb] = r.tok.match(/\d+/g).map(Number); assert.ok(gg > rr && gg > bb, "grün überwiegt: " + r.tok); await p.close();
+  }
+  return null;
+});
+T("U282", "Storyteller", "Spielabend: eine Szene groß, 'Gespielt, weiter' setzt den Status und blättert, Coterie-Kästchen ändern den Bogen, eigene Notiz ist privat; Spieler haben keinen Zugriff", async () => {
+  const p = await openApp("st", "start"); await p.evaluate(pushScenes); await p.locator("#nav button", { hasText: /^Storyteller$/ }).click(); await p.waitForTimeout(900); await p.locator(".st-tabs button", { hasText: "Spielabend" }).click(); await p.waitForTimeout(900);
+  assert.equal(await hashOf(p), "#play/1"); assert.equal(await p.locator('#nav [aria-current="page"]').innerText(), "Storyteller"); assert.equal(await p.locator("[data-play-scene] h3").innerText(), "Audienz"); assert.match(await p.locator("[data-play-scene]").innerText(), /Szene 1 von 2/); assert.match(await p.locator("[data-play-scene]").innerText(), /Der Brief/);
+  await p.getByRole("button", { name: /Gespielt, weiter/ }).click(); await p.waitForTimeout(300); assert.equal((await scn(p)).find(x => x.id === "sc1").status, "played"); assert.equal(await p.locator("[data-play-scene] h3").innerText(), "Hinterhalt");
+  await p.getByRole("button", { name: "Übersprungen" }).click(); await p.waitForTimeout(300); assert.equal((await scn(p)).find(x => x.id === "sc2").status, "skipped"); await p.getByRole("button", { name: "Wieder offen" }).click(); await p.waitForTimeout(300); assert.equal((await scn(p)).find(x => x.id === "sc2").status, "open");
+  const lukas = p.locator("[data-play-char]").first(); await lukas.locator('button[aria-label$="Hunger 4"]').click(); await p.waitForTimeout(500); assert.equal((await db(p, "characters"))[0].sheet.hunger, 4); await lukas.locator('button[aria-label$="Willpower Kästchen 1"]').click(); await p.waitForTimeout(500); assert.deepEqual((await db(p, "characters"))[0].sheet.wp, [1, 0]);
+  await p.fill("#play-note", "Der Sheriff hat gelogen"); await p.locator("[data-play-note]").getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Notiz gespeichert\./); const n = (await db(p, "private_notes")).find(x => x.title === "Spielabend · Session 1"); assert.equal(n.body, "Der Sheriff hat gelogen"); assert.equal(n.owner_id, STID);
+  const q = await openApp("player", "play"); assert.match(await q.locator("main .notice.bad").innerText(), /nur für den Storyteller/); await q.close(); return p;
+});
+T("U283", "Storyteller", "Fünf Reiter im Storyteller-Bereich; Fäden-Übersicht über alle Szenen mit 'offen' und 'erledigt'; Fäden stehen oben auf der Szenenkarte", async () => {
+  const p = await openApp("st", "start"); await p.evaluate(pushScenes); await p.evaluate(() => { window.__db.scenes.push({ id: "sc3", session_number: null, position: 1, title: "Epilog", place: "", mood: "", goal: "", antagonist: "", outcomes: [], threads: ["Alte Schuld"], body: "", details: "", status: "played" }); });
+  await p.locator("#nav button", { hasText: /^Storyteller$/ }).click(); await p.waitForTimeout(900); assert.deepEqual(await p.locator(".st-tabs button").allInnerTexts(), ["Beziehungskarte", "Szenen", "Spielabend", "Private Spielernotizen", "Gruppe"]);
+  await p.locator(".st-tabs button", { hasText: "Szenen" }).click(); await p.waitForTimeout(600); await p.getByRole("button", { name: "Fäden", exact: true }).click(); await p.waitForTimeout(500); assert.equal(await hashOf(p), "#scenes/threads");
+  const th = await p.locator("[data-thread]").evaluateAll(e => e.map(x => [x.dataset.thread, x.querySelector(".badge").textContent, x.querySelectorAll(".conn .c").length])); assert.deepEqual(th, [["Der Brief", "offen", 2], ["Die Ratten", "offen", 1], ["Alte Schuld", "erledigt", 1]]);
+  await p.locator('[data-thread="Der Brief"] .linkbtn').first().click(); await p.waitForTimeout(600); assert.equal(await hashOf(p), "#sessions/1"); await p.locator('details[data-scene="sc2"] summary').click();
+  assert.ok(await p.evaluate(() => { const b = document.querySelector('details[data-scene="sc2"] .stack'); return b.firstElementChild.hasAttribute("data-threads-top"); }), "Fäden sind das erste Element der Karte"); return p;
+});
+T("U284", "ST-Karte", "'Mit Angaben …' überträgt einen NPC mit gewähltem Typ und gewählter Sekte auf die Spielerkarte, die Beschreibung nur auf Wunsch", async () => {
+  const p = await openApp("st", "st", { wait: 2500 }); await p.locator(".node-list summary").click(); await p.locator(".node-list .list button", { hasText: "Aniq" }).click(); await p.waitForTimeout(400); await p.getByRole("button", { name: "Mit Angaben …" }).click();
+  assert.deepEqual(await p.locator("dialog [data-reveal]").evaluateAll(e => e.map(x => [x.dataset.reveal, x.checked])), [["type", false], ["sect", false], ["description", false]]);
+  await p.locator('[data-reveal="type"]').check(); await p.locator('[data-reveal="sect"]').check(); await p.getByRole("button", { name: "Übertragen" }).click(); await waitToast(p, /steht auf der Spielerkarte \(mit Typ, Sekte\)/);
+  const n = (await db(p, "player_map_nodes")).find(x => x.label === "Aniq"); assert.equal(n.type, "Kindred"); assert.equal(n.sect, "Camarilla"); assert.equal(n.description, "", "Beschreibung nicht angehakt"); assert.equal(await p.locator("dialog[open]").count(), 0);
+  await p.getByRole("button", { name: "Mit Angaben …" }).click(); await p.locator('[data-reveal="description"]').check(); await p.getByRole("button", { name: "Übertragen" }).click(); await p.waitForTimeout(400);
+  const all = (await db(p, "player_map_nodes")).filter(x => x.label === "Aniq"); assert.equal(all.length, 1, "kein Duplikat"); assert.match(all[0].description, /Alt/); assert.equal(all[0].type, "Kindred", "nicht angehakte Angaben bleiben"); return p;
+});
+T("U285", "Storyteller", "XP vergeben: Betrag kommt zu 'XP gesamt' der gewählten Charaktere und steht mit Grund im XP-Verlauf", async () => {
+  const p = await openApp("st", "chars"); await p.getByRole("button", { name: "XP vergeben" }).click(); assert.deepEqual(await p.locator("[data-xp-char]").evaluateAll(e => e.map(x => x.checked)), [true, false, false], "vorgewählt sind Charaktere mit Spieler");
+  await p.fill("#xp-amount", "0"); await p.getByRole("button", { name: "Vergeben" }).click(); await waitToast(p, /1 bis 99 XP/);
+  await p.fill("#xp-amount", "2"); await p.fill("#xp-reason", "Session 1"); await p.locator("[data-xp-char]").nth(1).check(); await p.getByRole("button", { name: "Vergeben" }).click(); await waitToast(p, /2 XP an 2 Charaktere vergeben/);
+  const c = await db(p, "characters"); assert.equal(c[0].sheet.xpTotal, 2); assert.equal(c[0].sheet.hunger, 2, "übriger Bogen unverändert"); assert.equal(c[0].sheet.xplog[0].t, "Session 1"); assert.equal(c[0].sheet.xplog[0].n, 2); assert.equal(c[1].sheet.xpTotal, 2); assert.ok(!c[2].sheet.xpTotal);
+  const q = await openApp("player", "chars"); assert.equal(await q.getByRole("button", { name: "XP vergeben" }).count(), 0); await q.close(); return p;
+});
+T("U286", "Wiki", "Verlauf: früherer Stand lässt sich ansehen und wiederherstellen; ohne frühere Stände kein Verlauf", async () => {
+  const p = await openApp("player", "wiki"); await p.locator(".wiki-grid .list button", { hasText: "Prinz" }).click(); await p.waitForTimeout(300); assert.equal(await p.locator("details.history").count(), 0);
+  await p.evaluate(() => { const pg = window.__db.wiki_pages[0]; (window.__db.wiki_page_versions = window.__db.wiki_page_versions || []).push({ id: "v1", page_id: pg.id, title: "Prinz (alt)", body: "Alter Text über den Prinzen.", tags: ["alt"], saved_at: "2026-10-01T18:00:00.000Z", saved_by: "11111111-1111-1111-1111-111111111111" }); });
+  await nav(p, "Dokumente"); await nav(p, "Wiki"); await p.locator(".wiki-grid .list button", { hasText: "Prinz" }).click(); await p.waitForTimeout(300); assert.match(await p.locator("details.history summary").innerText(), /Verlauf \(1\)/);
+  await p.locator("details.history summary").click(); assert.match(await p.locator("[data-version]").innerText(), /Stand vom 01\.10\.2026.*Storyteller/s); await p.getByRole("button", { name: "Ansehen" }).click(); assert.match(await p.locator("[data-version] .panel").innerText(), /Alter Text über den Prinzen/);
+  await p.getByRole("button", { name: "Wiederherstellen" }).first().click(); await p.locator("dialog[data-ask]").getByRole("button", { name: "Wiederherstellen" }).click(); await waitToast(p, /Wiederhergestellt\./);
+  const pg = (await db(p, "wiki_pages"))[0]; assert.equal(pg.title, "Prinz (alt)"); assert.equal(pg.body, "Alter Text über den Prinzen."); assert.deepEqual(pg.tags, ["alt"]); assert.equal(await p.locator("article h2").innerText(), "Prinz (alt)"); return p;
+});
+T("U287", "Storyteller", "Gruppe: Konto anlegen und Passwort setzen rufen 'account-admin' auf, Eingaben werden geprüft; fehlt die Funktion, kommt ein klarer Hinweis", async () => {
+  const ok = "window.__ACCOUNT = async b => { if (b.action === 'create' && b.username === 'belegt') return { data: null, error: { context: { status: 409, json: async () => ({ error: 'username_taken', message: 'Diesen Benutzernamen gibt es schon.' }) } } }; if (b.action === 'create') window.__db.profiles.push({ id: '33333333-3333-4333-8333-333333333333', display_name: b.display_name, role: b.role }); return { data: { ok: true }, error: null }; };";
+  const p = await openApp("st", "st/group", { init: ok }); const calls = () => p.evaluate(() => (window.__invokes || []).filter(x => x.n === "account-admin").map(x => x.o.body));
+  await p.fill("#na-user", "Mit Leerzeichen"); await p.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(p, /Benutzername: 2 bis 32 Zeichen/); await p.fill("#na-user", "Damien"); await p.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(p, /Anzeigenamen eintragen/);
+  await p.fill("#na-name", "Damien"); await p.fill("#na-pw", "kurz"); await p.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(p, /mindestens 8 Zeichen/); assert.deepEqual(await calls(), [], "ungültige Eingaben erreichen die Funktion nicht");
+  await p.locator("[data-admin=newaccount]").getByRole("button", { name: "Vorschlag" }).click(); const pw = await p.inputValue("#na-pw"); assert.match(pw, /^[A-Za-z2-9]{14}$/); await p.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(p, /Konto „damien“ angelegt/); await p.waitForTimeout(300);
+  assert.deepEqual(await calls(), [{ action: "create", username: "damien", password: pw, display_name: "Damien", role: "player" }]); assert.equal(await p.locator("[data-profile]").count(), 3);
+  await p.fill("#na-user", "belegt"); await p.fill("#na-name", "X"); await p.fill("#na-pw", "langes-passwort"); await p.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(p, /Diesen Benutzernamen gibt es schon/);
+  await p.locator('[data-setpw-btn="' + P1ID + '"]').click(); await p.fill("#sp-pw", "kurz"); await p.locator("dialog[data-setpw]").getByRole("button", { name: "Passwort setzen" }).click(); await waitToast(p, /Mindestens 8 Zeichen/); await p.fill("#sp-pw", "neues-passwort-9"); await p.locator("dialog[data-setpw]").getByRole("button", { name: "Passwort setzen" }).click(); await waitToast(p, /Passwort gesetzt\./);
+  assert.deepEqual((await calls()).pop(), { action: "set_password", user_id: P1ID, password: "neues-passwort-9" }); assert.equal(await p.locator("dialog[open]").count(), 0);
+  const q = await openApp("st", "st/group"); await q.fill("#na-user", "damien"); await q.fill("#na-name", "Damien"); await q.fill("#na-pw", "langes-passwort"); await q.getByRole("button", { name: "Konto anlegen" }).click(); await waitToast(q, /noch nicht eingerichtet/); await q.close(); return p;
+});
+T("U288", "Sessions", "Live: Notiz eines anderen erscheint ohne Neuladen; ist ein Editor offen, kommt nur ein Hinweis und der eigene Text bleibt; im Wiki ebenso", async () => {
+  const add = () => { window.__db.session_notes.push({ id: "live1", session_number: 1, author_id: "11111111-1111-1111-1111-111111111111", body: "Nachtrag des ST", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }); window.__rt.forEach(f => f()); };
+  const p = await openApp("player", "sessions"); assert.equal(await p.locator(".entry").count(), 1); await p.evaluate(add); await p.waitForTimeout(900); assert.equal(await p.locator(".entry").count(), 2); assert.match(await p.locator(".sessions-list").innerText(), /Nachtrag des ST/);
+  await p.locator(".entry button", { hasText: "Bearbeiten" }).click(); await p.fill("#note-body", "Ich tippe gerade"); await p.evaluate(() => { window.__db.session_notes.push({ id: "live2", session_number: 1, author_id: "11111111-1111-1111-1111-111111111111", body: "Zweiter Nachtrag", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }); window.__rt.forEach(f => f()); }); await p.waitForTimeout(900);
+  assert.equal(await p.locator(".live-hint").isVisible(), true); assert.equal(await p.inputValue("#note-body"), "Ich tippe gerade"); assert.ok(!(await p.locator(".sessions-list").innerText()).includes("Zweiter Nachtrag"));
+  await p.locator(".live-hint button").click(); await p.waitForTimeout(400); assert.match(await p.locator(".sessions-list").innerText(), /Zweiter Nachtrag/); assert.equal(await p.locator(".live-hint").isVisible(), false);
+  await nav(p, "Wiki"); await p.evaluate(() => { const c = window.__db.wiki_pages[0].category_id; window.__db.wiki_pages.push({ id: "wlive", category_id: c, title: "Neu von Johana", tags: [], body: "", created_by: "x", updated_by: "x", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }); window.__rt.forEach(f => f()); }); await p.waitForTimeout(900);
+  assert.equal(await p.locator(".wiki-grid .list button", { hasText: "Neu von Johana" }).count(), 1); return p;
+});
+T("U289", "Storyteller", "Sicherung lädt alle Tabellen als JSON; Zeitleiste lässt sich umdrehen und merkt sich die Wahl; 'Zusammenfassung fehlt' sieht nur der ST", async () => {
+  const p = await openApp("st", "st/group"); await p.evaluate(() => { window.__blobs = []; const orig = URL.createObjectURL; URL.createObjectURL = b => { window.__blobs.push(b); return orig.call(URL, b); }; });
+  await p.getByRole("button", { name: "Sicherung herunterladen" }).click(); await waitToast(p, /Sicherung heruntergeladen \(\d+ Einträge\)/);
+  const bk = JSON.parse(await p.evaluate(() => window.__blobs[0].text())); assert.equal(bk.format, "kbn-backup/1"); assert.deepEqual(bk.missing, []); for (const t of ["profiles", "characters", "sessions", "session_notes", "private_notes", "wiki_pages", "player_map_nodes", "scenes", "chronicles"]) assert.ok(Array.isArray(bk.tables[t]), t); assert.equal(bk.tables.private_notes[0].title, "Verdacht");
+  await p.evaluate(() => { window.__db.sessions.push({ number: 2, title: "Zwei", play_date: "2026-10-08" }); window.__db.session_info.push({ session_number: 2, chronicle_id: window.__db.chronicles[0].id, chapter_id: window.__db.chapters[0].id, ingame_date: "", summary: "" }); });
+  await nav(p, "Chroniken"); await p.getByRole("button", { name: "Zeitleiste öffnen" }).click(); await p.waitForTimeout(500); const order = () => p.locator("[data-chapter] [data-session]").evaluateAll(e => e.map(x => x.dataset.session));
+  assert.deepEqual(await order(), ["2", "1"]); await p.getByRole("button", { name: "Von Anfang an" }).click(); assert.deepEqual(await order(), ["1", "2"]); assert.equal(await p.evaluate(() => localStorage.getItem("kbn-timeline")), "asc");
+  await nav(p, "Sessions"); assert.deepEqual(await p.locator("details.session-item").evaluateAll(e => e.map(x => [x.dataset.session, !!x.querySelector("[data-nosummary]")])), [["2", true], ["1", false]]);
+  const q = await openApp("player", "start"); await q.evaluate(() => window.__db.sessions.push({ number: 2, title: "Zwei", play_date: "2026-10-08" })); await nav(q, "Sessions"); assert.equal(await q.locator("[data-nosummary]").count(), 0); await q.close(); return p;
+});
+T("U290", "Szenenkarten", "Reihenfolge per Ziehen am Griff; Entwurf einer Szene sichert auch die NPC-Zeilen", async () => {
+  const p = await openApp("st", "start"); await p.evaluate(pushScenes); await nav(p, "Sessions"); await p.waitForTimeout(400); assert.equal(await p.locator(".grip").count(), 2);
+  await p.locator('details[data-scene="sc2"] .grip').dragTo(p.locator('details[data-scene="sc1"] summary')); await p.waitForTimeout(700); assert.deepEqual((await scn(p)).sort((a, b) => a.position - b.position).map(x => x.id), ["sc2", "sc1"]);
+  await p.getByRole("button", { name: "Neue Szene" }).click(); await p.fill("#sc-title", "Entwurfsszene"); await p.getByRole("button", { name: "NPC hinzufügen" }).click(); await p.locator('input[aria-label="NPC-Name"]').fill("Mara"); await p.locator('input[aria-label="Motivation"]').fill("will fliehen");
+  await nav(p, "Wiki"); await waitToast(p, /als Entwurf gesichert/); await nav(p, "Sessions"); await p.getByRole("button", { name: "Neue Szene" }).click(); await p.waitForTimeout(300);
+  assert.equal(await p.inputValue("#sc-title"), "Entwurfsszene"); assert.equal(await p.locator('input[aria-label="NPC-Name"]').inputValue(), "Mara"); assert.equal(await p.locator('input[aria-label="Motivation"]').inputValue(), "will fliehen"); assert.equal(await p.locator(".draft-notice").count(), 1);
+  await p.locator(".session-item .panel.stack").getByRole("button", { name: "Abbrechen" }).click(); assert.equal(await draftKeys(p), 0); return p;
 });
 
 // =====================================================================

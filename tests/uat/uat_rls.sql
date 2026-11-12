@@ -352,15 +352,39 @@ begin
 
   -- ---------- E: Konfiguration der Datenbank ----------
   perform pg_temp.q('R190', 'service_role darf notion_cache schreiben', null, 'postgres', $x$select count(*) from (select 1 where has_table_privilege('service_role','public.notion_cache','INSERT') and has_table_privilege('service_role','public.notion_cache','UPDATE')) s$x$, 'n=1');
+  -- ---------- v1.15: Schutz der Spielercharakter-Knoten, Wiki-Verlauf ----------
+  execute 'reset role';
+  insert into public.player_map_nodes(label, is_pc) values ('UAT PC', true);
+  perform pg_temp.q('R340', 'Spieler: Spielercharakter-Knoten löschen wirkt nicht', p1, 'authenticated', $x$delete from public.player_map_nodes where label = 'UAT PC'$x$, 'rows=0');
+  perform pg_temp.q('R341', 'Spieler: Kennzeichen Spielercharakter entfernen', p1, 'authenticated', $x$update public.player_map_nodes set is_pc = false where label = 'UAT PC'$x$, 'err');
+  perform pg_temp.q('R342', 'Spieler: Spielercharakter-Knoten beschreiben bleibt erlaubt', p1, 'authenticated', $x$update public.player_map_nodes set description = 'bekannt' where label = 'UAT PC'$x$, 'rows=1');
+  perform pg_temp.q('R343', 'Spieler: normalen Knoten zum Spielercharakter machen', p1, 'authenticated', $x$update public.player_map_nodes set is_pc = true where label = 'UAT B'$x$, 'err');
+  perform pg_temp.q('R344', 'ST: Kennzeichen ändern', st, 'authenticated', $x$update public.player_map_nodes set is_pc = true where label = 'UAT B'$x$, 'rows=1');
+  perform pg_temp.q('R345', 'ST: Spielercharakter-Knoten löschen', st, 'authenticated', $x$delete from public.player_map_nodes where label = 'UAT PC'$x$, 'rows=1');
+  perform pg_temp.q('R346', 'Spieler: Wiki-Seite für den Verlauf anlegen', p1, 'authenticated', format($x$insert into public.wiki_pages(category_id, title, body) values (%L, 'UAT Verlauf', 'erster Stand')$x$, catpub), 'rows=1');
+  perform pg_temp.q('R347', 'Verlauf ist nach dem Anlegen leer', p1, 'authenticated', $x$select count(*) from public.wiki_page_versions v join public.wiki_pages p on p.id = v.page_id where p.title = 'UAT Verlauf'$x$, 'n=0');
+  perform pg_temp.q('R348', 'Spieler 2: Text ändern', p2, 'authenticated', $x$update public.wiki_pages set body = 'zweiter Stand' where title = 'UAT Verlauf'$x$, 'rows=1');
+  perform pg_temp.q('R349', 'Verlauf hält den alten Stand mit seinem Autor', p1, 'authenticated', format($x$select count(*) from public.wiki_page_versions where body = 'erster Stand' and saved_by = %L$x$, p1), 'n=1');
+  perform pg_temp.q('R350', 'Änderung ohne Inhalt (nur Kategorie) erzeugt keinen Stand', p1, 'authenticated', format($x$update public.wiki_pages set category_id = %L where title = 'UAT Verlauf'$x$, catpub), 'rows=1');
+  perform pg_temp.q('R351', 'Verlauf weiterhin ein Stand', p2, 'authenticated', $x$select count(*) from public.wiki_page_versions where title = 'UAT Verlauf'$x$, 'n=1');
+  perform pg_temp.q('R352', 'Spieler: Verlauf nicht beschreibbar', p1, 'authenticated', $x$insert into public.wiki_page_versions(page_id, title) select id, 'x' from public.wiki_pages where title = 'UAT Verlauf'$x$, 'err');
+  perform pg_temp.q('R353', 'Spieler: Verlauf nicht löschbar', p1, 'authenticated', $x$delete from public.wiki_page_versions$x$, 'err');
+  perform pg_temp.q('R354', 'ohne Profil: kein Verlauf', nop, 'authenticated', $x$select count(*) from public.wiki_page_versions$x$, 'n=0');
+  perform pg_temp.q('R355', 'ST: versteckt die Seite', st, 'authenticated', $x$update public.wiki_pages set st_only = true where title = 'UAT Verlauf'$x$, 'rows=1');
+  perform pg_temp.q('R356', 'Spieler: Verlauf einer versteckten Seite unsichtbar', p1, 'authenticated', $x$select count(*) from public.wiki_page_versions where title = 'UAT Verlauf'$x$, 'n=0');
+  perform pg_temp.q('R357', 'ST: sieht den Verlauf der versteckten Seite', st, 'authenticated', $x$select count(*) from public.wiki_page_versions where title = 'UAT Verlauf'$x$, 'n=1');
+  perform pg_temp.q('R358', 'anon: kein Recht auf den Verlauf', null, 'anon', $x$select count(*) from public.wiki_page_versions$x$, 'err');
+  perform pg_temp.q('R359', 'Seite löschen räumt den Verlauf auf', st, 'authenticated', $x$delete from public.wiki_pages where title = 'UAT Verlauf'$x$, 'rows=1');
+  perform pg_temp.q('R360', 'Verlauf der gelöschten Seite ist weg', null, 'postgres', $x$select count(*) from public.wiki_page_versions where title = 'UAT Verlauf'$x$, 'n=0');
   perform pg_temp.q('R191', 'anon hat keine Tabellenrechte in public', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public'$x$, 'n=0');
   perform pg_temp.q('R192', 'authenticated ohne TRUNCATE/REFERENCES/TRIGGER', null, 'postgres', $x$select count(*) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')$x$, 'n=0');
   perform pg_temp.q('R193', 'Funktionsrechte nur wie vorgesehen (ping 2x, is_st, is_member, wiki_category_visible)', null, 'postgres', $x$select count(*) from information_schema.role_routine_grants where grantee in ('anon','authenticated') and routine_schema = 'public'$x$, 'n=5');
   perform pg_temp.q('R194', 'RLS auf allen public-Tabellen', null, 'postgres', $x$select count(*) from pg_tables where schemaname = 'public' and not rowsecurity$x$, 'n=0');
-  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=67');
+  perform pg_temp.q('R195', 'Anzahl Policies public', null, 'postgres', $x$select count(*) from pg_policies where schemaname = 'public'$x$, 'n=68');
   perform pg_temp.q('R196', 'security definer Funktionen mit festem search_path', null, 'postgres', $x$select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'))$x$, 'n=0');
   perform pg_temp.q('R197', 'Bucket documents ist privat, Limit 20 MB', null, 'postgres', $x$select count(*) from storage.buckets where id = 'documents' and not public and file_size_limit = 20971520$x$, 'n=1');
   perform pg_temp.q('R198', 'profiles.role akzeptiert nur st/player', null, 'postgres', format($x$insert into public.profiles(id, role) values (%L, 'admin')$x$, nop), 'err');
-  perform pg_temp.q('R199', 'Realtime nur für Spielerkarten-Tabellen', null, 'postgres', $x$select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'$x$, 'n=2');
+  perform pg_temp.q('R199', 'Realtime für Spielerkarte, Sessions, Wiki und Bögen (7 Tabellen)', null, 'postgres', $x$select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'$x$, 'n=7');
   perform pg_temp.q('R200', 'Selbstregistrierung: Profile entstehen nicht automatisch', null, 'postgres', $x$select count(*) from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'auth' and c.relname = 'users' and not t.tgisinternal$x$, 'n=0');
 
   select format('UAT total=%s pass=%s fail=%s | %s', count(*), count(*) filter (where pass), count(*) filter (where not pass),

@@ -77,7 +77,24 @@ async function stGroup(root) {
           if (!Object.keys(patch).length) { toast("Nichts geändert."); return; }
           await guard(sb.from("profiles").update(patch).eq("id", p.id), "Gespeichert.");
           await draw();
-        } }, "Speichern"));
+        } }, "Speichern"),
+        h("button", { class: "btn", type: "button", "data-setpw-btn": p.id, onclick: () => setPw(p) }, "Passwort setzen"));
+    };
+    // Konto anlegen und Passwort setzen laufen über die Edge Function account-admin (nur ST, Service-Schlüssel bleibt dort)
+    const suggest = () => { const abc = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", b = new Uint8Array(14); crypto.getRandomValues(b); return [...b].map(x => abc[x % abc.length]).join(""); };
+    const pwField = id => { const i = h("input", { type: "text", id, autocomplete: "off", spellcheck: "false", placeholder: "mindestens 8 Zeichen" }); return [i, h("button", { class: "btn small", type: "button", onclick: () => { i.value = suggest(); } }, "Vorschlag")]; };
+    const naUser = h("input", { type: "text", id: "na-user", placeholder: "z. B. damien", autocapitalize: "none", autocomplete: "off", spellcheck: "false" }), naName = h("input", { type: "text", id: "na-name", placeholder: "Vorname" });
+    const naRole = h("select", { id: "na-role" }, h("option", { value: "player" }, "Spieler"), h("option", { value: "st" }, "Storyteller")), [naPw, naPwBtn] = pwField("na-pw");
+    const setPw = p => {
+      const [pw, btn] = pwField("sp-pw");
+      const dlg = h("dialog", { "data-setpw": p.id }, h("div", { class: "stack" }, h("h3", {}, "Passwort setzen für " + (p.display_name || "Mitglied")),
+        h("p", { class: "muted" }, "Das alte Passwort gilt danach nicht mehr. Gib das neue persönlich weiter, die Person ändert es anschließend selbst."),
+        h("div", { class: "row" }, h("div", { class: "field" }, h("label", { for: "sp-pw" }, "Neues Passwort"), pw), btn),
+        h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: async () => {
+          if (pw.value.length < 8) { toast("Mindestens 8 Zeichen.", true); return; }
+          try { await accountCall({ action: "set_password", user_id: p.id, password: pw.value }); toast("Passwort gesetzt."); dlg.close(); dlg.remove(); } catch (e) { toast(e.message, true); }
+        } }, "Passwort setzen"), h("button", { class: "btn", type: "button", onclick: () => { dlg.close(); dlg.remove(); } }, "Abbrechen"))));
+      document.body.append(dlg); dlg.showModal();
     };
     const uid = h("input", { type: "text", id: "np-uid", placeholder: "36 Zeichen, z. B. 1a2b3c4d-0000-4000-8000-123456789abc", autocomplete: "off", spellcheck: "false" });
     const nn = h("input", { type: "text", id: "np-name", placeholder: "Vorname" });
@@ -85,8 +102,20 @@ async function stGroup(root) {
     root.replaceChildren(
       h("div", { class: "panel stack", style: "margin-bottom:14px" }, h("h3", {}, "Mitglieder"),
         h("p", { class: "muted" }, "Den Charakter einer Person ordnest du im Bogen unter „Verwaltung“ zu."), ...people.map(row)),
-      h("div", { class: "panel stack", "data-admin": "newprofile" }, h("h3", {}, "Profil für ein neues Konto anlegen"),
-        h("p", { class: "muted" }, "Das Konto (Benutzername und Passwort) legst du zuerst im Supabase-Dashboard an: Authentication, Users, „Add user“ mit „Auto Confirm User“, Adresse benutzername@kbn.invalid. Trage danach die dort angezeigte User-ID (UID) hier ein. Erst mit Profil ist die Person Mitglied."),
+      h("div", { class: "panel stack", "data-admin": "newaccount", style: "margin-bottom:14px" }, h("h3", {}, "Konto anlegen"),
+        h("p", { class: "muted" }, "Legt Konto und Profil in einem Schritt an. Die Person meldet sich mit dem Benutzernamen und dem Startpasswort an und ändert das Passwort danach selbst."),
+        h("div", { class: "row" }, h("div", { class: "field" }, h("label", { for: "na-user" }, "Benutzername"), naUser), h("div", { class: "field" }, h("label", { for: "na-name" }, "Anzeigename"), naName), h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "na-role" }, "Rolle"), naRole)),
+        h("div", { class: "row" }, h("div", { class: "field", style: "flex:0 1 320px" }, h("label", { for: "na-pw" }, "Startpasswort"), naPw), naPwBtn,
+          h("button", { class: "btn primary", type: "button", onclick: async () => {
+            const user = naUser.value.trim().toLowerCase();
+            if (!/^[a-z0-9._-]{2,32}$/.test(user)) { toast("Benutzername: 2 bis 32 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus und Unterstrich.", true); return; }
+            if (!naName.value.trim()) { toast("Bitte einen Anzeigenamen eintragen.", true); return; }
+            if (naPw.value.length < 8) { toast("Das Startpasswort braucht mindestens 8 Zeichen.", true); return; }
+            try { await accountCall({ action: "create", username: user, password: naPw.value, display_name: naName.value.trim(), role: naRole.value }); toast("Konto „" + user + "“ angelegt."); await draw(); }
+            catch (e) { toast(e.message, true); }
+          } }, "Konto anlegen"))),
+      h("details", { class: "panel", "data-admin": "newprofile" }, h("summary", { class: "muted", style: "cursor:pointer" }, "Profil zu einem vorhandenen Konto anlegen (User-ID)"), h("div", { class: "stack", style: "margin-top:10px" },
+        h("p", { class: "muted" }, "Für Konten, die im Supabase-Dashboard angelegt wurden (Authentication, Users, „Add user“ mit „Auto Confirm User“, Adresse benutzername@kbn.invalid). Trage die dort angezeigte User-ID (UID) ein. Erst mit Profil ist die Person Mitglied."),
         h("div", { class: "row" }, h("div", { class: "field", style: "flex:2 1 300px" }, h("label", { for: "np-uid" }, "User-ID (UID)"), uid), h("div", { class: "field" }, h("label", { for: "np-name" }, "Anzeigename"), nn), h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "np-role" }, "Rolle"), nr),
           h("button", { class: "btn primary", type: "button", onclick: async () => {
             const id = uid.value.trim().toLowerCase();
@@ -97,12 +126,23 @@ async function stGroup(root) {
             if (error) { toast(error.code === "23503" ? "Zu dieser User-ID gibt es kein Konto. UID im Supabase-Dashboard prüfen." : errMsg(error), true); return; }
             toast("Profil angelegt."); await draw();
           } }, "Profil anlegen")),
-        h("p", { class: "muted" }, "Profile löschen geht hier bewusst nicht: Mit einem Profil verschwinden alle Notizen und Dokumente der Person.")),
+        h("p", { class: "muted" }, "Profile löschen geht hier bewusst nicht: Mit einem Profil verschwinden alle Notizen und Dokumente der Person."))),
       h("div", { class: "panel stack", "data-admin": "backup", style: "margin-top:14px" }, h("h3", {}, "Sicherung"),
         h("p", { class: "muted" }, "Lädt alle Inhalte der Seite als eine JSON-Datei herunter: Profile, Bögen, Sessions, Notizen (auch private), Wiki, Karten, Chroniken, Szenen und die Liste der Dokumente. Die hochgeladenen Dateien selbst sind nicht enthalten. Die Datei enthält alles, was nur du sehen darfst: sicher aufbewahren."),
         h("div", {}, h("button", { class: "btn", type: "button", onclick: backup }, "Sicherung herunterladen"))));
   }
   await draw();
+}
+
+// Aufruf der Edge Function account-admin mit verständlichen Fehlern
+async function accountCall(body) {
+  const { data, error } = await sb.functions.invoke("account-admin", { body });
+  if (!error) { if (data && data.error) throw new Error(data.message || data.error); return data; }
+  let j = null; try { j = await error.context.json(); } catch (_) {}
+  const status = error.context && error.context.status;
+  if (!error.context || (status === 404 && !(j && j.error)) || /not.?found/i.test((j && j.code) || ""))
+    throw new Error("Die Funktion „account-admin“ ist noch nicht eingerichtet (Technische Dokumentation, Abschnitt 4.14). Bis dahin legst du Konten im Supabase-Dashboard an.");
+  throw new Error((j && (j.message || j.error)) || "Die Anfrage ist fehlgeschlagen.");
 }
 
 // Sicherung: alles, was der ST lesen darf, als eine JSON-Datei (kein Wiederherstellen in der Seite)

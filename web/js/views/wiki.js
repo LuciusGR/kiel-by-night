@@ -1,7 +1,7 @@
 // Kiel by Night · Wiki: Kategorien, Tags, Verweise per [[Seitentitel]]
 // Alle legen Kategorien an, nur der ST benennt um oder löscht. "ST-Notizen" (st_only) sieht nur der ST (RLS).
-import { h, toast, guard, head, fmtDate, confirmBtn, splitTags, bindDraft, revealOnNarrow } from "../lib.js";
-import { sb, S, registerView, setRoute, draftKey, authorName, saveChecked, deleteWithUndo } from "../core.js";
+import { h, toast, guard, head, fmtDate, fmtDateTime, confirmBtn, splitTags, bindDraft, revealOnNarrow, ask } from "../lib.js";
+import { sb, S, registerView, setRoute, draftKey, authorName, saveChecked, deleteWithUndo, watchTables } from "../core.js";
 import { forgetWikiTitles, formatInto } from "../wikilinks.js";
 
 registerView("wiki", async m => {
@@ -73,8 +73,30 @@ registerView("wiki", async m => {
         h("h2", { style: "margin-top:6px" }, p.title),
         (p.tags || []).length ? h("div", { class: "chips", style: "margin-top:8px" }, ...p.tags.map(t => h("span", { class: "chip" }, "#" + t))) : null,
         body(p.body),
-        h("p", { class: "muted", style: "margin-top:16px;font-size:.86rem" }, "Zuletzt geändert " + fmtDate(p.updated_at) + (p.updated_by ? " von " + authorName(p.updated_by) : ""))));
+        h("p", { class: "muted", style: "margin-top:16px;font-size:.86rem" }, "Zuletzt geändert " + fmtDate(p.updated_at) + (p.updated_by ? " von " + authorName(p.updated_by) : "")),
+        historyBox(p)));
     } else c3.replaceChildren(h("div", { class: "empty" }, catOf(cat)?.st_only ? "Versteckte Notizen nur für dich. Spieler sehen diese Kategorie nicht." : "Seite aus der Liste auswählen oder eine neue anlegen."));
+  }
+
+  // Verlauf: frühere Stände der Seite (Tabelle wiki_page_versions, geschrieben vom Datenbank-Trigger). Fehlt die Tabelle, bleibt der Block leer.
+  function historyBox(p) {
+    const box = h("div", { "data-history": p.id });
+    sb.from("wiki_page_versions").select("*").eq("page_id", p.id).order("saved_at", { ascending: false }).then(({ data, error }) => {
+      if (error || !data || !data.length) return;
+      const list = data.slice().sort((a, b) => Date.parse(b.saved_at) - Date.parse(a.saved_at));
+      box.append(h("details", { class: "history", style: "margin-top:14px" }, h("summary", { class: "muted", style: "cursor:pointer" }, "Verlauf (" + list.length + ")"),
+        h("div", { class: "stack", style: "margin-top:8px" }, ...list.map(v => {
+          const view = h("div", { class: "panel", hidden: true }, h("strong", {}, v.title), body(v.body));
+          return h("div", { class: "hit", "data-version": v.id },
+            h("div", { class: "row", style: "align-items:center" }, h("span", { style: "flex:1 1 200px" }, "Stand vom " + fmtDateTime(v.saved_at) + (v.saved_by ? " · " + authorName(v.saved_by) : "")),
+              h("button", { class: "btn small", type: "button", onclick: ev => { view.hidden = !view.hidden; ev.target.textContent = view.hidden ? "Ansehen" : "Schließen"; } }, "Ansehen"),
+              h("button", { class: "btn small", type: "button", onclick: async () => {
+                if (!(await ask("Stand wiederherstellen", "Titel, Text und Tags dieser Seite werden auf den Stand vom " + fmtDateTime(v.saved_at) + " zurückgesetzt. Der jetzige Stand bleibt im Verlauf erhalten.", "Wiederherstellen"))) return;
+                if (await saveChecked("wiki_pages", p, { title: v.title, body: v.body, tags: v.tags || [] }, "Wiederhergestellt.")) { await load(); draw(); }
+              } }, "Wiederherstellen")), view);
+        }))));
+    }).catch(() => {});
+    return box;
   }
 
   function catAdmin() {
@@ -109,7 +131,7 @@ registerView("wiki", async m => {
           if (S.isST) data.st_only = hid.checked;
           if (p) { if (!(await saveChecked("wiki_pages", p, data, "Gespeichert."))) return; }
           else { const r = await guard(sb.from("wiki_pages").insert({ ...data, created_by: S.user.id, updated_by: S.user.id }).select("id").single(), "Seite angelegt."); cur = r.id; }
-          draft.clear(); cat = cs.value; edit = false; route(cur ? { page: cur } : null); await load(); draw();
+          draft.clear(); cat = cs.value; edit = false; route(cur ? { page: cur } : null); await load(); draw(); const lh = m.querySelector(".live-hint"); if (lh) lh.hidden = true;
         } }, "Speichern"),
         h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); edit = false; draw(); } }, "Abbrechen"),
         p && (S.isST || p.created_by === S.user.id) ? confirmBtn("Löschen", async () => { await deleteWithUndo("wiki_pages", p, async () => { await load(); draw(); }); draft.clear(); cur = null; edit = false; route(null); await load(); draw(); }) : null));
@@ -120,4 +142,13 @@ registerView("wiki", async m => {
   if (cur) { const p = pages.find(x => x.id === cur); if (p) cat = p.category_id; else { cur = null; route(null); } }
   draw();
   if (cur) revealOnNarrow(c3, NARROW);
+  // Live: geänderte oder neue Seiten anderer erscheinen ohne Neuladen, außer während du selbst schreibst
+  const sig = () => JSON.stringify(pages.map(p => [p.id, p.updated_at, p.category_id]));
+  const liveHint = h("div", { class: "notice live-hint", role: "status", hidden: true, style: "margin-bottom:12px" }, "Das Wiki wurde von anderen geändert. Nach dem Speichern oder Abbrechen siehst du den neuen Stand.");
+  c3.before(liveHint);
+  watchTables("kbn-wiki", ["wiki_pages"], async () => {
+    const before = sig(), wasEdit = edit; await load(); if (sig() === before) return;
+    if (wasEdit) { liveHint.hidden = false; return; }
+    liveHint.hidden = true; draw();
+  });
 });

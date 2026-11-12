@@ -1,6 +1,6 @@
 // Kiel by Night · Spielabend (nur Storyteller): die Szenen einer Session der Reihe nach, die Coterie im Blick, Notizen nur für den ST
 import { h, toast, guard, head, bindDraft } from "../lib.js";
-import { sb, S, go, registerView, onCleanup, setRoute, draftKey, loadChars, personName } from "../core.js";
+import { sb, S, go, registerView, onCleanup, setRoute, draftKey, loadChars, personName, watchTables } from "../core.js";
 import { normSheet } from "./characters.js";
 import { STATUS } from "./scenes.js";
 import { stTabs } from "./sttabs.js";
@@ -83,6 +83,7 @@ registerView("play", async m => {
   }
   const tick = setInterval(async () => { try { await loadChars(); drawCoterie(); } catch (_) {} }, 30000);
   onCleanup(() => clearInterval(tick));
+  watchTables("kbn-play", ["characters"], async () => { await loadChars(); drawCoterie(); });
 
   // ---------- Notizen nur für den ST (private Notiz "Spielabend · Session N") ----------
   const noteTitle = "Spielabend · Session " + num, noteBox = h("div", { class: "panel stack", "data-play-note": "1" });

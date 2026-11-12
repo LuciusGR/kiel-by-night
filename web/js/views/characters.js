@@ -127,7 +127,7 @@ async function viewSheet(m, id) {
   const conflictBox = h("div", {});
   const stateEl = h("span", { class: "save-state", role: "status" }, "");
   const title = h("h2", {}, c.name || "Unbenannt");
-  const wrap = h("div", {});
+  const wrap = h("div", {}), diceWrap = h("div", { style: "margin-top:18px" }); // Würfeln steht außerhalb des Bogens: Es bleibt auch in der Ansicht bedienbar und ändert nichts
   // Zwei Modi: Ansicht (Standard, alles gesperrt) und Bearbeitung. Wer den Bogen nicht ändern darf, sieht nur die Ansicht.
   let mode = "view";
   const isEdit = () => editable && mode === "edit";
@@ -141,7 +141,7 @@ async function viewSheet(m, id) {
   paintMode();
   m.append(h("div", { class: "head" }, h("div", {},
     h("button", { class: "linkbtn", type: "button", onclick: () => go("chars") }, "← Alle Charaktere"), title,
-    hintEl), h("div", { class: "row" }, modeToggle, stateEl)), sectionNav(wrap), conflictBox, wrap);
+    hintEl), h("div", { class: "row" }, modeToggle, stateEl)), sectionNav(m), conflictBox, wrap, diceWrap);
 
   // Speichern mit Schutz vor gleichzeitigem Bearbeiten: Geschrieben wird nur, wenn der Bogen seit dem Laden unverändert ist
   // (Vergleich über updated_at). Sonst erscheint ein Hinweis mit "Neu laden" und "Überschreiben".
@@ -174,7 +174,7 @@ async function viewSheet(m, id) {
   onCleanup(() => window.removeEventListener("beforeunload", flushOnUnload));
   function flushOnUnload(e) { if (pending) { flush(); e.preventDefault(); } }
 
-  const draw = () => { title.textContent = data.name || "Unbenannt"; wrap.replaceChildren(sheetUI(data, sheet, isEdit(), save, draw)); };
+  const draw = () => { title.textContent = data.name || "Unbenannt"; wrap.replaceChildren(sheetUI(data, sheet, isEdit(), save, draw)); diceWrap.replaceChildren(dicePanel(sheet)); };
   wrap.addEventListener("pick-portrait", async () => {
     // Porträt wählen: ein Bild aus dem Bereich Dokumente (dort hochladen, hier auswählen)
     const { data: docs } = await sb.from("documents").select("id, title, storage_path, content_type, draft");
@@ -273,16 +273,15 @@ function sheetUI(data, s, ed, save, redraw) {
     ed ? h("div", { class: "row" }, h("div", { class: "field", style: "flex:0 1 100px" }, h("label", { for: "xl-amount" }, "XP"), xpAmount), h("div", { class: "field", style: "flex:0 1 150px" }, h("label", { for: "xl-kind" }, "Art"), xpKind), h("div", { class: "field" }, h("label", { for: "xl-text" }, "Wofür"), xpText2),
       h("button", { class: "btn small", type: "button", onclick: () => { const n = Math.floor(Number(xpAmount.value)); if (!(n >= 1 && n <= 999)) { toast("Bitte 1 bis 999 XP eintragen.", true); return; }
         set(() => { const gained = xpKind.value === "gained"; if (gained) s.xpTotal += n; else s.xpSpent += n; s.xplog.push({ d: new Date().toISOString().slice(0, 10), t: xpText2.value.trim(), n: gained ? n : -n }); }); } }, "Eintragen")) : null));
-  out.append(dicePanel(s));
   out.append(h("div", { class: "grid3", "data-sec": "Notizen" }, area("Touchstones & Convictions", "touchstones"), area("Weitere Vorteile & Nachteile (Freitext)", "advantages", "Backgrounds, Merits, Flaws"), area("Notizen", "notes")));
   return out;
 }
 
 // Sprungmarken zu den Abschnitten des Bogens (am Handy ist der Bogen lang)
-const SECTIONS = ["Kopf", "Attribute", "Fertigkeiten", "Zustand", "Disziplinen", "Vorteile", "XP", "Würfeln", "Notizen"];
-function sectionNav(wrap) {
+const SECTIONS = ["Kopf", "Attribute", "Fertigkeiten", "Zustand", "Disziplinen", "Vorteile", "XP", "Notizen", "Würfeln"];
+function sectionNav(root) {
   return h("nav", { class: "sheet-nav no-swipe", "aria-label": "Abschnitte des Bogens" }, ...SECTIONS.map(n => h("button", { class: "chip", type: "button", onclick: () => {
-    const el = wrap.querySelector('[data-sec="' + n + '"]'); if (el) el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    const el = root.querySelector('[data-sec="' + n + '"]'); if (el) el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   } }, n)));
 }
 
