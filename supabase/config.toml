@@ -14,8 +14,3 @@ verify_jwt = false
 [functions.db-migrate]
 # false: Das Gateway prüft kein JWT. Die Function prüft jeden Aufruf selbst mit dem Migrations-Schlüssel (Secret MIGRATE_TOKEN).
 verify_jwt = false
-
-[functions.account-admin]
-# false: Das Gateway prüft das JWT nicht selbst; die Function prüft jeden Aufruf per auth.getUser() + is_st()
-# (wie notion-proxy). Ohne gültige Anmeldung eines Storytellers passiert nichts.
-verify_jwt = false

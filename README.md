@@ -11,7 +11,6 @@ web/                      Frontend ohne Build-Schritt (ES-Module, supabase-js + 
   js/views/*.js           ein Modul pro Bereich; map.js = gemeinsame Kartenansicht
 supabase/migrations/      Schema, RLS, Storage, Startdaten (in dieser Reihenfolge)
 supabase/functions/notion-proxy/   liest Notion (nur ST), cached in notion_cache
-supabase/functions/account-admin/  legt Konten an und setzt Passwörter (nur ST)
 .github/workflows/        pages.yml (Deploy), keepalive.yml (Ping gegen die 7-Tage-Pause)
 docs/                     Technische Doku, Benutzerhandbuch (lebend), Setup-Anleitung, Review (versioniert)
 tests/                    RLS-, Edge-Function- und Browser-Tests

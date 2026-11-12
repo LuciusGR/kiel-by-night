@@ -6,7 +6,6 @@
   "scripts": {
     "rls": "node run_rls.mjs",
     "function": "node fn_uat.mjs",
-    "account": "node account_uat.mjs",
     "ui": "node ui_uat.mjs"
   },
   "devDependencies": {

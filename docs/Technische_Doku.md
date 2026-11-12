@@ -92,7 +92,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten. Detailfeld zeigt verknüpfte Dokumente (`nodeExtras`), `S.arg.focus` wählt einen Knoten aus |
 | `doclinks.js` | Dokument-Verknüpfungen | `docLinksBox(scope, key, label, canEdit)`: Liste der verknüpften Dokumente im Detailfeld eines Knotens, Auswahl und „Verknüpfen“ nur bei `canEdit` (Spielerkarte: Modus Bearbeitung; Storytellerkarte: immer) |
 | `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
-| `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend), private Spielernotizen (`stPrivate()`: lesen, ändern, löschen) und Gruppe (`stGroup()`: Anzeigenamen und Rollen ändern, Konto anlegen und Passwort setzen über die Edge Function `account-admin` (Abschnitt 4.14), Profil zu einer User-ID anlegen, Sicherung als JSON (`backup()`, Format `kbn-backup/1`, alle für den ST lesbaren Tabellen, ohne Dateien); `revealDialog()` überträgt einen NPC mit gewählten Angaben (Typ, Sekte, Beschreibung) auf die Spielerkarte; kein Löschen von Profilen, weil `session_notes`, `private_notes` und `documents` per `on delete cascade` mitgingen) |
+| `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend), private Spielernotizen (`stPrivate()`: lesen, ändern, löschen) und Gruppe (`stGroup()`: Anzeigenamen und Rollen ändern, Profil zu einer User-ID anlegen, Sicherung als JSON (`backup()`, Format `kbn-backup/1`, alle für den ST lesbaren Tabellen, ohne Dateien); `revealDialog()` überträgt einen NPC mit gewählten Angaben (Typ, Sekte, Beschreibung) auf die Spielerkarte; kein Löschen von Profilen, weil `session_notes`, `private_notes` und `documents` per `on delete cascade` mitgingen) |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]`, Adresse `#wiki/<Seiten-ID>` (`openPage()`), Entwürfe, Verlauf aus `wiki_page_versions` (`historyBox()`, ansehen und wiederherstellen; fehlt die Tabelle, bleibt der Block weg) |
 | `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
 | `manual.js` | Anleitung | Zeigt `docs/Benutzerhandbuch.md` live aus GitHub (Abschnitt 4.12). Für alle Rollen |
@@ -270,7 +270,7 @@ Niemals den `service_role`- oder `secret`-Schlüssel ins Repo oder in den Browse
 - **Notion pflegen:** Änderungen in den Datenbanken NPCs und Beziehungen erscheinen nach „Aus Notion neu laden“ auf der ST-Karte. Neue Felder müssen in `index.ts` (Zuordnung) und `storyteller.js` (`buildGraph`) ergänzt werden.
 - **Datenänderungen per SQL** im SQL-Editor, immer mit Blick auf die Profile und Fremdschlüssel (Löschen eines Profils löscht dessen Notizen und Dokument-Einträge).
 - **Sicherung:** Im Free-Plan gibt es keine automatische Wiederherstellung (nicht geprüft). Der Storyteller lädt unter „Gruppe“ eine Sicherung als JSON herunter (alle Tabellen, ohne Dateien, Abschnitt 4.2). Das regelmäßig tun und die Datei sicher ablegen.
-- **Version 1.15.0 in Betrieb nehmen (einmalig):** (1) Stand nach `main` bringen, Pages veröffentlicht die Seite. (2) Migration einspielen: `node tools/db-migrate.mjs apply 20261112120000_guards_history_v1_15 --dry-run`, dann ohne `--dry-run` (Abschnitt 4.11), oder die Datei im SQL-Editor ausführen. Danach im Dashboard prüfen: 68 Policies, `wiki_page_versions` ohne Rechte für `anon`. (3) Edge Function `account-admin` anlegen (Abschnitt 4.14). Die Reihenfolge ist unkritisch: Die Seite läuft ohne Migration und ohne Function, es fehlen dann nur Wiki-Verlauf, Live-Aktualisierung, der Datenbank-Schutz der Spielercharakter-Knoten und das Anlegen von Konten in der Seite.
+- **Version 1.15.0 in Betrieb nehmen (einmalig):** (1) Stand nach `main` bringen, Pages veröffentlicht die Seite. (2) Migration einspielen: `node tools/db-migrate.mjs apply 20261112120000_guards_history_v1_15 --dry-run`, dann ohne `--dry-run` (Abschnitt 4.11), oder die Datei im SQL-Editor ausführen. Danach im Dashboard prüfen: 68 Policies, `wiki_page_versions` ohne Rechte für `anon`. Die Reihenfolge ist unkritisch: Die Seite läuft auch ohne Migration, es fehlen dann nur Wiki-Verlauf, Live-Aktualisierung und der Datenbank-Schutz der Spielercharakter-Knoten.
 
 ### 4.12 Anleitung
 
@@ -292,17 +292,6 @@ Voreingestelltes Erscheinungsbild, neben dem der bisherige Look („Klassisch“
 - **Schriften:** `web/fonts/BodoniModa-var.woff2`, `BodoniModa-Italic-var.woff2`, `EBGaramond-var.woff2`, `EBGaramond-Italic-var.woff2`, `Montserrat-var.woff2` (variable Schriften, SIL OFL 1.1, auf Latein zugeschnitten, zusammen rund 420 KB). Sie liegen auf der eigenen Domain, es gibt keine Verbindung zu Google. Der Browser lädt eine Schrift erst, wenn Text sie benutzt, im Stil „Klassisch“ werden sie also nicht geholt. Lizenzhinweise in `web/fonts/LICENSE.md`.
 - **Pflege:** Neue Bausteine mit festen Farben oder Schriften brauchen im Rulebook-Stil nur dann eine Regel, wenn sie Variablen umgehen. Kontrast prüfen (Tests U250a und U250b).
 
-### 4.14 Konten verwalten (`account-admin`)
-
-Edge Function `supabase/functions/account-admin/index.ts`, `verify_jwt = false`, die Function prüft selbst wie `notion-proxy`: `auth.getUser()` mit dem JWT des Aufrufers, dann `is_st()`, sonst 401 oder 403. Aufruf aus `stGroup()` über `sb.functions.invoke("account-admin", { body })`.
-
-- `{ action: "create", username, password, display_name, role }`: legt das Auth-Konto `<username>@kbn.invalid` an (bestätigt, kein Mailversand) und das Profil dazu. Scheitert das Profil, wird das Konto wieder gelöscht. Benutzername `^[a-z0-9._-]{2,32}$`, Passwort 8 bis 72 Zeichen, Anzeigename 1 bis 60 Zeichen, Rolle `player` oder `st`. Antworten: 200 `{ id, username, role }`, 409 `username_taken`, 400 bei ungültigen Eingaben.
-- `{ action: "set_password", user_id, password }`: setzt das Passwort eines Kontos, das ein Profil hat (sonst 404). So erreicht die Function keine anderen Konten des Projekts.
-- Der Service-Schlüssel ist das eingebaute Secret `SUPABASE_SERVICE_ROLE_KEY` der Function, er steht nie im Browser. Passwörter werden weder protokolliert noch zurückgegeben. Body höchstens 4 KB.
-- **Einrichten (einmalig, macht der Nutzer):** Dashboard → Edge Functions → neue Function `account-admin`, Inhalt von `index.ts` einfügen, JWT-Prüfung aus, deployen. Secret `ALLOWED_ORIGIN` gilt wie bei `notion-proxy` (`https://luciusgr.github.io`). Solange die Function fehlt, meldet die Seite „noch nicht eingerichtet“, und Konten entstehen wie bisher im Dashboard.
-- **Risiko:** Wer als Storyteller angemeldet ist, kann Konten anlegen und Passwörter aller Mitglieder setzen, auch das eines anderen Storytellers. Das entspricht dem Grundsatz „der ST darf alles“, heißt aber: Das ST-Passwort schützt jetzt auch die Konten der Spieler.
-- **Test:** `npm run account` in `tests/uat` (13 Fälle mit gespieltem Supabase).
-
 ## 10. Tests
 
 | Test | Aufruf | Prüft |
@@ -311,7 +300,7 @@ Edge Function `supabase/functions/account-admin/index.ts`, `verify_jwt = false`,
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, `account-admin`: 13 Fälle, Browser: 209 Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, Browser: 208 Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -319,7 +308,7 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGl
 - Adressen gibt es für Bogen, Wiki-Seite, Session, Chronik, private Notiz, Suche und die Reiter von Storyteller und Szenen. Ein gewählter Kartenknoten oder ein hervorgehobenes Dokument steht nicht in der Adresse.
 - Entwürfe liegen nur im jeweiligen Browser. Ändert jemand anderes den Eintrag in der Zwischenzeit, überschreibt das Speichern des Entwurfs dessen Stand (wie bisher: letzter Speicherstand gewinnt).
 - Die Suche lädt alle lesbaren Tabellen in den Browser. Bei sehr vielen Notizen wird das Öffnen des Bereichs langsamer.
-- Konten (Benutzername, Passwort) legt weiterhin nur das Supabase-Dashboard an. Die Seite legt Profile an, löscht aber keine.
+- Konten (Benutzername, Passwort) legt weiterhin nur das Supabase-Dashboard an. Die Seite legt Profile an, löscht aber keine. Eine Edge Function dafür (`account-admin`, Konto anlegen und Passwort setzen durch den ST) wurde gebaut und getestet, aber bewusst nicht übernommen. Sie steht im Verlauf des Repos (Commit `468c0be`), falls sie später gewünscht ist.
 - Schließt man den Tab in den 800 ms nach der letzten Eingabe, kann die Änderung fehlen.
 - „Neu seit deinem letzten Besuch“ und Entwürfe liegen je Browser, nicht je Konto: Auf einem zweiten Gerät beginnt beides neu.
 - Würfelergebnisse sieht nur, wer würfelt. Es gibt kein gemeinsames Würfelprotokoll.
@@ -336,7 +325,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
-- **12.11.2026 (Version 1.15.0):** Übersicht (`nextBox()`, `todoBox()`, `S.lastVisit`), Bogen (`dice.js`, `merits`, `xplog`, `portrait`, `sectionNav()`, Konfliktprüfung in `flush()`, `xpForm()`), `saveChecked()`, `deleteWithUndo()`, `ask()`, `formatInto()`, `watchTables()`, Ladebalken, Karte (Farben, Einblendung, `drawNodeList()`, `canDeleteNode`, `revealDialog()`), Spielabend (`play.js`), `sttabs.js`, Fäden-Übersicht, Sicherung, Wiki-Verlauf, Edge Function `account-admin` (Abschnitt 4.14), Migration `20261112120000_guards_history_v1_15.sql` (68 Policies). Abschnitte 4.1, 4.2, 4.6, 4.14, 5, 6, 10, 11. Der Hinweis zum Badge-Kontrast entfällt (seit 1.6.1 behoben, Tests U155b und U250).
+- **12.11.2026 (Version 1.15.0):** Übersicht (`nextBox()`, `todoBox()`, `S.lastVisit`), Bogen (`dice.js`, `merits`, `xplog`, `portrait`, `sectionNav()`, Konfliktprüfung in `flush()`, `xpForm()`), `saveChecked()`, `deleteWithUndo()`, `ask()`, `formatInto()`, `watchTables()`, Ladebalken, Karte (Farben, Einblendung, `drawNodeList()`, `canDeleteNode`, `revealDialog()`), Spielabend (`play.js`), `sttabs.js`, Fäden-Übersicht, Sicherung, Wiki-Verlauf, Migration `20261112120000_guards_history_v1_15.sql` (68 Policies). Abschnitte 4.1, 4.2, 4.6, 5, 6, 9, 10, 11. Der Hinweis zum Badge-Kontrast entfällt (seit 1.6.1 behoben, Tests U155b und U250).
 - **12.11.2026 (Version 1.14.1):** Farben je Typ in `TYPE_TOK` (`map.js`): Sterbliche `--mortal` (neuer Ton in `theme.css` und `theme-v5.css`), Orte `--slate`, Organisationen `--plum`, `FALLBACK_TOK` ohne diese Töne.
 - **12.11.2026 (Version 1.14.0):** Router mit Adressen und Verlauf (`ROUTE_KEY`, `toHash()`, `parseHash()`, `setRoute()`, `syncFromHash()`), Entwürfe (`bindDraft()`, `draftKey()`), Verweise außerhalb des Wikis (`wikilinks.js`), Suche (`search.js`), Wischen (`swipe.js`), Handy-Kopfzeile mit Menü, `--top-h`, `revealOnNarrow()`, größere Tippflächen, ST-Verwaltung in der Oberfläche (`newCharForm()`, `charAdmin()`, `stPrivate()`, `stGroup()`, Bearbeiten fremder Session-Notizen). Keine Migration, keine Änderung an Rechten. Abschnitte 4.1, 4.2, 4.6, 10 und 11.
 - **01.11.2026 (Version 1.13.2):** Der Stil-Knopf ist im Theme-Knopf aufgegangen (`cycleTheme()`, `MODES`, `applyMode()` in `app.js`, `toggleStyle()` entfällt). Test U07 neu gefasst, U248 und U248b angepasst, Kopfzeile zeigt wieder drei Knöpfe.

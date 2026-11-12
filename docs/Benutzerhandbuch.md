@@ -166,7 +166,6 @@ In der Kopfleiste steht nur noch **Storyteller**. Dahinter liegen fünf Reiter: 
   - **Knoten antippen:** Details aus Notion, „In Notion öffnen“ und **„Auf Spielerkarte“**. Das legt den Knoten auf der Spielerkarte an, **nur mit dem Namen, ohne Typ und ohne Beschreibung**. Den Typ (Kindred, Sterblicher, …) tragen die Spieler selbst ein, weil er nicht immer offensichtlich ist. Für Verbindungen gilt dasselbe ohne Beschriftung. Ein zweiter Klick legt nichts doppelt an.
   - Die Anordnung kannst du ziehen („Neu anordnen“ ordnet alles neu). Sie bleibt gespeichert.
 - **Private Spielernotizen:** zeigt die privaten Notizen jedes Spielers. Aufklappen, „Bearbeiten“, dann ändern oder löschen. Die Person sieht die Änderung.
-- **Gruppe, Konto anlegen:** Benutzername, Anzeigename, Rolle und ein Startpasswort eintragen, „Konto anlegen“. Das Konto ist sofort nutzbar, die Person ändert ihr Passwort danach selbst. In jeder Zeile der Mitglieder setzt „Passwort setzen“ ein neues Passwort, wenn jemand seines vergessen hat. Beides braucht die einmal eingerichtete Funktion `account-admin` (Technische Dokumentation, Abschnitt 4.14). Fehlt sie, sagt die Seite das, und du nimmst wie bisher das Supabase-Dashboard.
 - **Gruppe, Sicherung:** „Sicherung herunterladen“ lädt alle Inhalte als eine JSON-Datei (ohne die hochgeladenen Dateien). Sie enthält auch private Notizen, also sicher aufbewahren.
 - **Gruppe:** Liste aller Mitglieder mit Anzeigename, Rolle und Charakter. Du änderst Anzeigenamen und Rollen („Speichern“ je Zeile). Die eigene Rolle ist gesperrt, damit du dich nicht aussperrst. Darunter legst du das **Profil für ein neues Konto** an (User-ID, Anzeigename, Rolle). Profile löschen geht hier bewusst nicht, weil damit alle Notizen und Dokumente der Person verschwinden.
 
@@ -196,7 +195,7 @@ Du musst Szenen nicht vorab einer Session zuordnen. Der Reiter **Szenen** im Sto
 - Auf der **Beziehungskarte** zeigt „Kommt vor in“ auch Szenen aus dem Vorrat (Vorrat · Titel).
 
 ### Konten und Spieler verwalten
-Konto, Profil und Passwort gehen im Storyteller-Bereich unter „Gruppe“ (siehe oben), den Charakter ordnest du im Bogen unter „Verwaltung“ zu. Ist die Funktion `account-admin` noch nicht eingerichtet, legst du das Konto wie bisher im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“) und trägst unter „Gruppe“ nur das Profil mit der User-ID nach. Jeder Spieler ändert sein Passwort selbst.
+Das Konto selbst (Benutzername und Passwort) legt der ST im Supabase-Dashboard an (Benutzername + `@kbn.invalid`, Passwort, „Auto Confirm User“). Das kann die Seite aus Sicherheitsgründen nicht. Alles Weitere geht in der Seite: das Profil im Storyteller-Bereich unter „Gruppe“ (mit der User-ID aus dem Dashboard), den Charakter im Bogen unter „Verwaltung“. Jeder Spieler ändert sein Passwort selbst.
 
 ## 11. Wer darf was
 
@@ -211,14 +210,14 @@ Konto, Profil und Passwort gehen im Storyteller-Bereich unter „Gruppe“ (sieh
 | Dokumente | hochladen, eigene umbenennen und löschen, mit Elementen der Spielerkarte verknüpfen | alles, Entwürfe, freigeben, umbenennen, zusätzlich mit Elementen der Storytellerkarte verknüpfen |
 | Chroniken, Kapitel, Zusammenfassungen | lesen (Entwürfe nicht) | alles anlegen, ändern, löschen |
 | Szenenkarten | kein Zugriff | alles |
-| Profile, Rollen, Konten | eigenen Anzeigenamen, eigenes Passwort | Anzeigenamen und Rollen ändern, Konten und Profile anlegen, Passwörter setzen (Storyteller-Bereich, „Gruppe“) |
+| Profile, Rollen | eigenen Anzeigenamen, eigenes Passwort | Anzeigenamen und Rollen ändern, Profile anlegen (Storyteller-Bereich, „Gruppe“) |
 | Suche | alles, was man sehen darf | zusätzlich Szenenkarten und private Notizen der Spieler |
 
 ## 12. Hilfe bei Problemen
 
 | Meldung oder Problem | Was tun |
 |---|---|
-| „Benutzername oder Passwort falsch.“ | Schreibweise prüfen, Passwort neu eintippen. Weiter erfolglos: Der ST setzt dir unter „Gruppe“ ein neues Passwort. |
+| „Benutzername oder Passwort falsch.“ | Schreibweise prüfen, Passwort neu eintippen. Weiter erfolglos: ST fragen. |
 | „Für dieses Konto gibt es kein Profil“ | ST muss das Profil anlegen. |
 | „Anmeldung abgelaufen“ | Seite neu laden (Strg+F5) und neu anmelden. |
 | Seite zeigt alte Version | Strg+F5 (harte Aktualisierung). |
@@ -247,7 +246,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
-- **12.11.2026 (Version 1.15.0):** Übersicht mit nächster Session, „Neu seit deinem letzten Besuch“ und offenen Punkten für den ST (Abschnitt 3). Bogen mit Sprungmarken, Porträt, Vorteilen mit Punkten, XP-Verlauf und Würfeln (Abschnitt 4). Formatierung, Rückfrage bei gleichzeitigem Bearbeiten, „Rückgängig“ und Live-Aktualisierung (Abschnitt 5). Karte mit Einblendung am Handy, Knotenliste, neuen Farben und Schutz der Spielercharaktere (Abschnitt 7). Wiki-Verlauf (Abschnitt 8). Storyteller: Reiter gebündelt, Spielabend, Fäden, „Mit Angaben …“, XP vergeben, Konto anlegen, Passwort setzen, Sicherung (Abschnitt 10).
+- **12.11.2026 (Version 1.15.0):** Übersicht mit nächster Session, „Neu seit deinem letzten Besuch“ und offenen Punkten für den ST (Abschnitt 3). Bogen mit Sprungmarken, Porträt, Vorteilen mit Punkten, XP-Verlauf und Würfeln (Abschnitt 4). Formatierung, Rückfrage bei gleichzeitigem Bearbeiten, „Rückgängig“ und Live-Aktualisierung (Abschnitt 5). Karte mit Einblendung am Handy, Knotenliste, neuen Farben und Schutz der Spielercharaktere (Abschnitt 7). Wiki-Verlauf (Abschnitt 8). Storyteller: Reiter gebündelt, Spielabend, Fäden, „Mit Angaben …“, XP vergeben, Sicherung (Abschnitt 10).
 - **12.11.2026 (Version 1.14.1):** Neue Farben auf beiden Karten: Sterbliche grün, Orte blau, Organisationen violett (Abschnitt 7).
 - **12.11.2026 (Version 1.14.0):** Wischen zwischen den Bereichen am Handy, Kopfzeile am Handy mit „Menü“, Zurück-Taste und eigene Adressen für Einträge, Bereich Suche, Entwürfe für ungespeicherten Text, Verweise in Notizen, größere Tippflächen (Abschnitte 1, 2, 2a, 5, 6, 8). Für den Storyteller: fremde Notizen bearbeiten, Charaktere anlegen, zuordnen und löschen, Tab „Gruppe“ (Abschnitt 10).
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
