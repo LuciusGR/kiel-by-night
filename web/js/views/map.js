@@ -7,12 +7,14 @@ import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
 // ---------- A7: Farben je Typ ----------
 const TYPE_TOK = {
-  Kindred: "--blood", Ghoul: "--brass", Sterblicher: "--sea", Kine: "--sea",
-  Wight: "--plum", Geist: "--teal", Werwolf: "--rust",
-  Ort: "--moss", Organisation: "--slate", Gegenstand: "--olive",
+  // Sterbliche sind grün (eigener Ton --mortal): Im Stil Rulebook ist --sea karmesinrot und war von Kindred kaum zu unterscheiden.
+  // Orte sind deshalb blau statt graugrün, Organisationen violett.
+  Kindred: "--blood", Ghoul: "--brass", Sterblicher: "--mortal", Kine: "--mortal",
+  Wight: "--rust", Geist: "--teal", Werwolf: "--rust",
+  Ort: "--slate", Organisation: "--plum", Gegenstand: "--olive",
   "Ohne NPC-Eintrag": "--grey",
 };
-const FALLBACK_TOK = ["--moss", "--plum", "--teal", "--rust", "--slate", "--olive"];
+const FALLBACK_TOK = ["--moss", "--teal", "--rust", "--olive", "--grey"]; // ohne die Töne der festen Typen Sterblicher, Ort, Organisation
 // A3: alte Schreibweise abfangen
 export const normType = t => (t === "Ghul" ? "Ghoul" : (t || ""));
 export function typeColor(t) {

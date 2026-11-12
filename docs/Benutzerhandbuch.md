@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 12.11.2026 · gilt für Website-Version 1.14.0
+Stand: 12.11.2026 · gilt für Website-Version 1.14.1
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -95,7 +95,7 @@ Die gemeinsame Karte der Coterie: **Was ihr über Kiels Nächte wisst.** Alle be
 Bedienung:
 - **Knoten antippen:** zeigt rechts (am Handy unter der Karte, die Seite scrollt von selbst dorthin) Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen mit Beschriftung und Details. Die Beschriftung steht auch auf der Linie in der Karte (beim Hineinzoomen). Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
 - **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
-- **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein.
+- **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein. **Farben:** Kindred dunkelrot, Ghoul messing, Sterbliche grün, Orte blau, Organisationen violett. Das gilt für die Spielerkarte und die Beziehungskarte des Storytellers.
 - **Sekte und Form:** Im Formular gibt es die Auswahl „Sekte“ (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition). Die Form des Knotens richtet sich danach (Legende über der Karte); beim Ändern der Auswahl wechselt die Form sofort, mit „Abbrechen“ springt sie zurück.
 - **Knoten anlegen:** Name (Pflicht), Typ, Sekte, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
@@ -219,6 +219,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **12.11.2026 (Version 1.14.1):** Neue Farben auf beiden Karten: Sterbliche grün, Orte blau, Organisationen violett (Abschnitt 7).
 - **12.11.2026 (Version 1.14.0):** Wischen zwischen den Bereichen am Handy, Kopfzeile am Handy mit „Menü“, Zurück-Taste und eigene Adressen für Einträge, Bereich Suche, Entwürfe für ungespeicherten Text, Verweise in Notizen, größere Tippflächen (Abschnitte 1, 2, 2a, 5, 6, 8). Für den Storyteller: fremde Notizen bearbeiten, Charaktere anlegen, zuordnen und löschen, Tab „Gruppe“ (Abschnitt 10).
 - **25.10.2026 (Version 1.12.1):** Datenschutzerklärung wieder entfernt, nur der Hinweis „Inoffizielles Fan-Projekt“ bleibt in der Fußzeile (Abschnitt 13).
 - **24.10.2026 (Version 1.12.0):** Schriften und Skripte kommen nicht mehr von Google und jsDelivr (Abschnitt 13).

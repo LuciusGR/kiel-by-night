@@ -3,6 +3,9 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.14.1 – 12.11.2026
+- **Farben der Karten:** Sterbliche sind grün (eigener Ton `--mortal`, hell `#2f7d46`, dunkel `#6fcf8e`). Im Stil Rulebook waren sie karmesinrot und von Kindred kaum zu unterscheiden. Damit kein zweites Grün danebensteht, sind Orte blau (`--slate`) und Organisationen violett (`--plum`). Gilt für die Spielerkarte und die Beziehungskarte des Storytellers, samt Filter-Knöpfen. Keine Migration.
+
 ## 1.14.0 – 12.11.2026
 Ergebnis einer Durchsicht der Seite aus Sicht der Spieler und des Storytellers. Keine Migration, keine Änderung an Rechten.
 - **Wischen am Handy:** Ein Wisch nach links oder rechts schaltet zum nächsten oder vorigen Reiter, so als wäre er angetippt worden (`web/js/swipe.js`). Kein Wechsel auf Karten, in Eingabefeldern, in der Reiterleiste, am Bildschirmrand, bei markiertem Text und bei offenem Dialog.

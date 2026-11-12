@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 12.11.2026 · gilt für Website-Version 1.14.0 (siehe `CHANGELOG.md`)
+Stand: 12.11.2026 · gilt für Website-Version 1.14.1 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -310,6 +310,7 @@ Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration o
 
 ## 13. Änderungen an dieser Doku
 
+- **12.11.2026 (Version 1.14.1):** Farben je Typ in `TYPE_TOK` (`map.js`): Sterbliche `--mortal` (neuer Ton in `theme.css` und `theme-v5.css`), Orte `--slate`, Organisationen `--plum`, `FALLBACK_TOK` ohne diese Töne.
 - **12.11.2026 (Version 1.14.0):** Router mit Adressen und Verlauf (`ROUTE_KEY`, `toHash()`, `parseHash()`, `setRoute()`, `syncFromHash()`), Entwürfe (`bindDraft()`, `draftKey()`), Verweise außerhalb des Wikis (`wikilinks.js`), Suche (`search.js`), Wischen (`swipe.js`), Handy-Kopfzeile mit Menü, `--top-h`, `revealOnNarrow()`, größere Tippflächen, ST-Verwaltung in der Oberfläche (`newCharForm()`, `charAdmin()`, `stPrivate()`, `stGroup()`, Bearbeiten fremder Session-Notizen). Keine Migration, keine Änderung an Rechten. Abschnitte 4.1, 4.2, 4.6, 10 und 11.
 - **01.11.2026 (Version 1.13.2):** Der Stil-Knopf ist im Theme-Knopf aufgegangen (`cycleTheme()`, `MODES`, `applyMode()` in `app.js`, `toggleStyle()` entfällt). Test U07 neu gefasst, U248 und U248b angepasst, Kopfzeile zeigt wieder drei Knöpfe.
 - **01.11.2026 (Version 1.13.1):** Rulebook ist voreingestellt, der alte Look heißt „Klassisch“ (`kbn-style` = `classic`). `<head>`-Skript, `toggleStyle()`, Tests U248 bis U252 angepasst, Test-Harness setzt standardmäßig `classic`.
