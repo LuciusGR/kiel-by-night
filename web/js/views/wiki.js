@@ -144,7 +144,7 @@ registerView("wiki", async m => {
   if (cur) revealOnNarrow(c3, NARROW);
   // Live: geänderte oder neue Seiten anderer erscheinen ohne Neuladen, außer während du selbst schreibst
   const sig = () => JSON.stringify(pages.map(p => [p.id, p.updated_at, p.category_id]));
-  const liveHint = h("div", { class: "notice live-hint", role: "status", hidden: true, style: "margin-bottom:12px" }, "Das Wiki wurde von anderen geändert. Nach dem Speichern oder Abbrechen siehst du den neuen Stand.");
+  const liveHint = h("div", { class: "notice live-hint", "aria-live": "polite", hidden: true, style: "margin-bottom:12px" }, "Das Wiki wurde von anderen geändert. Nach dem Speichern oder Abbrechen siehst du den neuen Stand.");
   c3.before(liveHint);
   watchTables("kbn-wiki", ["wiki_pages"], async () => {
     const before = sig(), wasEdit = edit; await load(); if (sig() === before) return;

@@ -312,7 +312,7 @@ function dicePanel(s) {
       !usedWp && roll.normal.some(v => v < 6) ? h("div", {}, h("button", { class: "btn small", type: "button", onclick: () => { const x = rerollWillpower(last); last = x.roll; usedWp = true; show(last, x.rerolled); } }, "Willenskraft: bis zu drei normale Würfel neu"), h("span", { class: "muted", style: "margin-left:8px;font-size:.86rem" }, "kostet 1 Willpower (oberflächlich), im Bogen selbst eintragen")) : null);
   }
   paintPool();
-  return h("div", { class: "panel stack no-print", "data-sec": "Würfeln" }, h("h4", {}, "Würfeln"),
+  return h("div", { class: "panel stack no-print", "data-sec": "Würfeln" }, h("h4", { class: "eyebrow", style: "margin:0" }, "Würfeln"),
     h("div", { class: "row" }, h("div", { class: "field" }, h("label", { for: "dice-attr" }, "Attribut"), a), h("div", { class: "field" }, h("label", { for: "dice-skill" }, "Fertigkeit oder Disziplin"), b),
       h("div", { class: "field", style: "flex:0 1 90px" }, h("label", { for: "dice-mod" }, "Modifikator"), mod), h("div", { class: "field", style: "flex:0 1 90px" }, h("label", { for: "dice-diff" }, "Schwierigkeit"), diff)),
     h("div", { class: "row", style: "align-items:center" }, h("button", { class: "btn primary", type: "button", onclick: () => { last = rollPool(pool(), s.hunger); usedWp = false; show(last); } }, "Würfeln"),

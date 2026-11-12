@@ -200,7 +200,7 @@ registerView("sessions", async m => {
   draw();
   // Live: Änderungen anderer erscheinen ohne Neuladen. Ist gerade ein Editor offen oder ein Feld in Arbeit, kommt nur ein Hinweis.
   const sig = () => JSON.stringify([notes.map(n => [n.id, n.updated_at]), meta, info]);
-  const liveHint = h("div", { class: "notice live-hint", role: "status", hidden: true }, "Es gibt neue Änderungen von anderen. ",
+  const liveHint = h("div", { class: "notice live-hint", "aria-live": "polite", hidden: true }, "Es gibt neue Änderungen von anderen. ",
     h("button", { class: "btn small", type: "button", onclick: async () => { liveHint.hidden = true; await load(); draw(); } }, "Jetzt laden"));
   box.before(liveHint);
   watchTables("kbn-sessions", ["session_notes", "sessions", "session_info"], async () => {

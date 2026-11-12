@@ -14,7 +14,8 @@ registerView("st", async m => {
   const tab = (S.arg && S.arg.tab) || "map";
   const tg = stTabs(tab);
   const body = h("div", {});
-  m.append(head("Storyteller", "Nur für dich sichtbar. Die Karte liest aus Notion (NPCs, Beziehungen) und wird zwischengespeichert; „Aus Notion neu laden“ holt den aktuellen Stand.", tg), body);
+  const sub = { map: "Nur für dich sichtbar. Die Karte liest aus Notion (NPCs, Beziehungen) und wird zwischengespeichert; „Aus Notion neu laden“ holt den aktuellen Stand.", private: "Nur für dich sichtbar: die privaten Notizen der Spieler, zum Lesen, Ändern und Löschen.", group: "Nur für dich sichtbar: Mitglieder, Rollen, Konten und die Sicherung." };
+  m.append(head("Storyteller", sub[tab] || sub.map, tg), body);
   if (tab === "private") return stPrivate(body);
   if (tab === "group") return stGroup(body);
   MapView(body, notionSource(S.arg && S.arg.focus));
