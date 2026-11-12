@@ -25,10 +25,23 @@ export function h(tag, props, ...kids) {
   return el;
 }
 
-export function toast(msg, bad) {
-  const t = h("div", { class: "toast" + (bad ? " bad" : ""), role: "status" }, msg);
+// action = { label, run }: Knopf in der Meldung (z. B. "Rückgängig"), die Meldung bleibt dann 8 Sekunden stehen
+export function toast(msg, bad, action) {
+  const t = h("div", { class: "toast" + (bad ? " bad" : "") + (action ? " has-action" : ""), role: "status" }, msg);
+  if (action) t.append(h("button", { class: "toast-btn", type: "button", onclick: () => { t.remove(); action.run(); } }, action.label));
   document.body.append(t);
-  setTimeout(() => t.remove(), bad ? Math.max(5200, String(msg).length * 80) : 2600);
+  setTimeout(() => t.remove(), action ? 8000 : bad ? Math.max(5200, String(msg).length * 80) : 2600);
+}
+
+// Rückfrage als Dialog. Liefert true bei Bestätigung.
+export function ask(title, text, yes, no = "Abbrechen") {
+  return new Promise(res => {
+    const done = v => { dlg.close(); dlg.remove(); res(v); };
+    const dlg = h("dialog", { "data-ask": "1" }, h("div", { class: "stack" }, h("h3", {}, title), h("p", {}, text),
+      h("div", { class: "row" }, h("button", { class: "btn danger", type: "button", onclick: () => done(true) }, yes), h("button", { class: "btn", type: "button", onclick: () => done(false) }, no))));
+    dlg.addEventListener("cancel", ev => { ev.preventDefault(); done(false); });
+    document.body.append(dlg); dlg.showModal();
+  });
 }
 
 // Supabase-/PostgREST-Fehler in verständliche Meldungen übersetzen

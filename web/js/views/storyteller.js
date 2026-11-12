@@ -1,8 +1,10 @@
 // Kiel by Night · Storyteller-Bereich: ST-Karte aus Notion (über Edge Function notion-proxy) + private Spielernotizen
 import { h, toast, errMsg, head, guard, confirmBtn, fmtDate, fmtDateTime } from "../lib.js";
-import { sb, S, go, registerView, personName, charOf, loadProfiles } from "../core.js";
+import { sb, S, go, registerView, personName, charOf, loadProfiles, saveChecked, deleteWithUndo } from "../core.js";
 import { richText } from "../wikilinks.js";
-import { MapView, shapeForSekte, normType } from "./map.js";
+import { stTabs } from "./sttabs.js";
+import { download, stamp } from "../export.js";
+import { MapView, shapeForSekte, normType, SEKTEN } from "./map.js";
 import { savePositions, loadPositions } from "./playermap.js";
 import { sceneMentions } from "./scenes.js";
 import { docLinksBox } from "./doclinks.js";
@@ -10,8 +12,7 @@ import { docLinksBox } from "./doclinks.js";
 registerView("st", async m => {
   if (!S.isST) { m.append(h("div", { class: "notice bad" }, "Dieser Bereich ist nur für den Storyteller.")); return; }
   const tab = (S.arg && S.arg.tab) || "map";
-  const tg = h("div", { class: "toggle", role: "group", "aria-label": "Storyteller-Bereich" },
-    ...[["map", "Beziehungskarte"], ["private", "Private Spielernotizen"], ["group", "Gruppe"]].map(([k, l]) => h("button", { type: "button", "aria-pressed": String(tab === k), onclick: () => go("st", { tab: k }) }, l)));
+  const tg = stTabs(tab);
   const body = h("div", {});
   m.append(head("Storyteller", "Nur für dich sichtbar. Die Karte liest aus Notion (NPCs, Beziehungen) und wird zwischengespeichert; „Aus Notion neu laden“ holt den aktuellen Stand.", tg), body);
   if (tab === "private") return stPrivate(body);
@@ -36,9 +37,9 @@ async function stPrivate(root) {
       h("div", { class: "notice" }, "Du änderst als Storyteller eine private Notiz. Die Person sieht die Änderung."),
       h("div", { class: "field" }, h("label", { for: "pn-title" }, "Titel"), t), h("div", { class: "field" }, h("label", { for: "pn-body" }, "Text"), b),
       h("div", { class: "row" },
-        h("button", { class: "btn primary", type: "button", onclick: async () => { await guard(sb.from("private_notes").update({ title: t.value, body: b.value }).eq("id", x.id), "Gespeichert."); editing = null; if (await load()) draw(); } }, "Speichern"),
+        h("button", { class: "btn primary", type: "button", onclick: async () => { if (!(await saveChecked("private_notes", x, { title: t.value, body: b.value }, "Gespeichert."))) return; editing = null; if (await load()) draw(); } }, "Speichern"),
         h("button", { class: "btn", type: "button", onclick: () => { editing = null; draw(); } }, "Abbrechen"),
-        confirmBtn("Löschen", async () => { await guard(sb.from("private_notes").delete().eq("id", x.id), "Gelöscht."); editing = null; if (await load()) draw(); })));
+        confirmBtn("Löschen", async () => { await deleteWithUndo("private_notes", x, async () => { if (await load()) draw(); }); editing = null; if (await load()) draw(); })));
   }
   function draw() {
     const players = [...S.profiles.values()].filter(p => p.role !== "st");
@@ -96,9 +97,22 @@ async function stGroup(root) {
             if (error) { toast(error.code === "23503" ? "Zu dieser User-ID gibt es kein Konto. UID im Supabase-Dashboard prüfen." : errMsg(error), true); return; }
             toast("Profil angelegt."); await draw();
           } }, "Profil anlegen")),
-        h("p", { class: "muted" }, "Profile löschen geht hier bewusst nicht: Mit einem Profil verschwinden alle Notizen und Dokumente der Person.")));
+        h("p", { class: "muted" }, "Profile löschen geht hier bewusst nicht: Mit einem Profil verschwinden alle Notizen und Dokumente der Person.")),
+      h("div", { class: "panel stack", "data-admin": "backup", style: "margin-top:14px" }, h("h3", {}, "Sicherung"),
+        h("p", { class: "muted" }, "Lädt alle Inhalte der Seite als eine JSON-Datei herunter: Profile, Bögen, Sessions, Notizen (auch private), Wiki, Karten, Chroniken, Szenen und die Liste der Dokumente. Die hochgeladenen Dateien selbst sind nicht enthalten. Die Datei enthält alles, was nur du sehen darfst: sicher aufbewahren."),
+        h("div", {}, h("button", { class: "btn", type: "button", onclick: backup }, "Sicherung herunterladen"))));
   }
   await draw();
+}
+
+// Sicherung: alles, was der ST lesen darf, als eine JSON-Datei (kein Wiederherstellen in der Seite)
+const BACKUP_TABLES = ["profiles", "characters", "sessions", "session_info", "session_notes", "private_notes", "wiki_categories", "wiki_pages", "documents", "document_links",
+  "player_map_nodes", "player_map_edges", "map_positions", "chronicles", "chapters", "scenes", "scene_npcs"];
+async function backup() {
+  const out = { format: "kbn-backup/1", created_at: new Date().toISOString(), tables: {}, missing: [] };
+  for (const t of BACKUP_TABLES) { const { data, error } = await sb.from(t).select("*"); if (error) out.missing.push(t); else out.tables[t] = data; }
+  download("kiel-by-night_sicherung_" + stamp() + ".json", JSON.stringify(out, null, 1), "application/json");
+  toast(out.missing.length ? "Sicherung geladen, ohne: " + out.missing.join(", ") : "Sicherung heruntergeladen (" + Object.values(out.tables).reduce((a, r) => a + r.length, 0) + " Einträge).", !!out.missing.length);
 }
 
 // ---------- Notion → Graph ----------
@@ -173,6 +187,8 @@ function notionSource(focus) {
       h("button", { class: "btn small", type: "button", onclick: async () => {
         try { await ensurePlayerNode(n); toast("„" + n.label + "“ steht auf der Spielerkarte."); } catch (e) { toast("Fehler: " + (e.message || e), true); }
       } }, "Auf Spielerkarte"),
+      // Enthüllen in einem Schritt: wählen, welche Angaben die Spieler sehen sollen
+      n.raw ? h("button", { class: "btn small", type: "button", onclick: () => revealDialog(n) }, "Mit Angaben …") : null,
     ].filter(Boolean),
     edgeExtras: (e, id, nodes) => [h("button", { class: "btn small", type: "button", onclick: async () => {
       try {
@@ -200,6 +216,27 @@ function mentionsBox(notionId) {
         x.npc.motivation ? h("div", { class: "muted" }, x.npc.motivation) : null))));
   }).catch(() => {});
   return box;
+}
+
+// Dialog: Knoten mit ausgewählten Angaben auf die Spielerkarte bringen. Besteht der Knoten schon, werden nur die gewählten Angaben überschrieben.
+function revealDialog(n) {
+  const sect = SEKTEN.find(x => x === String(n.raw.sekte || "").replace("Unabhaengig", "Unabhängig")) || "";
+  const opts = [["type", "Typ", n.type], ["sect", "Sekte", sect], ["description", "Beschreibung (deine Notizen aus Notion)", n.description]].filter(([, , v]) => v);
+  const boxes = opts.map(([k, l, v]) => ({ k, v, el: h("input", { type: "checkbox", style: "width:auto", "data-reveal": k }), l }));
+  const dlg = h("dialog", { "data-reveal-dialog": "1" }, h("div", { class: "stack" }, h("h3", {}, "„" + n.label + "“ auf die Spielerkarte"),
+    h("p", { class: "muted" }, "Der Name wird immer übertragen. Hake an, was die Spieler zusätzlich sehen sollen. Nichts angehakt heißt: nur der Name."),
+    ...boxes.map(b => h("label", { class: "row", style: "align-items:flex-start;gap:8px" }, b.el, h("span", {}, h("strong", {}, b.l + ": "), String(b.v).slice(0, 200) + (String(b.v).length > 200 ? " …" : "")))),
+    !boxes.length ? h("p", { class: "muted" }, "Zu diesem Eintrag gibt es keine weiteren Angaben.") : null,
+    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: async () => {
+      const extra = Object.fromEntries(boxes.filter(b => b.el.checked).map(b => [b.k, b.v]));
+      try {
+        const id = await ensurePlayerNode(n);
+        if (Object.keys(extra).length) { const { error } = await sb.from("player_map_nodes").update(extra).eq("id", id); if (error) throw error; }
+        toast("„" + n.label + "“ steht auf der Spielerkarte" + (Object.keys(extra).length ? " (mit " + boxes.filter(b => b.el.checked).map(b => b.l.split(" ")[0]).join(", ") + ")." : "."));
+        dlg.close(); dlg.remove();
+      } catch (e) { toast("Fehler: " + (e.message || e), true); }
+    } }, "Übertragen"), h("button", { class: "btn", type: "button", onclick: () => { dlg.close(); dlg.remove(); } }, "Abbrechen"))));
+  document.body.append(dlg); dlg.showModal();
 }
 
 // Nur der Name. Typ (Kindred, Sterblicher, …) bleibt leer: Die Spieler tragen ihn selbst ein, weil er nicht immer offensichtlich ist. Keine Beschreibung, keine Notion-Tags.

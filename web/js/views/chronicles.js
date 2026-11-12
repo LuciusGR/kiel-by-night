@@ -1,6 +1,6 @@
 // Kiel by Night · Chroniken: Chronik → Kapitel → Sessions als Zeitleiste. Der Storyteller pflegt, alle lesen.
 // Entwürfe sieht nur der ST (Datenbank-Rechte, nicht nur die Anzeige).
-import { h, toast, guard, head, fmtDate, confirmBtn } from "../lib.js";
+import { h, toast, guard, head, fmtDate, confirmBtn, store } from "../lib.js";
 import { sb, S, go, registerView } from "../core.js";
 
 export const CHRON_STATUS = { draft: "Entwurf", running: "Laufend", done: "Abgeschlossen" };
@@ -145,16 +145,21 @@ function drawDetail(root, id, data, refresh) {
         } }, "Kapitel anlegen")));
   }
 
+  // Reihenfolge der Zeitleiste: neueste zuerst (Standard) oder von Anfang an, zum Nachlesen der Geschichte. Gemerkt je Browser.
+  let asc = store("kbn-timeline") === "asc";
+  const orderToggle = () => h("div", { class: "toggle", role: "group", "aria-label": "Reihenfolge der Zeitleiste", style: "margin-left:auto" },
+    ...[[false, "Neueste zuerst"], [true, "Von Anfang an"]].map(([v, l]) => h("button", { type: "button", "aria-pressed": String(asc === v), onclick: () => { asc = v; store("kbn-timeline", v ? "asc" : null); paint(); } }, l)));
   function paint() {
-    const groups = chapters.map(k => ({ k, list: mine.filter(s => infoOf(s).chapter_id === k.id) }));
-    const loose = mine.filter(s => !chapters.some(k => k.id === infoOf(s).chapter_id));
+    const dir = l => asc ? [...l].reverse() : l;
+    const groups = dir(chapters).map(k => ({ k, list: dir(mine.filter(s => infoOf(s).chapter_id === k.id)) }));
+    const loose = dir(mine.filter(s => !chapters.some(k => k.id === infoOf(s).chapter_id)));
     const unassigned = data.sessions.filter(s => !infoOf(s).chronicle_id);
     const gaps = mine.filter(s => !s.title || !infoOf(s).summary).length;
     const section = (title, list, open, key) => h("details", { class: "panel stack", open: open ? true : null, "data-chapter": key },
       h("summary", { style: "cursor:pointer" }, h("h3", { style: "display:inline" }, title), h("span", { class: "muted" }, "  " + list.length + (list.length === 1 ? " Session" : " Sessions"))),
       h("div", { class: "stack", style: "margin-top:10px" }, ...(list.length ? list.map(sessionCard) : [h("div", { class: "muted" }, "Noch keine Session in diesem Kapitel.")])));
     body.replaceChildren(
-      h("div", { class: "row", style: "align-items:center" }, badge(c.status), h("span", { class: "muted" }, [mine.length + (mine.length === 1 ? " Session" : " Sessions"), chapters.length + " Kapitel", c.started_on ? "seit " + fmtDate(c.started_on) : ""].join(" · "))),
+      h("div", { class: "row", style: "align-items:center" }, badge(c.status), h("span", { class: "muted" }, [mine.length + (mine.length === 1 ? " Session" : " Sessions"), chapters.length + " Kapitel", c.started_on ? "seit " + fmtDate(c.started_on) : ""].join(" · ")), orderToggle()),
       editing ? editForm() : null, managing ? chapterManager() : null,
       ...groups.map((g, n) => section("Kapitel " + g.k.number + (g.k.title ? " · " + g.k.title : ""), g.list, n === 0, g.k.id)),
       loose.length || !chapters.length ? section(chapters.length ? "Ohne Kapitel" : "Sessions", loose, !chapters.length || !groups.some(g => g.list.length), "loose") : null,

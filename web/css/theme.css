@@ -11,7 +11,7 @@
   --paper:#eef1f0; --surface:#f7f9f8; --raised:#ffffff; --ink:#152029; --muted:#596872;
   --line:#d3dbdc; --line2:#97a7ad;
   --sea:#1d4f66; --sea-soft:#dce8ee; --blood:#8c1d2c; --blood-soft:#f4e1e3;
-  --brass:#8a6a2a; --moss:#4c6b55; --plum:#5f4772;
+  --brass:#8a6a2a; --moss:#4c6b55; --mortal:#2f7d46; --plum:#5f4772;
   --teal:#1f7a7a; --rust:#a4501f; --slate:#4a5a8c; --olive:#6b6b1f; --grey:#8a949a;
   --band:#0e1a22; --band-ink:#e4ebed; --band-muted:#8fa2ac;
   --ok:#2f6b45; --warn:#9a6a12; --bad:#a3283a;
@@ -24,7 +24,7 @@
   --paper:#0b1217; --surface:#101a21; --raised:#16222b; --ink:#dfe6e8; --muted:#8c9ba4;
   --line:#22323c; --line2:#4b5f6a;
   --sea:#7fb2c9; --sea-soft:#15303d; --blood:#df7482; --blood-soft:#3a1a21;
-  --brass:#cba45c; --moss:#88ab92; --plum:#ad91c8;
+  --brass:#cba45c; --moss:#88ab92; --mortal:#6fcf8e; --plum:#ad91c8;
   --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
   --band:#060b0f; --band-ink:#e4ebed; --band-muted:#7f929c;
   --ok:#6fbf8a; --warn:#d9a441; --bad:#e2707f; color-scheme:dark }}
@@ -32,7 +32,7 @@
   --paper:#0b1217; --surface:#101a21; --raised:#16222b; --ink:#dfe6e8; --muted:#8c9ba4;
   --line:#22323c; --line2:#4b5f6a;
   --sea:#7fb2c9; --sea-soft:#15303d; --blood:#df7482; --blood-soft:#3a1a21;
-  --brass:#cba45c; --moss:#88ab92; --plum:#ad91c8;
+  --brass:#cba45c; --moss:#88ab92; --mortal:#6fcf8e; --plum:#ad91c8;
   --teal:#5cc2c2; --rust:#e08a55; --slate:#93a5e0; --olive:#bdbd5e; --grey:#6d7880;
   --band:#060b0f; --band-ink:#e4ebed; --band-muted:#7f929c;
   --ok:#6fbf8a; --warn:#d9a441; --bad:#e2707f; color-scheme:dark }
@@ -299,3 +299,67 @@ nav.tabs.more-left.more-right{-webkit-mask-image:linear-gradient(90deg,transpare
 .hit-text{font-size:.92rem;overflow-wrap:anywhere}
 mark{background:var(--sea-soft);color:inherit;padding:0 2px;border-radius:2px}
 .draft-notice{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* ---------- v1.15: Übersicht, Ladebalken ---------- */
+.loadbar{position:absolute;left:0;right:0;bottom:-3px;height:3px;overflow:hidden;pointer-events:none;opacity:0}
+.loadbar.on{opacity:1}
+.loadbar.on::after{content:"";position:absolute;inset:0;width:35%;background:var(--brass);animation:loadbar 1s ease-in-out infinite}
+@keyframes loadbar{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+@media (prefers-reduced-motion:reduce){.loadbar.on::after{animation:none;width:100%}}
+.next-session h3{font-size:1.5rem}
+.todo{display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:8px;align-items:baseline}
+.todo .mono{text-align:right;font-weight:500}
+.feed .item.is-new{background:linear-gradient(90deg,var(--blood-soft),transparent 60%);margin-inline:-8px;padding-inline:8px}
+
+/* ---------- v1.15: Charakterbogen (Porträt, Sprungmarken, Vorteile, XP-Verlauf, Würfel) ---------- */
+.pc-title{display:flex;align-items:center;gap:12px;min-width:0}
+.avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:1px solid var(--line2)}
+.portrait{width:96px;height:96px;border-radius:var(--r);object-fit:cover;border:1px solid var(--line2)}
+.sheet-nav{position:sticky;top:calc(var(--top-h,110px) + 0px);z-index:3;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin-bottom:12px;background:var(--paper);scrollbar-width:none}
+.sheet-nav::-webkit-scrollbar{display:none}
+.sheet-nav .chip{flex:0 0 auto}
+.sheet [data-sec]{scroll-margin-top:calc(var(--top-h,110px) + 64px)}
+.disc.merit{grid-template-columns:minmax(0,1fr) auto auto auto}
+.xplog{display:flex;flex-direction:column}
+.xprow{display:grid;grid-template-columns:6.5em 3.2em minmax(0,1fr) auto;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.xprow:last-child{border-bottom:0}
+.dice-row{display:flex;flex-wrap:wrap;gap:6px}
+.die{display:inline-grid;place-items:center;width:34px;height:34px;border:1.5px solid var(--line2);border-radius:6px;font-family:var(--f-mono);background:var(--raised);opacity:.55}
+.die.hit{opacity:1;border-color:var(--ink);font-weight:500}
+.die.ten{background:var(--ink);color:var(--paper)}
+.die.hunger{border-color:var(--blood);color:var(--blood)}
+.die.hunger.ten{background:var(--blood);color:var(--paper)}
+.die.hunger.one{background:var(--blood-soft);opacity:1;border-style:dashed}
+.die.re{outline:2px dotted var(--brass);outline-offset:2px}
+@media (max-width:600px){.disc.merit{grid-template-columns:minmax(0,1fr) auto}.disc.merit .dots{grid-column:1}}
+
+/* ---------- v1.15: Formatierung in Texten, Meldung mit Knopf ---------- */
+.fmt-h{display:block;font-family:var(--f-display);line-height:1.2;margin:.5em 0 .15em}
+.fmt-h1{font-size:1.45em}.fmt-h2{font-size:1.25em}.fmt-h3{font-size:1.1em}
+.fmt-li{display:block;padding-left:1.2em;text-indent:-1.2em}
+.fmt-li::before{content:"•";display:inline-block;width:1.2em;text-indent:0;color:var(--muted)}
+.fmt-hint{font-size:.8rem}
+.toast.has-action{display:flex;align-items:center;gap:14px}
+.toast-btn{background:none;border:1px solid currentColor;color:inherit;border-radius:var(--r);padding:4px 10px;cursor:pointer;font:inherit;min-height:32px}
+
+/* ---------- v1.15: Karte (Einblendung am Handy, Knotenliste, Bildvorschau) ---------- */
+.map-panel .sheet-close{display:none;align-self:flex-end}
+.node-list{margin-top:10px}
+.node-list summary{color:var(--muted)}
+.doc-thumbs:empty{display:none}
+.doc-thumb{width:84px;height:84px;object-fit:cover;border:1px solid var(--line2);border-radius:var(--r)}
+@media (max-width:900px){
+  .map-panel.sheet-open{position:fixed;left:0;right:0;bottom:0;z-index:8;max-height:58vh;overflow:auto;background:var(--paper);border-top:2px solid var(--line2);padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 32px rgba(0,0,0,.28)}
+  .map-panel.sheet-open .sheet-close{display:inline-flex}
+}
+
+/* ---------- v1.15: Storyteller (Reiter, Spielabend, Szenen ziehen) ---------- */
+.st-tabs button{flex:0 1 auto}
+@media (max-width:600px){.toggle.wrap.st-tabs{grid-template-columns:1fr 1fr}}
+.play-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+@media (max-width:1000px){.play-grid{grid-template-columns:minmax(0,1fr)}}
+.play-char{border-top:1px solid var(--line);padding-top:10px}
+.play-tracks{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;align-items:center;margin-top:6px}
+.grip{cursor:grab;color:var(--muted);margin-right:8px;user-select:none}
+details.panel.drop{outline:2px dashed var(--sea);outline-offset:2px}
+@media (pointer:coarse){.grip{display:none}}

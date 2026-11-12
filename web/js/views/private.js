@@ -1,6 +1,6 @@
 // Kiel by Night · Private Notizen (Spieler schreibt, ST liest mit)
 import { h, guard, head, fmtDate, fmtShort, confirmBtn, bindDraft, revealOnNarrow } from "../lib.js";
-import { sb, S, registerView, setRoute, draftKey } from "../core.js";
+import { sb, S, registerView, setRoute, draftKey, saveChecked, deleteWithUndo } from "../core.js";
 import { richText } from "../wikilinks.js";
 
 registerView("private", async m => {
@@ -29,12 +29,12 @@ async function recordsUI() {
         h("div", { class: "field" }, h("label", { for: "rec-body" }, "Text"), b),
         h("div", { class: "row" },
           h("button", { class: "btn primary", type: "button", onclick: async () => {
-            if (d) await guard(sb.from("private_notes").update({ title: t.value, body: b.value }).eq("id", d.id), "Gespeichert.");
+            if (d) { if (!(await saveChecked("private_notes", d, { title: t.value, body: b.value }, "Gespeichert."))) return; }
             else { const r = await guard(sb.from("private_notes").insert({ title: t.value, body: b.value }).select("id").single(), "Angelegt."); cur = r.id; }
             draft.clear(); edit = false; route(cur ? { id: cur } : null); await load(); draw();
           } }, "Speichern"),
           h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); edit = false; draw(); } }, "Abbrechen"),
-          d ? confirmBtn("Löschen", async () => { await guard(sb.from("private_notes").delete().eq("id", d.id), "Gelöscht."); draft.clear(); cur = null; edit = false; route(null); await load(); draw(); }) : null)));
+          d ? confirmBtn("Löschen", async () => { await deleteWithUndo("private_notes", d, async () => { await load(); draw(); }); draft.clear(); cur = null; edit = false; route(null); await load(); draw(); }) : null)));
     } else if (d) right.replaceChildren(h("div", { class: "article" }, h("h3", {}, d.title || "Ohne Titel"), h("p", { class: "muted" }, "Zuletzt geändert " + fmtDate(d.updated_at)), richText(d.body, { class: "body pre" }),
       h("div", { style: "margin-top:14px" }, h("button", { class: "btn", type: "button", onclick: () => { edit = true; draw(); } }, "Bearbeiten"))));
     else right.replaceChildren(h("div", { class: "empty" }, docs.length ? "Eintrag aus der Liste auswählen." : "Hier ist noch nichts."));

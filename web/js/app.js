@@ -16,9 +16,11 @@ import "./views/docs.js";
 import "./views/search.js";
 import "./views/manual.js";
 import "./views/storyteller.js";
+import "./views/play.js";
+import { ST_VIEWS } from "./views/sttabs.js";
 
 const NAV = [["start", "Übersicht"], ["chars", "Charaktere"], ["chronicles", "Chroniken"], ["sessions", "Sessions"], ["map", "Spielerkarte"], ["wiki", "Wiki"], ["docs", "Dokumente"], ["search", "Suche"], ["manual", "Anleitung"]];
-const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "search", "manual", "private", "st"]);
+const VALID = new Set(["start", "chars", "chronicles", "sessions", "scenes", "map", "wiki", "docs", "search", "manual", "private", "st", "play"]);
 
 // Supabase Auth braucht eine E-Mail als Kennung. Die Gruppe meldet sich mit einem Benutzernamen an, intern wird
 // daraus name@kbn.invalid (".invalid" kann nie eine echte Adresse sein, es werden keine Mails verschickt).
@@ -36,10 +38,9 @@ function renderNav() {
   closeWhoMenu();
   if (!S.user) { document.title = "Kiel by Night"; return; }
   const items = [...NAV];
-  if (S.isST) items.splice(4, 0, ["scenes", "Szenen"]); // Szenenvorrat, nur Storyteller
   if (!S.isST) items.push(["private", "Privat"]);
   for (const [v, l] of items) nav.append(h("button", { type: "button", "aria-current": S.view === v ? "page" : null, onclick: () => go(v) }, l));
-  if (S.isST) nav.append(h("button", { type: "button", class: "st", "aria-current": S.view === "st" ? "page" : null, onclick: () => go("st") }, "Storyteller"));
+  if (S.isST) nav.append(h("button", { type: "button", class: "st", "aria-current": ST_VIEWS.has(S.view) ? "page" : null, onclick: () => go("st") }, "Storyteller")); // Szenen und Spielabend gehören zum Storyteller-Bereich
   // Am Handy scrollt die Reiterleiste seitlich: den aktuellen Reiter in die Mitte holen, Ränder mit Verlauf zeigen, dass es weitergeht
   const cur = nav.querySelector('[aria-current="page"]');
   if (cur) { nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; document.title = cur.textContent + " · Kiel by Night"; }
@@ -163,6 +164,12 @@ async function enterInner(user) {
   catch (e) { renderLogin("Daten konnten nicht geladen werden: " + errMsg(e)); return; }
   if (!S.profiles.has(user.id)) { renderLogin("Für dieses Konto gibt es kein Profil. Der Storyteller muss es anlegen."); return; }
   started = true;
+  // Besuch: Liegt die letzte Aktivität mehr als 30 Minuten zurück, beginnt ein neuer Besuch und ihr Zeitpunkt wird zur Marke
+  // für "Neu seit deinem letzten Besuch" (je Konto, nur in diesem Browser).
+  const seenKey = "kbn-seen:" + user.id, prevKey = "kbn-seen-prev:" + user.id, seen = store(seenKey), nowIso = new Date().toISOString();
+  if (seen && Date.now() - Date.parse(seen) > 30 * 60000) store(prevKey, seen);
+  store(seenKey, nowIso);
+  S.lastVisit = store(prevKey) || null;
   renderWho();
   const r = parseHash(location.hash);
   if (VALID.has(r.view)) go(r.view, r.arg, { replace: true }); else go("start", null, { replace: true });

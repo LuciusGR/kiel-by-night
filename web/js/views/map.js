@@ -1,18 +1,20 @@
 // Kiel by Night · Kartenansicht (gemeinsam für Spielerkarte und ST-Karte)
 // Backlog umgesetzt: A1 schneller Zoom · A2 Positionen dauerhaft (inkl. Erstanordnung) · A4 gleich große Knoten
 //                    A5 Form je Sekte (nur ST-Karte, sonst Kreis) · A7 unterscheidbare Farben
-import { h, toast, tok, themeListeners, confirmBtn, splitTags, revealOnNarrow } from "../lib.js";
+import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
 // ---------- A7: Farben je Typ ----------
 const TYPE_TOK = {
-  Kindred: "--blood", Ghoul: "--brass", Sterblicher: "--sea", Kine: "--sea",
-  Wight: "--plum", Geist: "--teal", Werwolf: "--rust",
-  Ort: "--moss", Organisation: "--slate", Gegenstand: "--olive",
+  // Sterbliche sind grün (eigener Ton --mortal): Im Stil Rulebook ist --sea karmesinrot und war von Kindred kaum zu unterscheiden.
+  // Orte sind deshalb blau statt graugrün, Organisationen violett.
+  Kindred: "--blood", Ghoul: "--brass", Sterblicher: "--mortal", Kine: "--mortal",
+  Wight: "--rust", Geist: "--teal", Werwolf: "--rust",
+  Ort: "--slate", Organisation: "--plum", Gegenstand: "--olive",
   "Ohne NPC-Eintrag": "--grey",
 };
-const FALLBACK_TOK = ["--moss", "--plum", "--teal", "--rust", "--slate", "--olive"];
+const FALLBACK_TOK = ["--moss", "--teal", "--rust", "--olive", "--grey"]; // ohne die Töne der festen Typen Sterblicher, Ort, Organisation
 // A3: alte Schreibweise abfangen
 export const normType = t => (t === "Ghul" ? "Ghoul" : (t || ""));
 export function typeColor(t) {
@@ -98,10 +100,12 @@ export function MapView(root, src) {
   const chips = h("div", { class: "chips" });
   const tools = h("div", { class: "map-tools" }, search, chips);
   const canvas = h("div", { class: "map-canvas" }, h("div", { class: "state" }, "Karte wird geladen …"));
-  const panel = h("aside", { class: "map-panel" });
+  const panel = h("aside", { class: "map-panel no-swipe" });
+  // Alle Knoten als Liste: Weg für Tastatur und Screenreader, die die gezeichnete Karte nicht bedienen können
+  const nodeList = h("details", { class: "node-list" });
   const actions = h("div", { class: "row", style: "margin-bottom:10px" });
   const status = h("span", { class: "muted", style: "font-size:.86rem" });
-  root.append(...[actions, src.legend ? shapeLegend() : null, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas), panel)].filter(Boolean));
+  root.append(...[actions, src.legend ? shapeLegend() : null, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas, nodeList), panel)].filter(Boolean));
 
   // Zwei Modi für bearbeitbare Karten: Ansicht (Standard) sperrt Anlegen, Bearbeiten, Löschen, Verschieben und Neu anordnen.
   let mode = "view";
@@ -189,8 +193,8 @@ export function MapView(root, src) {
       const placed = cy.nodes().filter(n => !!positions[n.id()]).length;
       if (placed < cy.nodes().length * 0.6) relayout(false, true);      // Erstanordnung wird gespeichert
       else { const fresh = placeMissing(); cy.fit(undefined, 30); capZoom(); if (fresh.length) queuePos(fresh); }
-      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); revealOnNarrow(panel, 900, "nearest"); });
-      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); revealOnNarrow(panel, 900, "nearest"); });
+      cy.on("tap", "node", ev => { sel = { kind: "node", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
+      cy.on("tap", "edge", ev => { sel = { kind: "edge", id: ev.target.id() }; editing = null; resultsOn = false; highlight(); drawPanel(); });
       cy.on("tap", ev => { if (ev.target === cy) { sel = null; resultsOn = false; highlight(); drawPanel(); } });
       cy.on("dragfree", "node", ev => { const n = ev.target; queuePos([[n.id(), n.position("x"), n.position("y")]]); });
     } else {
@@ -238,6 +242,7 @@ export function MapView(root, src) {
   function drawChips() {
     const types = [...new Set([...nodes.values()].map(n => normType(n.type)))].sort((a, b) => a.localeCompare(b, "de"));
     const cats = [...new Set([...nodes.values()].map(n => n.cat).filter(Boolean))];
+    drawNodeList();
     chips.replaceChildren(
       ...types.map(t => h("button", { type: "button", class: "chip", "aria-pressed": String(!hidden.has(t)), onclick: () => { hidden.has(t) ? hidden.delete(t) : hidden.add(t); applyFilter(); drawChips(); } }, h("span", { class: "dot", style: "background:" + typeColor(t) }), t || "ohne Typ")),
       ...cats.map(c => h("button", { type: "button", class: "chip", "aria-pressed": String(!hiddenCat.has(c)), onclick: () => { hiddenCat.has(c) ? hiddenCat.delete(c) : hiddenCat.add(c); applyFilter(); drawChips(); } }, c)));
@@ -287,7 +292,8 @@ export function MapView(root, src) {
     const btns = h("div", { class: "row" });
     if (src.editable && mode === "edit") btns.append(
       h("button", { class: "btn small", type: "button", onclick: () => { editing = { kind: "node", data: { id, ...n } }; drawPanel(); } }, "Bearbeiten"),
-      confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); }));
+      !src.canDeleteNode || src.canDeleteNode(n) ? confirmBtn("Löschen", async () => { await src.deleteNode(id); sel = null; await afterWrite(); })
+        : h("span", { class: "muted", style: "font-size:.86rem", "data-nodelete": "1" }, "Spielercharaktere löscht nur der Storyteller."));
     if (src.nodeExtras) btns.append(...src.nodeExtras(n, id, nodes, { edit: !!src.editable && mode === "edit" }));
     out.push(btns);
     return out;
@@ -307,8 +313,18 @@ export function MapView(root, src) {
     return box;
   }
 
+  function drawNodeList() {
+    const list = [...nodes].sort((a, b) => String(a[1].label || "").localeCompare(String(b[1].label || ""), "de"));
+    nodeList.replaceChildren(h("summary", { style: "cursor:pointer" }, "Alle Knoten als Liste (" + list.length + ")"),
+      h("div", { class: "list", style: "margin-top:8px;max-height:320px;overflow:auto" }, ...list.map(([id, n]) => h("button", { type: "button", "data-node": id, onclick: () => selectNode(id) }, h("span", {}, n.label || "?"), h("span", { class: "muted" }, normType(n.type) || "ohne Typ")))));
+  }
+  // Am Handy (einspaltig) erscheint das Detailfeld als Einblendung am unteren Rand über der Karte, mit "Schließen"
+  const closeSheet = () => { sel = null; editing = null; resultsOn = false; if (cy) cy.elements().unselect(); highlight(); drawPanel(); };
   function drawPanel() {
     panel.replaceChildren();
+    const open = !!(editing || sel || (resultsOn && search.value.trim()));
+    panel.classList.toggle("sheet-open", open);
+    if (open) panel.append(h("button", { class: "btn small sheet-close", type: "button", onclick: closeSheet }, "Schließen"));
     if (editing) { panel.append(editing.kind === "node" ? nodeForm(editing.data) : edgeForm(editing.data)); return; }
     if (resultsOn && search.value.trim()) { panel.append(resultsView()); return; }
     if (!sel) { panel.append(h("div", { class: "panel" }, h("p", { class: "muted" }, "Knoten oder Verbindung antippen, um Details zu sehen. Die Suche zeigt alle Treffer als Liste."))); return; }

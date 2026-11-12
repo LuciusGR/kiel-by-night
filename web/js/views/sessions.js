@@ -1,6 +1,6 @@
 // Kiel by Night · Session-Notizen: eine Seite pro Session, jede Person schreibt ihren eigenen Abschnitt
 import { h, toast, guard, head, fmtDate, confirmBtn, drafts, bindDraft } from "../lib.js";
-import { sb, S, registerView, setRoute, draftKey, authorName, personName } from "../core.js";
+import { sb, S, registerView, setRoute, draftKey, authorName, personName, saveChecked, deleteWithUndo } from "../core.js";
 import { richText } from "../wikilinks.js";
 import { sceneBlock, resetNpcCache } from "./scenes.js";
 
@@ -57,17 +57,17 @@ registerView("sessions", async m => {
       foreign ? h("div", { class: "notice" }, "Du bearbeitest als Storyteller den Abschnitt von " + authorName(n.author_id) + " (" + personName(n.author_id) + ").") : null,
       draft.notice,
       h("div", { class: "row" }, h("div", { class: "field", style: "flex:0 1 120px" }, h("label", { for: "note-session" }, "Session Nr."), sn)),
-      h("div", { class: "field" }, h("label", { for: "note-body" }, "Notiz"), ta),
+      h("div", { class: "field" }, h("label", { for: "note-body" }, "Notiz"), ta, h("span", { class: "muted fmt-hint" }, "Formatierung: **fett**, *kursiv*, [[Wiki-Seite]], Zeilenanfang „# “ für eine Zwischenüberschrift, „- “ für einen Aufzählungspunkt.")),
       h("div", { class: "row" },
         h("button", { class: "btn primary", type: "button", onclick: async () => {
           const session_number = Number(sn.value);
           if (!Number.isInteger(session_number) || session_number < 1) { toast("Bitte eine Session-Nummer eintragen.", true); return; }
-          if (n.id) await guard(sb.from("session_notes").update({ session_number, body: ta.value }).eq("id", n.id), "Gespeichert.");
+          if (n.id) { if (!(await saveChecked("session_notes", n, { session_number, body: ta.value }, "Gespeichert."))) return; }
           else await guard(sb.from("session_notes").insert({ session_number, body: ta.value }), "Notiz angelegt.");
           draft.clear(); editing = null; cur = session_number; await load(); draw();
         } }, "Speichern"),
         h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); editing = null; draw(); } }, "Abbrechen"),
-        n.id ? confirmBtn("Löschen", async () => { await guard(sb.from("session_notes").delete().eq("id", n.id), "Gelöscht."); draft.clear(); editing = null; await load(); draw(); }) : null));
+        n.id ? confirmBtn("Löschen", async () => { await deleteWithUndo("session_notes", n, async () => { await load(); draw(); }); draft.clear(); editing = null; await load(); draw(); }) : null));
   }
 
   function metaEditor(num) {
@@ -157,6 +157,7 @@ registerView("sessions", async m => {
       h("strong", {}, "Session " + num + (md.title ? " · " + md.title : "")),
       h("span", { class: "muted" }, [md.play_date ? fmtDate(md.play_date) : "", i.summary ? "mit Zusammenfassung" : ""].filter(Boolean).join(" · ")),
       badge,
+      S.isST && !i.summary && (c > 0 || (md.play_date && md.play_date <= new Date().toISOString().slice(0, 10))) ? h("span", { class: "badge st", "data-nosummary": "1", title: "Nur du siehst diesen Hinweis" }, "Zusammenfassung fehlt") : null,
       h("span", { class: "muted mono", style: "margin-left:auto" }, c + (c === 1 ? " Notiz" : " Notizen"))), body);
     if (num === cur) body.append(...sessionBody(num).filter(Boolean));
     badgePainters.push(paintBadge);

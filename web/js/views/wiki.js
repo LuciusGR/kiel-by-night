@@ -1,8 +1,8 @@
 // Kiel by Night · Wiki: Kategorien, Tags, Verweise per [[Seitentitel]]
 // Alle legen Kategorien an, nur der ST benennt um oder löscht. "ST-Notizen" (st_only) sieht nur der ST (RLS).
 import { h, toast, guard, head, fmtDate, confirmBtn, splitTags, bindDraft, revealOnNarrow } from "../lib.js";
-import { sb, S, registerView, setRoute, draftKey, authorName } from "../core.js";
-import { forgetWikiTitles } from "../wikilinks.js";
+import { sb, S, registerView, setRoute, draftKey, authorName, saveChecked, deleteWithUndo } from "../core.js";
+import { forgetWikiTitles, formatInto } from "../wikilinks.js";
 
 registerView("wiki", async m => {
   const route = (arg, push) => setRoute(arg, push, "wiki");
@@ -26,16 +26,9 @@ registerView("wiki", async m => {
   const byTitle = t => pages.find(p => p.title.toLowerCase() === t.toLowerCase());
 
   function body(text) {
-    const out = h("div", { class: "body pre" }); const re = /\[\[([^\]]+)\]\]/g; let i = 0, mm;
-    text = text || "";
-    while ((mm = re.exec(text))) {
-      out.append(text.slice(i, mm.index));
-      const t = mm[1].trim(), p = byTitle(t);
-      out.append(p ? h("button", { class: "wlink", type: "button", onclick: () => openPage(p.id) }, t)
-        : h("span", { class: "wlink missing", title: "Seite existiert noch nicht" }, t));
-      i = re.lastIndex;
-    }
-    out.append(text.slice(i));
+    const out = h("div", { class: "body pre" });
+    formatInto(out, text, t => { const p = byTitle(t);
+      return p ? h("button", { class: "wlink", type: "button", onclick: () => openPage(p.id) }, t) : h("span", { class: "wlink missing", title: "Seite existiert noch nicht" }, t); });
     return out;
   }
 
@@ -107,19 +100,19 @@ registerView("wiki", async m => {
       h("div", { class: "field" }, h("label", { for: "wp-title" }, "Titel"), t),
       h("div", { class: "field" }, h("label", { for: "wp-cat" }, "Kategorie"), cs),
       h("div", { class: "field" }, h("label", { for: "wp-tags" }, "Tags"), tg),
-      h("div", { class: "field" }, h("label", { for: "wp-body" }, "Text"), b),
+      h("div", { class: "field" }, h("label", { for: "wp-body" }, "Text"), b, h("span", { class: "muted fmt-hint" }, "Formatierung: **fett**, *kursiv*, [[Seitentitel]], Zeilenanfang „# “ für eine Zwischenüberschrift, „- “ für einen Aufzählungspunkt.")),
       S.isST ? h("label", { class: "row", style: "align-items:center;gap:8px" }, hid, "Nur für den ST sichtbar (Spieler sehen die Seite nicht)") : null,
       h("div", { class: "row" },
         h("button", { class: "btn primary", type: "button", onclick: async () => {
           if (!t.value.trim()) { toast("Bitte einen Titel eintragen.", true); return; }
           const data = { title: t.value.trim(), tags: splitTags(tg.value), body: b.value, category_id: cs.value };
           if (S.isST) data.st_only = hid.checked;
-          if (p) await guard(sb.from("wiki_pages").update(data).eq("id", p.id), "Gespeichert.");
+          if (p) { if (!(await saveChecked("wiki_pages", p, data, "Gespeichert."))) return; }
           else { const r = await guard(sb.from("wiki_pages").insert({ ...data, created_by: S.user.id, updated_by: S.user.id }).select("id").single(), "Seite angelegt."); cur = r.id; }
           draft.clear(); cat = cs.value; edit = false; route(cur ? { page: cur } : null); await load(); draw();
         } }, "Speichern"),
         h("button", { class: "btn", type: "button", onclick: () => { draft.clear(); edit = false; draw(); } }, "Abbrechen"),
-        p && (S.isST || p.created_by === S.user.id) ? confirmBtn("Löschen", async () => { await guard(sb.from("wiki_pages").delete().eq("id", p.id), "Gelöscht."); draft.clear(); cur = null; edit = false; route(null); await load(); draw(); }) : null));
+        p && (S.isST || p.created_by === S.user.id) ? confirmBtn("Löschen", async () => { await deleteWithUndo("wiki_pages", p, async () => { await load(); draw(); }); draft.clear(); cur = null; edit = false; route(null); await load(); draw(); }) : null));
   }
 
   await load();

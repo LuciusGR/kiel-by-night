@@ -162,6 +162,12 @@ export function sceneBoard(opts) {
     for (let k = 0; k < order.length; k++) if (order[k].position !== k + 1) await guard(sb.from("scenes").update({ position: k + 1 }).eq("id", order[k].id));
     await refresh();
   }
+  let dragId = null;
+  async function reorder(list, from, to) {
+    const order = list.slice(); const [x] = order.splice(from, 1); order.splice(to, 0, x);
+    for (let k = 0; k < order.length; k++) if (order[k].position !== k + 1) await guard(sb.from("scenes").update({ position: k + 1 }).eq("id", order[k].id));
+    await refresh();
+  }
   // Szene einer Session zuordnen, in eine andere verschieben oder in den Vorrat zurücklegen
   async function relocate(sc, target) {
     if ((sc.session_number ?? null) === target) { toast("Die Szene liegt dort schon."); return; }
@@ -194,13 +200,14 @@ export function sceneBoard(opts) {
     const kv = [["Ort", sc.place], ["Stimmung", sc.mood], ["Ziel", sc.goal], ["Gegenspieler", sc.antagonist]].filter(([, v]) => v);
     const arrows = opts.mode !== "all" && opts.mode !== "assigned" && !query;
     const body = h("div", { class: "stack", style: "margin-top:10px" },
+      // Fäden stehen oben: am Tisch zählt zuerst, woran die Szene hängt
+      sc.threads.length ? h("div", { class: "chips", "data-threads-top": "1" }, h("span", { class: "eyebrow", style: "align-self:center" }, "Fäden"), ...sc.threads.map(t => h("span", { class: "badge st" }, t))) : null,
       kv.length ? h("dl", { class: "kv" }, ...kv.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])) : null,
       sc.npcs.length ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"),
         h("div", { class: "conn" }, ...sc.npcs.map(n => h("div", { class: "c" }, npcChip(n), n.motivation ? h("div", { class: "muted" }, n.motivation) : null)))) : null,
       sc.outcomes.length ? h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "Mögliche Ausgänge"), h("ul", { style: "margin:0;padding-left:20px" }, ...sc.outcomes.map(o => h("li", {}, o)))) : null,
       sc.body ? h("div", { class: "pre" }, sc.body) : null,
       sc.details ? h("details", {}, h("summary", { class: "muted", style: "cursor:pointer" }, "Weitere Details und Infos"), h("div", { class: "pre", style: "margin-top:6px" }, sc.details)) : null,
-      sc.threads.length ? h("div", { class: "chips" }, ...sc.threads.map(t => h("span", { class: "badge st" }, t))) : null,
       moveRow(sc),
       h("div", { class: "row" },
         h("div", { class: "toggle wrap", role: "group", "aria-label": "Status der Szene" }, ...Object.entries(STATUS).map(([k, l]) => h("button", { type: "button", "aria-pressed": String(sc.status === k), onclick: () => setStatus(sc, k) }, l))),
@@ -208,9 +215,19 @@ export function sceneBoard(opts) {
         arrows ? h("button", { class: "btn small", type: "button", "aria-label": "Szene nach unten", disabled: i === list.length - 1, onclick: () => move(list, i, 1) }, "↓") : null,
         h("button", { class: "btn small", type: "button", onclick: () => { editing = sc; draw(); } }, "Bearbeiten"),
         confirmBtn("Löschen", async () => { await guard(sb.from("scenes").delete().eq("id", sc.id), "Gelöscht."); await refresh(); })));
-    return h("details", { class: "panel", open: list.length === 1 ? true : null, "data-scene": sc.id },
-      h("summary", { style: "cursor:pointer" }, h("strong", {}, (sessionView ? (i + 1) + ". " : "") + sc.title), " ", h("span", { class: sc.status === "open" ? "badge" : "badge st" }, STATUS[sc.status]),
+    // Reihenfolge per Ziehen am Griff (Maus). Die Pfeile bleiben für Tastatur und Handy.
+    const grip = arrows && list.length > 1 ? h("span", { class: "grip", draggable: "true", title: "Ziehen, um die Reihenfolge zu ändern", "aria-hidden": "true",
+      ondragstart: ev => { ev.dataTransfer.setData("text/plain", "kbn-scene:" + sc.id); ev.dataTransfer.effectAllowed = "move"; dragId = sc.id; } }, "⠿") : null;
+    const det = h("details", { class: "panel", open: list.length === 1 ? true : null, "data-scene": sc.id });
+    if (arrows) {
+      det.addEventListener("dragover", ev => { if (dragId && dragId !== sc.id) { ev.preventDefault(); det.classList.add("drop"); } });
+      det.addEventListener("dragleave", () => det.classList.remove("drop"));
+      det.addEventListener("drop", async ev => { ev.preventDefault(); det.classList.remove("drop"); const from = list.findIndex(x => x.id === dragId); dragId = null; if (from >= 0 && from !== i) await reorder(list, from, i); });
+    }
+    det.append(
+      h("summary", { style: "cursor:pointer" }, grip, h("strong", {}, (sessionView ? (i + 1) + ". " : "") + sc.title), " ", h("span", { class: sc.status === "open" ? "badge" : "badge st" }, STATUS[sc.status]),
         !sessionView && sc.session_number != null ? h("span", { class: "badge" }, "Session " + sc.session_number) : null, sc.chronicle_id && chronTitle(sc.chronicle_id) ? h("span", { class: "badge st" }, chronTitle(sc.chronicle_id)) : null, sc.place ? h("span", { class: "muted" }, " · " + sc.place) : null), body);
+    return det;
   }
 
   // ---------- Bearbeiten / Neu ----------
@@ -222,18 +239,26 @@ export function sceneBoard(opts) {
     const addRow = (n = {}) => {
       const name = h("input", { type: "text", "aria-label": "NPC-Name", value: n.name || "", placeholder: "Name" }), mot = h("input", { type: "text", "aria-label": "Motivation", value: n.motivation || "", placeholder: "Motivation in dieser Szene" });
       const r = { name, mot, notion_id: n.notion_id || "", el: null };
-      r.el = h("div", { class: "row" }, h("div", { class: "field" }, name), h("div", { class: "field", style: "flex:2 1 220px" }, mot), h("button", { class: "btn small", type: "button", "aria-label": "NPC entfernen", onclick: () => { rows.splice(rows.indexOf(r), 1); r.el.remove(); } }, "×"));
+      r.el = h("div", { class: "row" }, h("div", { class: "field" }, name), h("div", { class: "field", style: "flex:2 1 220px" }, mot), h("button", { class: "btn small", type: "button", "aria-label": "NPC entfernen", onclick: () => { rows.splice(rows.indexOf(r), 1); r.el.remove(); npcRows.dispatchEvent(new Event("input")); } }, "×"));
       rows.push(r); npcRows.append(r.el);
     };
     (sc.npcs || []).forEach(addRow);
+    // NPC-Zeilen als ein Feld für den Entwurf: Wert ist die Liste als JSON, Änderungen melden die Eingaben in den Zeilen
+    F["sc-npcs"] = {
+      get value() { return JSON.stringify(rows.map(r => [r.name.value, r.mot.value, r.notion_id])); },
+      set value(v) { try { const a = JSON.parse(v); rows.splice(0).forEach(r => r.el.remove()); a.forEach(([name, motivation, notion_id]) => addRow({ name, motivation, notion_id })); } catch (_) {} },
+      get isConnected() { return npcRows.isConnected; },
+      addEventListener: (t, fn) => npcRows.addEventListener(t, fn),
+    };
+    const npcChanged = () => npcRows.dispatchEvent(new Event("input"));
     const get = id => document.getElementById(id).value;
     const head3 = h("h3", {}, sc.id ? "Szene bearbeiten" : "Neue Szene");
-    // Entwurf sichert die Textfelder (ohne NPC-Zeilen und Chronik-Auswahl); der Hinweis wird nach dem Aufbau eingesetzt
+    // Entwurf sichert die Textfelder und die NPC-Zeilen (ohne Chronik-Auswahl); der Hinweis wird nach dem Aufbau eingesetzt
     let draft = { clear() {} };
     queueMicrotask(() => { draft = bindDraft(draftKey("scene", sc.id || "new:" + (home == null ? "pool" : home)), F); if (draft.notice) head3.after(draft.notice); });
     return h("div", { class: "panel stack" }, head3,
       f("sc-title", "Titel", sc.title), h("div", { class: "field" }, h("label", { for: "sc-chron" }, "Chronik"), chronSelect("sc-chron", sc.id ? sc.chronicle_id : defaultChron())), f("sc-place", "Ort", sc.place), f("sc-mood", "Grundstimmung", sc.mood), f("sc-goal", "Ziel", sc.goal), f("sc-ant", "Gegenspieler", sc.antagonist),
-      h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"), npcRows, h("button", { class: "btn small", type: "button", style: "margin-top:8px", onclick: () => addRow() }, "NPC hinzufügen")),
+      h("div", {}, h("h4", { class: "eyebrow", style: "margin:0 0 6px" }, "NPCs und Motivation"), npcRows, h("button", { class: "btn small", type: "button", style: "margin-top:8px", onclick: () => { addRow(); npcChanged(); } }, "NPC hinzufügen")),
       f("sc-out", "Mögliche Ausgänge (eine Zeile je Ausgang)", (sc.outcomes || []).join("\n"), "ta"), f("sc-thr", "Fäden (durch Komma getrennt)", (sc.threads || []).join(", ")),
       f("sc-body", "Ablauf", sc.body, "ta"), f("sc-det", "Weitere Details und Infos", sc.details, "ta"),
       h("div", { class: "row" },

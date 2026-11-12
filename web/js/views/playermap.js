@@ -20,6 +20,8 @@ export async function loadPositions(scope) {
 export function playerMapSource() {
   return {
     editable: true, focus: (S.arg && S.arg.focus) || null, legend: true, sects: true, exportName: "spielerkarte",
+    // Knoten von Spielercharakteren löscht nur der Storyteller (Anzeige hier, Recht in der Datenbank ab Migration v1_16)
+    canDeleteNode: n => !n.pc || S.isST,
     // Dokumente am Knoten: Liste für alle, Verknüpfen und Lösen nur im Modus Bearbeitung
     nodeExtras: (n, id, nodes, o) => [docLinksBox("player", id, n.label, !!(o && o.edit))],
     async load() {

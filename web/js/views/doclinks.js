@@ -2,11 +2,12 @@
 // scope "player": node_key = Knoten-ID der Spielerkarte. scope "st": node_key = Notion-ID des NPC (nur Storyteller).
 import { h, toast, guard } from "../lib.js";
 import { sb, go } from "../core.js";
+import { portraitImg } from "./characters.js";
 
 export function docLinksBox(scope, key, label, canEdit) {
   const box = h("div", { class: "stack", style: "width:100%", "data-doclinks": scope });
   async function draw() {
-    const [l, d] = await Promise.all([sb.from("document_links").select("*").eq("scope", scope).eq("node_key", key), sb.from("documents").select("id, title, draft")]);
+    const [l, d] = await Promise.all([sb.from("document_links").select("*").eq("scope", scope).eq("node_key", key), sb.from("documents").select("id, title, draft, storage_path, content_type")]);
     if (l.error || d.error) { box.replaceChildren(); return; }
     const docs = new Map(d.data.map(x => [x.id, x]));
     const linked = l.data.filter(x => docs.has(x.document_id)).sort((a, b) => docs.get(a.document_id).title.localeCompare(docs.get(b.document_id).title, "de"));
@@ -14,6 +15,8 @@ export function docLinksBox(scope, key, label, canEdit) {
     const sel = h("select", { "aria-label": "Dokument verknüpfen" }, h("option", { value: "" }, "Dokument wählen …"), ...free.map(x => h("option", { value: x.id }, x.title + (x.draft ? " (Entwurf)" : ""))));
     box.replaceChildren(
       linked.length || canEdit ? h("h4", { class: "eyebrow", style: "margin:0" }, "Dokumente (" + linked.length + ")") : null,
+      // Bilder unter den verknüpften Dokumenten erscheinen als Vorschau (z. B. ein Porträt der Person oder ein Foto des Ortes)
+      h("div", { class: "row doc-thumbs" }, ...linked.map(x => docs.get(x.document_id)).filter(d => /^image\//.test(d.content_type || "")).map(d => portraitImg({ path: d.storage_path }, "doc-thumb"))),
       ...linked.map(x => { const t = docs.get(x.document_id).title; return h("div", { class: "conn" }, h("div", { class: "c" },
         h("button", { class: "linkbtn", type: "button", title: "Im Bereich Dokumente zeigen", onclick: () => go("docs", { focus: x.document_id }) }, t),
         canEdit ? h("button", { class: "btn small", type: "button", style: "margin-left:8px", "aria-label": "Verknüpfung lösen: " + t, onclick: async () => { await guard(sb.from("document_links").delete().eq("id", x.id), "Verknüpfung gelöst."); await draw(); } }, "×") : null)); }),
