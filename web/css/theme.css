@@ -363,3 +363,13 @@ mark{background:var(--sea-soft);color:inherit;padding:0 2px;border-radius:2px}
 .grip{cursor:grab;color:var(--muted);margin-right:8px;user-select:none}
 details.panel.drop{outline:2px dashed var(--sea);outline-offset:2px}
 @media (pointer:coarse){.grip{display:none}}
+
+/* ---------- v1.15.1: Abschnitte einer Session aufklappbar ---------- */
+details.entry>summary{cursor:pointer;list-style:none;align-items:baseline}
+details.entry>summary::-webkit-details-marker{display:none}
+details.entry>summary::before{content:"▸";color:var(--muted);width:1em;flex:0 0 auto}
+details.entry[open]>summary::before{content:"▾"}
+.entry-preview{flex:1 1 100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:calc(1em + 8px)}
+details.entry[open] .entry-preview{display:none}
+.entry-body{padding-left:calc(1em + 8px)}
+@media (max-width:600px){.entry-body{padding-left:0}.entry-preview{padding-left:0}}

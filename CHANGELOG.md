@@ -3,6 +3,11 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.16.0 – 12.11.2026
+- **Sessions, Sprung behoben:** Wer am Handy eine Session öffnete, landete am Ende ihres Eintrags. Ursache: Die zuvor offene Session darüber klappt zu, der Inhalt rutscht nach oben. Jetzt springt die Seite an den Anfang der geöffneten Session, direkt unter die Kopfzeile.
+- **Abschnitte aufklappbar:** Die Notizen der einzelnen Personen innerhalb einer Session sind eigene aufklappbare Zeilen und anfangs zu. Die Zeile zeigt Autor, Datum und den Anfang des Textes, „Bearbeiten“ steht im aufgeklappten Abschnitt. Ein bearbeiteter Abschnitt bleibt nach dem Speichern offen. Gilt auch für „Nur meine“.
+- **Tests:** Browser 210 Fälle (neu U291 und U292). Die älteren Fälle klappen die Abschnitte über den Test-Harness automatisch auf (`openApp` ohne `entries`). Keine Migration.
+
 ## 1.15.0 – 12.11.2026
 Zweite Runde nach der Durchsicht: alles, was zur Bestnote fehlte und sich ohne die Gruppe bauen ließ. **Eine Migration** (`20261112120000_guards_history_v1_15.sql`). Die Seite läuft auch ohne sie, dann fehlen Wiki-Verlauf, Live-Aktualisierung und der Schutz der Spielercharakter-Knoten in der Datenbank.
 - **Übersicht:** nächste Session mit Wochentag und Countdown, „Neu seit deinem letzten Besuch“ mit Schild und „Als gelesen markieren“, für den ST „Offene Punkte“ (fehlende Zusammenfassungen, Titel, Chronik, offene Szenen, Vorrat).

@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 12.11.2026 · gilt für Website-Version 1.15.0
+Stand: 12.11.2026 · gilt für Website-Version 1.16.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -74,7 +74,8 @@ Weitere Teile des Bogens:
 
 ## 5. Sessions
 
-- Jede Session ist eine **aufklappbare Zeile** in der Liste (neueste oben). Ein Klick auf die Zeile zeigt ihren Inhalt direkt darunter, ein zweiter Klick schließt sie. Es ist immer höchstens eine Session offen, die Liste bleibt also auch bei vielen Sessions kurz. Beim Öffnen der Seite ist die neueste Session aufgeklappt. In der Zeile stehen Titel, Spieldatum, ob eine Zusammenfassung vorliegt und die Zahl der Notizen. **Jede Person schreibt ihren eigenen Abschnitt**, alle können mitlesen. Der eigene Abschnitt steht oben.
+- Jede Session ist eine **aufklappbare Zeile** in der Liste (neueste oben). Ein Klick auf die Zeile zeigt ihren Inhalt direkt darunter, ein zweiter Klick schließt sie. Es ist immer höchstens eine Session offen, die Liste bleibt also auch bei vielen Sessions kurz. Beim Öffnen der Seite ist die neueste Session aufgeklappt. In der Zeile stehen Titel, Spieldatum, ob eine Zusammenfassung vorliegt und die Zahl der Notizen. **Jede Person schreibt ihren eigenen Abschnitt**, alle können mitlesen. Der eigene Abschnitt steht oben. Öffnest du eine Session, springt die Seite an ihren Anfang.
+- **Abschnitte aufklappen:** In einer geöffneten Session ist jeder Abschnitt eine eigene Zeile mit Autor, Datum und dem Anfang des Textes. Ein Klick klappt den Abschnitt auf, ein zweiter wieder zu. Anfangs sind alle zu, so bleibt auch eine Session mit langen Notizen übersichtlich. „Bearbeiten“ steht im aufgeklappten Abschnitt.
 - **Neue Notiz:** Session-Nummer und Text eingeben, „Speichern“. Mit „Eigenen Abschnitt schreiben“ legst du einen Abschnitt in der geöffneten Session an. Hast du dort schon einen, heißt der Knopf „Weiteren Abschnitt schreiben“.
 - **Entwurf:** Ungespeicherter Text geht nicht verloren. Verlässt du den Editor (andere Session, anderer Bereich, Neuladen), bleibt der Text in diesem Browser liegen. Die Session zeigt dann das Schild „Entwurf“, der Knopf heißt „Entwurf fortsetzen“. Beim Öffnen steht der Text wieder da, mit Datum und dem Knopf „Entwurf verwerfen“. Nach „Speichern“ oder „Abbrechen“ ist der Entwurf weg. Der Entwurf liegt nur auf diesem Gerät, andere sehen ihn nicht.
 - **Verweise:** `[[Seitentitel]]` in einer Notiz oder Zusammenfassung wird zum Link auf die Wiki-Seite. Fehlt die Seite, erscheint der Titel markiert („Seite existiert noch nicht“).
@@ -246,6 +247,7 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 
 ## 14. Änderungen an diesem Handbuch
 
+- **12.11.2026 (Version 1.16.0):** Abschnitte einer Session sind aufklappbar und anfangs zu, eine geöffnete Session springt an ihren Anfang (Abschnitt 5).
 - **12.11.2026 (Version 1.15.0):** Übersicht mit nächster Session, „Neu seit deinem letzten Besuch“ und offenen Punkten für den ST (Abschnitt 3). Bogen mit Sprungmarken, Porträt, Vorteilen mit Punkten, XP-Verlauf und Würfeln (Abschnitt 4). Formatierung, Rückfrage bei gleichzeitigem Bearbeiten, „Rückgängig“ und Live-Aktualisierung (Abschnitt 5). Karte mit Einblendung am Handy, Knotenliste, neuen Farben und Schutz der Spielercharaktere (Abschnitt 7). Wiki-Verlauf (Abschnitt 8). Storyteller: Reiter gebündelt, Spielabend, Fäden, „Mit Angaben …“, XP vergeben, Sicherung (Abschnitt 10).
 - **12.11.2026 (Version 1.14.1):** Neue Farben auf beiden Karten: Sterbliche grün, Orte blau, Organisationen violett (Abschnitt 7).
 - **12.11.2026 (Version 1.14.0):** Wischen zwischen den Bereichen am Handy, Kopfzeile am Handy mit „Menü“, Zurück-Taste und eigene Adressen für Einträge, Bereich Suche, Entwürfe für ungespeicherten Text, Verweise in Notizen, größere Tippflächen (Abschnitte 1, 2, 2a, 5, 6, 8). Für den Storyteller: fremde Notizen bearbeiten, Charaktere anlegen, zuordnen und löschen, Tab „Gruppe“ (Abschnitt 10).

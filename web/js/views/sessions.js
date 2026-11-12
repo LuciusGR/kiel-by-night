@@ -1,5 +1,5 @@
 // Kiel by Night · Session-Notizen: eine Seite pro Session, jede Person schreibt ihren eigenen Abschnitt
-import { h, toast, guard, head, fmtDate, confirmBtn, drafts, bindDraft } from "../lib.js";
+import { h, toast, guard, head, fmtDate, confirmBtn, drafts, bindDraft, plainLinks } from "../lib.js";
 import { sb, S, registerView, setRoute, draftKey, authorName, personName, saveChecked, deleteWithUndo, watchTables } from "../core.js";
 import { richText } from "../wikilinks.js";
 import { sceneBlock, resetNpcCache } from "./scenes.js";
@@ -12,6 +12,7 @@ registerView("sessions", async m => {
   let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
   let fresh = null; // frisch angelegte Session: Titel/Datum gleich zum Ausfüllen offen
   let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [], badgePainters = [];
+  const openNotes = new Set(); // aufgeklappte Abschnitte (Notiz-IDs)
   resetNpcCache();
   const me = S.user.id;
   // Entwürfe: ungespeicherter Text einer Notiz bleibt im Browser liegen (siehe lib.js)
@@ -110,11 +111,18 @@ registerView("sessions", async m => {
         } }, "Speichern")))));
   }
 
-  function entry(n) {
-    return h("div", { class: "entry" },
-      h("div", { class: "by" }, h("strong", {}, authorName(n.author_id)), h("span", { class: "muted" }, personName(n.author_id) + " · " + fmtDate(n.updated_at)),
-        n.author_id === me || S.isST ? h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, drafts.has(noteKey(n)) ? "Entwurf fortsetzen" : "Bearbeiten") : null),
-      richText(n.body, { style: "margin-top:6px" }));
+  // Ein Abschnitt (Notiz einer Person) ist eine aufklappbare Zeile, anfangs zu. In der Zeile stehen Autor, Datum und der Anfang des Textes.
+  // Welche Abschnitte offen sind, bleibt über Neuzeichnen hinweg erhalten (openNotes), nicht über das Verlassen des Bereichs.
+  function entry(n, title) {
+    const canEdit = n.author_id === me || S.isST, first = plainLinks((n.body || "").split("\n").find(l => l.trim()) || "").replace(/^#+\s*|^[-*]\s+/, "").slice(0, 90);
+    const det = h("details", { class: "entry", "data-note": n.id, open: openNotes.has(n.id) ? true : null },
+      h("summary", { class: "by" }, h("strong", {}, title || authorName(n.author_id)), h("span", { class: "muted" }, (title ? "" : personName(n.author_id) + " · ") + fmtDate(n.updated_at)),
+        drafts.has(noteKey(n)) ? h("span", { class: "badge" }, "Entwurf") : null,
+        first ? h("span", { class: "muted entry-preview" }, first) : null),
+      h("div", { class: "entry-body" }, richText(n.body, { style: "margin-top:6px" }),
+        canEdit ? h("div", { style: "margin-top:10px" }, h("button", { class: "btn small", type: "button", onclick: () => { openNotes.add(n.id); editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, drafts.has(noteKey(n)) ? "Entwurf fortsetzen" : "Bearbeiten")) : null));
+    det.addEventListener("toggle", () => { if (det.open) openNotes.add(n.id); else openNotes.delete(n.id); });
+    return det;
   }
 
   // Inhalt einer aufgeklappten Session
@@ -168,6 +176,9 @@ registerView("sessions", async m => {
         for (const d of box.querySelectorAll("details.session-item[open]")) if (d !== det) d.open = false;
         body.replaceChildren(...sessionBody(num).filter(Boolean));
         route({ session: num });
+        // An den Anfang der geöffneten Session springen: Die zuvor offene Session darüber klappt zu, der Inhalt rutscht
+        // nach oben, und ohne diesen Sprung stünde man mitten im oder am Ende des neuen Eintrags.
+        requestAnimationFrame(() => { if (det.isConnected && det.open) det.scrollIntoView({ block: "start" }); });
       } else { body.replaceChildren(); if (cur === num) { cur = null; editing = null; route(null); } }
       for (const f of badgePainters) f();
     });
@@ -180,8 +191,7 @@ registerView("sessions", async m => {
     if (mine) {
       const my = notes.filter(n => n.author_id === me).sort((a, b) => (b.session_number - a.session_number) || (Date.parse(b.updated_at) - Date.parse(a.updated_at)));
       box.replaceChildren(h("div", { class: "article" }, h("h3", {}, "Meine Notizen"),
-        my.length ? my.map(n => h("div", { class: "entry" }, h("div", { class: "by" }, h("strong", {}, "Session " + n.session_number), h("span", { class: "muted" }, fmtDate(n.updated_at)),
-          h("button", { class: "btn small", type: "button", onclick: () => { editing = n; mine = false; cur = n.session_number; auto = false; draw(); } }, drafts.has(noteKey(n)) ? "Entwurf fortsetzen" : "Bearbeiten")), richText(n.body, { style: "margin-top:6px" })))
+        my.length ? my.map(n => entry(n, "Session " + n.session_number))
           : h("p", { class: "muted", style: "margin-top:10px" }, "Du hast noch keine Notizen geschrieben.")));
       return;
     }

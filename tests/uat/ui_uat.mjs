@@ -39,6 +39,9 @@ async function openApp(role, hash = "start", o = {}) {
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) page.errors.push("console: " + m.text().slice(0, 160)); });
   await page.exposeFunction("__log", s => page.logs.push(s));
   // Voreinstellung der Seite ist der Stil Rulebook. Die übrigen Tests prüfen den Look "Klassisch" (Texte unverändert), nur o.defaultStyle lässt die Voreinstellung stehen.
+  // Abschnitte einer Session sind seit 1.16.0 anfangs zugeklappt. Die älteren Tests prüfen den Inhalt der Abschnitte und klappen sie
+  // deshalb automatisch auf; nur mit o.entries bleibt die Voreinstellung der Seite stehen (Tests U291 und U292).
+  if (!o.entries) await page.addInitScript(() => { new MutationObserver(() => document.querySelectorAll("details.entry:not([open]):not([data-auto])").forEach(d => { d.dataset.auto = "1"; d.open = true; })).observe(document, { childList: true, subtree: true }); });
   await page.addInitScript(([r, lo, mode, extra, keepStyle]) => { window.__KBN_ROLE = r; if (lo) window.__KBN_LOGGED_OUT = true; if (mode) window.__NOTION_MODE = mode; if (!keepStyle) try { localStorage.setItem("kbn-style", "classic"); } catch (_) {} if (extra) eval(extra); }, [role, !!o.loggedOut, o.notion || null, o.init || null, !!o.defaultStyle]);
   await page.route("**/*", async route => {
     const u = new URL(route.request().url());
@@ -1416,6 +1419,30 @@ T("U290", "Szenenkarten", "Reihenfolge per Ziehen am Griff; Entwurf einer Szene 
   await nav(p, "Wiki"); await waitToast(p, /als Entwurf gesichert/); await nav(p, "Sessions"); await p.getByRole("button", { name: "Neue Szene" }).click(); await p.waitForTimeout(300);
   assert.equal(await p.inputValue("#sc-title"), "Entwurfsszene"); assert.equal(await p.locator('input[aria-label="NPC-Name"]').inputValue(), "Mara"); assert.equal(await p.locator('input[aria-label="Motivation"]').inputValue(), "will fliehen"); assert.equal(await p.locator(".draft-notice").count(), 1);
   await p.locator(".session-item .panel.stack").getByRole("button", { name: "Abbrechen" }).click(); assert.equal(await draftKeys(p), 0); return p;
+});
+
+// =====================================================================
+// X · Version 1.16: Abschnitte einer Session aufklappbar, Sprung an den Anfang
+// =====================================================================
+T("U291", "Sessions", "Abschnitte einer Session sind anfangs zugeklappt und zeigen Autor, Datum und den Textanfang; aufklappen zeigt Text und 'Bearbeiten'; der Zustand übersteht das Speichern", async () => {
+  const p = await openApp("player", "start", { entries: true }); await p.evaluate(() => window.__db.session_notes.push({ id: "st-note", session_number: 1, author_id: "11111111-1111-1111-1111-111111111111", body: "# Rückblick\nDer Prinz schweigt.", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }));
+  await nav(p, "Sessions"); const own = p.locator("details.entry").first(), other = p.locator('details.entry[data-note="st-note"]');
+  assert.deepEqual(await p.locator("details.entry").evaluateAll(e => e.map(x => x.open)), [false, false], "beide zu"); assert.match(await own.locator("summary").innerText(), /Feller[\s\S]*Anna · \d\d\.\d\d\.\d{4}[\s\S]*Wir trafen Prinz\./); assert.equal(await own.locator(".entry-body").isVisible(), false);
+  assert.match(await other.locator(".entry-preview").innerText(), /^Rückblick$/, "Vorschau ohne Formatzeichen"); assert.equal(await p.getByRole("button", { name: "Bearbeiten" }).isVisible(), false);
+  await own.locator("summary").click(); assert.equal(await own.locator(".entry-body").isVisible(), true); assert.equal(await own.locator(".entry-preview").isVisible(), false); assert.equal(await other.evaluate(d => d.open), false, "der andere Abschnitt bleibt zu");
+  await own.getByRole("button", { name: "Bearbeiten" }).click(); await p.fill("#note-body", "Neu gefasst"); await p.getByRole("button", { name: "Speichern" }).click(); await waitToast(p, /Gespeichert\./);
+  assert.deepEqual(await p.locator("details.entry").evaluateAll(e => e.map(x => x.open)), [true, false], "bearbeiteter Abschnitt bleibt offen"); assert.match(await p.locator("details.entry").first().locator(".entry-body").innerText(), /Neu gefasst/);
+  await p.locator("details.entry").first().locator("summary").click(); assert.equal(await p.locator("details.entry").first().evaluate(d => d.open), false); assert.equal(await other.getByRole("button", { name: "Bearbeiten" }).count(), 0, "fremder Abschnitt ohne Bearbeiten");
+  await p.getByRole("button", { name: "Nur meine" }).click(); assert.equal(await p.locator("details.entry").count(), 1); assert.equal(await p.locator("details.entry").evaluate(d => d.open), false); assert.match(await p.locator("details.entry summary").innerText(), /Session 1/); return p;
+});
+T("U292", "Handy 390 px", "Session öffnen springt an ihren Anfang, auch wenn die Session darüber dabei zuklappt", async () => {
+  const p = await openApp("player", "start", { viewport: PHONE, entries: true, defaultStyle: true });
+  await p.evaluate(() => { const long = "Zeile\n".repeat(120); for (let n = 2; n <= 6; n++) { window.__db.sessions.push({ number: n, title: "Abend " + n, play_date: "2026-10-0" + n }); window.__db.session_notes.push({ id: "n" + n, session_number: n, author_id: "22222222-2222-2222-2222-222222222222", body: long, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }); } });
+  await nav(p, "Sessions"); await p.locator('details.session-item[data-session="6"] details.entry summary').click(); await p.waitForTimeout(200); // oberste Session ist offen und jetzt lang
+  await p.locator('details.session-item[data-session="3"] > summary').scrollIntoViewIfNeeded(); await p.locator('details.session-item[data-session="3"] > summary').click(); await p.waitForTimeout(600);
+  const r = await p.evaluate(() => { const d = document.querySelector('details.session-item[data-session="3"]'), top = document.querySelector("header.top").getBoundingClientRect().bottom, b = d.getBoundingClientRect(); return { gap: Math.round(b.top - top), open: d.open, others: document.querySelectorAll("details.session-item[open]").length }; });
+  assert.equal(r.open, true); assert.equal(r.others, 1); assert.ok(r.gap >= 0 && r.gap <= 30, "Anfang der Session steht direkt unter der Kopfzeile, Abstand " + r.gap);
+  assert.equal(await p.locator('details.session-item[data-session="3"] > summary').isVisible(), true); assert.equal(await hashOf(p), "#sessions/3"); return p;
 });
 
 // =====================================================================
