@@ -10,7 +10,7 @@ registerView("sessions", async m => {
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
   const jump = cur != null;
   let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
-  let fresh = null; // frisch angelegte Session: Titel/Datum gleich zum Ausfüllen offen
+  let fresh = S.arg && S.arg.edit && S.arg.session != null ? Number(S.arg.session) : null; // frisch angelegte Session (oder „Termin ändern“ von der Startseite): Titel/Datum gleich zum Ausfüllen offen
   let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [], badgePainters = [];
   const openNotes = new Set(); // aufgeklappte Abschnitte (Notiz-IDs)
   resetNpcCache();
@@ -75,7 +75,7 @@ registerView("sessions", async m => {
     const md = meta[num] || {};
     const title = h("input", { type: "text", id: "sess-title", value: md.title || "", placeholder: "Titel der Session" });
     const date = h("input", { type: "date", id: "sess-date", value: md.play_date || "" });
-    return h("details", { "data-meta": "1", open: num === fresh ? true : null }, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — bearbeiten"),
+    return h("details", { "data-meta": "1", open: num === fresh ? true : null }, h("summary", { class: "muted", style: "cursor:pointer" }, [md.play_date ? fmtDate(md.play_date) : "Datum offen", md.title || "ohne Titel"].join(" · ") + " — Titel und Datum ändern"),
       h("div", { class: "row", style: "margin-top:8px" },
         h("div", { class: "field" }, h("label", { for: "sess-title" }, "Titel"), title),
         h("div", { class: "field", style: "flex:0 1 170px" }, h("label", { for: "sess-date" }, "Spieldatum"), date),
