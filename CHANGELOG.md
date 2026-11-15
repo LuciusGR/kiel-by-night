@@ -3,6 +3,9 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.16.1 – 15.11.2026
+- **Session-Termin ändern:** Titel und Spieldatum waren schon bearbeitbar, aber nur über die aufgeklappte Session versteckt. Neu: Knopf „Termin ändern“ im Kasten „Nächste Session“ auf der Startseite (öffnet die Session mit offenem Titel-/Datumsformular, `S.arg.edit`), Beschriftung in der Session jetzt „Titel und Datum ändern“. Keine Migration, Rechte unverändert (jedes Mitglied darf `sessions` ändern).
+
 ## 1.16.0 – 12.11.2026
 - **Sessions, Sprung behoben:** Wer am Handy eine Session öffnete, landete am Ende ihres Eintrags. Ursache: Die zuvor offene Session darüber klappt zu, der Inhalt rutscht nach oben. Jetzt springt die Seite an den Anfang der geöffneten Session, direkt unter die Kopfzeile.
 - **Abschnitte aufklappbar:** Die Notizen der einzelnen Personen innerhalb einer Session sind eigene aufklappbare Zeilen und anfangs zu. Die Zeile zeigt Autor, Datum und den Anfang des Textes, „Bearbeiten“ steht im aufgeklappten Abschnitt. Ein bearbeiteter Abschnitt bleibt nach dem Speichern offen. Gilt auch für „Nur meine“.
