@@ -20,8 +20,7 @@ function nextBox(sessions) {
   return h("div", { class: "panel next-session", "data-next": String(next.number) }, h("span", { class: "eyebrow" }, "Nächste Session"),
     h("div", { class: "row", style: "align-items:baseline;gap:6px 14px" },
       h("h3", {}, wd + ", " + fmtDate(next.play_date)), h("span", { class: "badge" }, inDays(next.play_date)),
-      h("button", { class: "linkbtn", type: "button", onclick: () => go("sessions", { session: next.number }) }, "Session " + next.number + (next.title ? " · " + next.title : "")),
-      h("button", { class: "btn small", type: "button", "data-edit-next": "1", onclick: () => go("sessions", { session: next.number, edit: true }) }, "Termin ändern")));
+      h("button", { class: "linkbtn", type: "button", onclick: () => go("sessions", { session: next.number }) }, "Session " + next.number + (next.title ? " · " + next.title : ""))));
 }
 
 // Nur ST: was noch zu tun ist

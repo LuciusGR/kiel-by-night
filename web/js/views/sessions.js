@@ -10,7 +10,7 @@ registerView("sessions", async m => {
   let cur = S.arg && S.arg.session != null ? Number(S.arg.session) : null;
   const jump = cur != null;
   let auto = true; // solange niemand etwas auf- oder zuklappt, ist die neueste Session offen
-  let fresh = S.arg && S.arg.edit && S.arg.session != null ? Number(S.arg.session) : null; // frisch angelegte Session (oder „Termin ändern“ von der Startseite): Titel/Datum gleich zum Ausfüllen offen
+  let fresh = null; // frisch angelegte Session: Titel/Datum gleich zum Ausfüllen offen
   let notes = [], meta = {}, editing = null, info = {}, chrons = [], chaps = [], badgePainters = [];
   const openNotes = new Set(); // aufgeklappte Abschnitte (Notiz-IDs)
   resetNpcCache();
