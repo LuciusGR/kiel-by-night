@@ -3,6 +3,9 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.19.2 – 16.11.2026
+- **Karten: Knotenbild sitzt mittig, Verbindungen zeigen auf die Mitte.** Das Knotenbild war ein SVG ohne eigene Größe (nur `viewBox`). Chrome gibt solchen Bildern 300×150 als natürliche Größe, Cytoscape setzte es mit `background-fit: cover` ein: Das Bild war verschoben und angeschnitten, besonders bei starkem Zoom und auf dem Handy. Die Kanten liefen dadurch scheinbar neben die Mitte. Jetzt hat das SVG `width` und `height` (40×40, Maske der Legende 24×24) und wird mit `background-fit: contain` eingesetzt. Knotenmitte, Bildmitte und Umriss für die Kanten stimmen überein. Keine Migration, Rechte unverändert, keine Testläufe (auf Wunsch).
+
 ## 1.19.1 – 16.11.2026
 - **Karten: Pfeile treffen den Rand der Symbole.** Seit 1.18.0 waren die Knoten Rechtecke ohne Rand, nur das Bild darin hatte die Form. Cytoscape berechnete die Enden der Kanten deshalb am Rechteck, und die Pfeile endeten sichtbar vor dem Knoten, besonders in den Ecken. Jetzt trägt der Knoten denselben Umriss wie das Bild (`shape: polygon` mit `shape-polygon-points` aus `framePolygon()` in `glyphs.js`, ohne `border-width`, sonst wirft Cytoscape 3.33 einen Fehler). Der Umriss wechselt mit dem Symbolstil. Keine Migration, Rechte unverändert.
 
