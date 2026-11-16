@@ -214,9 +214,14 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   .row>.btn,.row>.confirm{flex:0 0 auto}
 }
 
-/* Karten-Legende Formen (A5) */
-.shape-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;color:var(--muted);margin:-4px 0 10px}
-.shape-legend svg{vertical-align:-3px;margin-right:4px}
+/* Karten-Legende: Symbol = Art, Farbe = Sekte (ab 1.17.0) */
+.shape-legend{display:flex;flex-direction:column;gap:4px;font-size:.82rem;color:var(--muted);margin:-4px 0 10px}
+.shape-legend .lg-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.shape-legend strong{color:var(--ink);font-weight:600;margin-right:2px}
+.shape-legend .lg-row>span{display:inline-flex;align-items:center;gap:5px}
+.shape-legend .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.glyph{display:inline-block;width:14px;height:14px;background:currentColor;flex:0 0 auto;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+.chip .glyph{width:13px;height:13px}
 
 /* Anleitung (Handbuch live aus GitHub) */
 .toc{position:sticky;top:calc(var(--top-h,110px) + 10px);max-height:calc(100vh - var(--top-h,110px) - 30px);overflow:auto}

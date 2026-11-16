@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.17.0 – 16.11.2026
+- **Karten: Symbol und Farbe umgekehrt.** Das **Symbol** im Knoten zeigt jetzt die Art des Wesens, die **Farbe** die Sekte. Vorher war es andersherum (Form je Sekte, Farbe je Wesen). Alle Knoten sind Kreise gleicher Größe (28 px). Symbole: Kindred Blutstropfen, Ghoul Kelch, Sterblicher Person, Ort Haus, Organisation Säulenbau, Wight Schädel, Geist Gespenst, Werwolf Pfote, Gegenstand Kiste, ohne Typ und „Ohne NPC-Eintrag“ Fragezeichen, unbekannte Typen Raute. Farben: Camarilla blau (`--slate`), Anarch orange (`--rust`), Sabbat dunkelrot (`--blood`), Unabhängig türkis (`--teal`), Second Inquisition violett (`--plum`), ohne Sekte grau. Das Symbol wechselt je nach Helligkeit der Fläche zwischen hell und dunkel, damit es in beiden Themes lesbar bleibt.
+- **Legende und Filter:** Die Legende über beiden Karten hat zwei Zeilen („Symbol = Art“, „Farbe = Sekte“). Die Typ-Knöpfe tragen das Symbol statt eines Farbpunkts. Im Knotenformular der Spielerkarte wechseln beim Ändern von Typ oder Sekte Symbol und Farbe sofort, „Abbrechen“ stellt den gespeicherten Stand wieder her.
+- **Code:** `map.js` (`GLYPH`, `glyphKey()`, `sectColor()`, `normSect()`, `glyphIcon()`, `shapeLegend()`). `shapeForSekte()`, `SEKTE_SHAPE`, `typeColor()` und `TYPE_TOK` entfallen. Knotendaten tragen `sect` statt `shape`. Keine Migration, Rechte unverändert.
+- **Tests:** U119, U131, U141 und U281 an die neue Logik angepasst (Browser weiter 210 Fälle).
+
 ## 1.16.1 – 15.11.2026
 - **Session-Titel und -Datum:** Die Bearbeitung gab es schon, sie steckte aber nur in der aufgeklappten Session. Beschriftung jetzt „Titel und Datum ändern“. Auf der Startseite gibt es dafür bewusst keinen Knopf. Keine Migration, Rechte unverändert (jedes Mitglied darf `sessions` ändern).
 

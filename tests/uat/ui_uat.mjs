@@ -679,8 +679,12 @@ T("U118", "Spielerkarte", "'Neu anordnen' speichert die neue Anordnung", async (
   const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); const before = JSON.stringify((await db(p, "map_positions")).map(x => [x.node_key, x.x, x.y]).sort()); await p.getByRole("button", { name: "Neu anordnen" }).click(); await p.waitForTimeout(1800);
   const pos = await cyEval(p, cy => cy.nodes().map(n => [n.id(), Math.round(n.position("x")), Math.round(n.position("y"))])); const rows = await db(p, "map_positions"); for (const [id, x, y] of pos) { const r = rows.find(z => z.node_key === id); assert.deepEqual([r.x, r.y], [x, y]); } return p;
 });
-T("U119", "Spielerkarte", "Spielerkarte: alle Knoten sind Kreise (Form nur auf ST-Karte)", async () => {
-  const p = await openApp("player", "map", { wait: 1800 }); assert.deepEqual(await cyEval(p, cy => [...new Set(cy.nodes().map(n => n.data("shape")))]), ["ellipse"]); return p;
+T("U119", "Spielerkarte", "Spielerkarte: alle Knoten sind Kreise, Symbol folgt dem Typ, Farbe der Sekte (ohne Sekte grau)", async () => {
+  const p = await openApp("player", "map", { wait: 1800 });
+  assert.deepEqual(await cyEval(p, cy => [...new Set(cy.nodes().map(n => n.style("shape")))]), ["ellipse"]);
+  const r = await cyEval(p, cy => cy.nodes().map(n => [n.data("type"), n.data("sect"), n.style("background-color"), decodeURIComponent(n.style("background-image"))]));
+  assert.ok(r.length >= 3); assert.equal(new Set(r.map(x => x[2])).size, 1, "alle ohne Sekte: gleiche graue Fläche"); assert.ok(r.every(x => /svg\+xml/.test(x[3])), "Symbol im Knoten");
+  assert.notEqual(r.find(x => x[0] === "Ghoul")[3], r.find(x => x[0] === "Kindred")[3], "Ghoul und Kindred haben verschiedene Symbole"); return p;
 });
 T("U120", "Spielerkarte", "Knotenname mit HTML wird nur als Text gezeigt", async () => {
   const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await p.getByRole("button", { name: "Person/Ort hinzufügen" }).click(); await p.fill("#nf-label", '<img src=x onerror="window.__xss=1">'); await p.fill("#nf-desc", "<script>window.__xss=2</script>");
@@ -701,8 +705,13 @@ T("U130", "ST-Karte", "Karte lädt NPCs und Beziehungen aus der Function; Status
   const p = await openApp("st", "st", { wait: 2500 }); assert.equal(await cyEval(p, cy => cy.nodes().length), 5); const t = await p.locator("main").innerText(); assert.match(t, /Stand .* \(Cache\)/); assert.match(t, /5 Knoten · 3 Verbindungen/);
   assert.equal((await p.evaluate(() => window.__invokes))[0].o.body.refresh, false); return p;
 });
-T("U131", "ST-Karte", "Form je Sekte: Camarilla Sechseck, Anarch Dreieck, Second Inquisition Stern, ohne Sekte Kreis", async () => {
-  const p = await openApp("st", "st", { wait: 2500 }); const m = await cyEval(p, cy => Object.fromEntries(cy.nodes().map(n => [n.data("label"), n.data("shape")]))); assert.equal(m["Aniq"], "hexagon"); assert.equal(m["Mara"], "triangle"); assert.equal(m["Jäger"], "star"); assert.equal(m["Lukas"], "ellipse"); return p;
+T("U131", "ST-Karte", "Farbe je Sekte (Camarilla, Anarch, Second Inquisition, ohne Sekte), Symbol je Wesen; alle Knoten Kreise", async () => {
+  const p = await openApp("st", "st", { wait: 2500 });
+  const m = await cyEval(p, cy => Object.fromEntries(cy.nodes().map(n => [n.data("label"), { sect: n.data("sect"), col: n.style("background-color"), img: n.style("background-image"), shape: n.style("shape") }])));
+  assert.ok(Object.values(m).every(x => x.shape === "ellipse"));
+  assert.equal(m["Aniq"].sect, "Camarilla"); assert.equal(m["Mara"].sect, "Anarch"); assert.equal(m["Jäger"].sect, "Second Inquisition"); assert.equal(m["Lukas"].sect, "");
+  assert.equal(new Set([m["Aniq"].col, m["Mara"].col, m["Jäger"].col, m["Lukas"].col]).size, 4, "vier Sekten-Zustände, vier Farben");
+  assert.notEqual(m["Aniq"].img, m["Mara"].img, "Kindred und Ghoul: anderes Symbol"); return p;
 });
 T("U132", "ST-Karte", "Spielercharakter, Tote und Platzhalter sind erkennbar", async () => {
   const p = await openApp("st", "st", { wait: 2500 }); const m = await cyEval(p, cy => Object.fromEntries(cy.nodes().map(n => [n.data("label"), { pc: n.data("pc"), dead: n.data("dead"), type: n.data("type") }]))); assert.equal(m["Lukas"].pc, true); assert.equal(m["Mara"].dead, true); assert.equal(m["Hafenamt"].type, "Ohne NPC-Eintrag"); return p;
@@ -755,8 +764,10 @@ T("U141b", "ST-Karte", "ST-Karte hat keinen Modus-Schalter (schreibgeschützt), 
   const p = await openApp("st", "st", { wait: 2500 }); assert.equal(await p.locator(".toggle button", { hasText: /^(Ansicht|Bearbeitung)$/ }).count(), 0);
   assert.equal(await cyEval(p, cy => cy.nodes()[0].grabbable()), true); assert.equal(await p.getByRole("button", { name: "Neu anordnen" }).isVisible(), true); return p;
 });
-T("U141", "ST-Karte", "Legende der Formen ist sichtbar", async () => {
-  const p = await openApp("st", "st", { wait: 2500 }); assert.match(await p.locator(".shape-legend").innerText(), /Camarilla[\s\S]*Anarch[\s\S]*Sabbat/); return p;
+T("U141", "ST-Karte", "Legende zeigt Symbole je Art und Farben je Sekte", async () => {
+  const p = await openApp("st", "st", { wait: 2500 }); const t = await p.locator(".shape-legend").innerText();
+  assert.match(t, /Symbol[\s\S]*Kindred[\s\S]*Ghoul[\s\S]*Sterblicher/); assert.match(t, /Farbe[\s\S]*Camarilla[\s\S]*Anarch[\s\S]*Sabbat[\s\S]*ohne Sekte/);
+  assert.ok(await p.locator(".shape-legend .glyph").count() >= 10); return p;
 });
 
 // =====================================================================
@@ -1345,11 +1356,12 @@ T("U280", "Spielerkarte", "Handy: Detailfeld als Einblendung mit 'Schließen'; L
   await d.locator(".node-list .list button", { hasText: "Prinz Aniq" }).click(); await d.waitForTimeout(300); assert.equal(await d.locator(".map-panel .confirm").count(), 1, "andere Knoten bleiben löschbar"); await d.close();
   const s = await openApp("st", "map", { wait: 1500 }); await s.getByRole("button", { name: "Bearbeitung", exact: true }).click(); await s.locator(".node-list summary").click(); await s.locator(".node-list .list button", { hasText: "Lukas" }).click(); await s.waitForTimeout(300); assert.equal(await s.locator(".map-panel .confirm").count(), 1, "ST löscht auch Spielercharaktere"); await s.close(); return p;
 });
-T("U281", "ST-Karte", "Farben: Sterbliche sind grün (--mortal) und unterscheiden sich von Kindred, in beiden Stilen; die Legende nutzt dieselbe Farbe", async () => {
+T("U281", "ST-Karte", "Farben folgen der Sekte und kommen aus den Tokens, in beiden Stilen; Legende und Knoten nutzen dieselbe Farbe", async () => {
   for (const style of [null, RB_INIT]) {
     const p = await openApp("st", "st", { wait: 2500, init: style });
-    const r = await p.evaluate(() => { const cy = document.querySelector(".map-canvas")._cyreg.cy, col = t => cy.nodes().filter(n => n.data("type") === t)[0].style("background-color"); const hex = getComputedStyle(document.documentElement).getPropertyValue("--mortal").trim(); const n = parseInt(hex.slice(1), 16); return { mortal: col("Sterblicher"), kindred: col("Kindred"), tok: `rgb(${n >> 16},${(n >> 8) & 255},${n & 255})` }; });
-    assert.equal(r.mortal.replace(/\s/g, ""), r.tok); assert.notEqual(r.mortal, r.kindred); const [rr, gg, bb] = r.tok.match(/\d+/g).map(Number); assert.ok(gg > rr && gg > bb, "grün überwiegt: " + r.tok); await p.close();
+    const r = await p.evaluate(() => { const cy = document.querySelector(".map-canvas")._cyreg.cy, col = l => cy.nodes().filter(n => n.data("label") === l)[0].style("background-color"); const rgb = t => { const n = parseInt(getComputedStyle(document.documentElement).getPropertyValue(t).trim().slice(1), 16); return `rgb(${n >> 16},${(n >> 8) & 255},${n & 255})`; };
+      return { cam: col("Aniq"), anarch: col("Mara"), none: col("Lukas"), tCam: rgb("--slate"), tAnarch: rgb("--rust"), tNone: rgb("--grey"), dot: [...document.querySelectorAll(".shape-legend .dot")].map(d => getComputedStyle(d).backgroundColor.replace(/\s/g, "")) }; });
+    const n = s => s.replace(/\s/g, ""); assert.equal(n(r.cam), n(r.tCam)); assert.equal(n(r.anarch), n(r.tAnarch)); assert.equal(n(r.none), n(r.tNone)); assert.ok(r.dot.includes(n(r.tCam))); assert.notEqual(r.cam, r.anarch); await p.close();
   }
   return null;
 });
