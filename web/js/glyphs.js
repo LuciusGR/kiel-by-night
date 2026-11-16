@@ -117,3 +117,9 @@ export function glyphIcon(type, cls, styleId = current) {
 export function frameClip(styleId = current) {
   return "polygon(" + STYLES[styleId].pts.map(([x, y]) => (x / .4).toFixed(1) + "% " + (y / .4).toFixed(1) + "%").join(",") + ")";
 }
+
+/** Umriss des Stils für Cytoscape (`shape-polygon-points`, Koordinaten −1…1): Kanten enden damit am sichtbaren Rand des Knotenbilds,
+ *  nicht am umgebenden Rechteck. Nur ohne `border-width`, sonst wirft Cytoscape 3.33 einen Fehler (hasMiterBounds). */
+export function framePolygon(styleId = current) {
+  return STYLES[styleId].pts.map(([x, y]) => ((x - 20) / 20).toFixed(3) + " " + ((y - 20) / 20).toFixed(3)).join(" ");
+}

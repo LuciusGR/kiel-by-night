@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 12.11.2026 · gilt für Website-Version 1.19.0
+Stand: 12.11.2026 · gilt für Website-Version 1.19.1
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -246,6 +246,8 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - Der Zugang ist nur für die Chronik-Gruppe vorgesehen. Die Seite ist nicht für Suchmaschinen gedacht (noindex).
 
 ## 14. Änderungen an diesem Handbuch
+
+- **16.11.2026 (Version 1.19.1):** Karten: Pfeile enden am Rand der Symbole (Abschnitt 7).
 
 - **16.11.2026 (Version 1.19.0):** Karten: Auswahl „Symbolstil" (Holzschnitt, Sigil, Spritzer) (Abschnitt 7).
 
