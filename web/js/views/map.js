@@ -4,7 +4,7 @@
 import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
-import { STYLES, STYLE_IDS, getStyleId, setStyleId, nodeFaceUri, glyphIcon, frameClip } from "../glyphs.js";
+import { STYLES, STYLE_IDS, getStyleId, setStyleId, nodeFaceUri, glyphIcon, frameClip, framePolygon } from "../glyphs.js";
 
 // ---------- Symbol = Art des Wesens, Farbe = Zugehörigkeit (Sekte) ----------
 // Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Die Symbole und Umrisse stehen in `glyphs.js` in drei
@@ -51,7 +51,7 @@ const NODE_SIZE = 44; // A4: alle Knoten gleich groß
 function cyStyle() {
   const ink = tok("--ink"), paper = tok("--surface"), line = tok("--line2"), sea = tok("--sea"), muted = tok("--muted");
   return [
-    { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "background-opacity": 0, "shape": "rectangle", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 3,
+    { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "background-opacity": 0, "shape": "polygon", "shape-polygon-points": framePolygon(), "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 3,
       "background-image": e => nodeFace(e, { ink, sea }), "background-fit": "cover", "background-clip": "none", "bounds-expansion": 0,
       "width": NODE_SIZE, "height": NODE_SIZE, "text-wrap": "ellipsis", "text-max-width": 130, "font-family": "Alegreya Sans, system-ui, sans-serif",
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
