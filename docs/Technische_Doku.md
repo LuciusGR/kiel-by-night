@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 12.11.2026 · gilt für Website-Version 1.17.1 (siehe `CHANGELOG.md`)
+Stand: 12.11.2026 · gilt für Website-Version 1.18.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -108,7 +108,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - **Modi Ansicht (Standard) und Bearbeitung** nur bei bearbeitbaren Karten. In der Ansicht sind Anlegen, Bearbeiten, Löschen, Verschieben (`autoungrabify`) und „Neu anordnen“ gesperrt. Suche, Filter und Auswählen bleiben. Die Suche zeigt alle Treffer als Liste aus `<details>`-Einträgen im Seitenfeld, zugeklappt bei mehr als einem Treffer, offen bei genau einem (`resultsView()`).
 - Cytoscape wird mit `layout: preset` gestartet. Sonst legt die Bibliothek ein Raster über die gespeicherten Positionen. Fehlende Positionen werden zufällig im sichtbaren Bereich gesetzt, die Erstanordnung (Cose-Layout) wird gespeichert.
 - Positionen: Tabelle `map_positions` (scope `player` oder `st`, Schlüssel = Knoten-ID bzw. Notion-ID ohne Bindestriche oder `lbl:<Text>`). Schreiben gebündelt 700 ms nach dem Ziehen, Rest beim Verlassen der Ansicht. Andere sehen Positionsänderungen erst nach Neuladen.
-- Beide Karten (seit 1.17.0): **Symbol je Wesen, Farbe je Sekte**. Knoten sind Kreise (`NODE_SIZE` 36), das Symbol ist ein SVG-Pfad aus `GLYPH` (24×24-Raster), Cytoscape bekommt es als `background-image` (Data-URI, Farbe schwarz oder weiß je Helligkeit der Fläche über `inkOn()`), die Fläche färbt `sectColor()` aus `SECT_TOK`. Legende und Typ-Filter nutzen dieselben Pfade als CSS-Maske (`glyphIcon()`, Klasse `.glyph`), also ohne `innerHTML`. Neue Typen bekommen die Raute (`sonst`), neue Symbole gehören in `GLYPH`. Knotendaten tragen `sect` (normalisiert über `normSect()`). Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur den Namen an (`ensurePlayerNode()` in `storyteller.js`: `type` bleibt leer, die Spieler tragen ihn selbst ein; keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
+- Beide Karten (seit 1.17.0): **Symbol je Wesen, Farbe je Sekte**. Knoten haben seit 1.18.0 einen gesplitterten Umriss (`SPLINTER`, neun Ecken) statt Kreis (`NODE_SIZE` 44). Der ganze Knoten ist ein SVG-Bild, das `nodeFace()` zusammensetzt (Umriss mit Rand aus `darken()`, Symbol aus `GLYPH` im 24×24-Raster, Farbe schwarz oder weiß je Helligkeit der Fläche über `inkOn()`, Bruchlinie `CRACK` bei Toten, Doppelrahmen bei Spielercharakteren, Zusatzrahmen bei Auswahl) und als `background-image` setzt, Zwischenspeicher je Zustand. Grund: Cytoscape 3.33 wirft bei `shape: polygon` mit `border-width` einen Fehler (`hasMiterBounds`). Der Knoten ist deshalb ein Rechteck ohne Füllung und Rand, `background-color` trägt weiter die Sektenfarbe aus `sectColor()` und `SECT_TOK`. Legende und Typ-Filter nutzen dieselben Pfade als CSS-Maske (`glyphIcon()`, Klasse `.glyph`), also ohne `innerHTML`. Neue Typen bekommen die Raute (`sonst`), neue Symbole gehören in `GLYPH`. Knotendaten tragen `sect` (normalisiert über `normSect()`). Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur den Namen an (`ensurePlayerNode()` in `storyteller.js`: `type` bleibt leer, die Spieler tragen ihn selbst ein; keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
 
 - Typ eines Knotens (Spielerkarte): `select#nf-type` mit Standardtypen, vorhandenen Typen, „— ohne Typ —“ und „＋ Neuer Typ …“ (`input#nf-type-new`, Pflicht bei dieser Wahl).
 - Detailfeld: `src.nodeExtras(n, id, nodes, { edit })` liefert zusätzliche Bausteine (Szenen-Vorkommen, Dokumente). `edit` ist wahr bei bearbeitbarer Karte im Modus Bearbeitung. `src.focus` wählt nach dem Laden einen Knoten aus (`selectNode()`).
@@ -324,6 +324,8 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGl
 Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`). Das Benutzerhandbuch erscheint zusätzlich live im Tab „Anleitung“ (Abschnitt 4.12): Es ist für alle Mitglieder lesbar, deshalb keine Zugangsdaten, Schlüssel oder Betriebsinterna hineinschreiben, und Überschriften der Ebene 2 knapp halten (sie bilden die Gliederung).
 
 ## 13. Änderungen an dieser Doku
+
+- **16.11.2026 (Version 1.18.0):** Karten kantig: gesplitterter Umriss, neue Symbole, Zustände im Knotenbild (Abschnitt 4.4).
 
 - **16.11.2026 (Version 1.17.1):** Knoten 36 px, Symbole Kindred Ankh, Ghoul Blutstropfen, Gegenstand Schlüssel (Abschnitt 4.4).
 

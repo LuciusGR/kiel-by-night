@@ -6,29 +6,40 @@ import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 
 // ---------- Symbol = Art des Wesens, Farbe = Zugehörigkeit (Sekte) ----------
-// Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Alle Knoten sind Kreise (A4: gleich groß),
-// das Symbol steht im Kreis, die Fläche trägt die Farbe der Sekte.
-// Symbole: Pfade in einem 24×24-Raster, einfarbig gefüllt (Farbe setzt der Aufrufer).
+// Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Seit 1.18.0 bewusst kantig: Alle Knoten haben denselben
+// gesplitterten Umriss (kein Kreis), einen harten dunklen Rand, und die Symbole bestehen nur aus Spitzen und Kanten.
+// Unterscheidbarkeit geht vor Lesbarkeit. Symbole: Pfade im 24×24-Raster, einfarbig gefüllt (Farbe setzt der Aufrufer).
 const GLYPH = {
-  Kindred: '<ellipse cx="12" cy="7" rx="4" ry="4.6" fill="none" stroke="#000" stroke-width="2.6"/><path d="M12 11.6V22M5.5 14h13" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/>', // Ankh (Erkennungszeichen der Kindred)
-  Ghoul: '<path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2Z"/>',                                                             // Blutstropfen (Vitae, die ihn bindet)
-  Sterblicher: '<circle cx="12" cy="7" r="4"/><path d="M4 21c0-5 3.5-8 8-8s8 3 8 8Z"/>',                                                  // Mensch
-  Ort: '<path d="M12 3 2 12h3v9h5v-6h4v6h5v-9h3Z"/>',                                                                                      // Haus
-  Organisation: '<path d="M12 2 2 8v2h20V8ZM4 11h3v8H4zM10.5 11h3v8h-3zM17 11h3v8h-3zM2 20h20v2H2z"/>',                                  // Säulenbau
-  Wight: '<path fill-rule="evenodd" d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5 3 6v4h2v-2h2v2h2v-2h2v2h2v-4c1.5-1 3-3 3-6a8 8 0 0 0-8-8ZM9 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/>', // Schädel
-  Geist: '<path fill-rule="evenodd" d="M12 2a7 7 0 0 0-7 7v13l3.5-3 3.5 3 3.5-3 3.5 3V9a7 7 0 0 0-7-7ZM9.5 8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Zm5 0a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z"/>', // Geist
-  Werwolf: '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><circle cx="5.2" cy="11" r="2.1"/><circle cx="9.4" cy="6.4" r="2.2"/><circle cx="14.6" cy="6.4" r="2.2"/><circle cx="18.8" cy="11" r="2.1"/>', // Pfote
-  Gegenstand: '<circle cx="7.6" cy="7.6" r="4.4" fill="none" stroke="#000" stroke-width="2.6"/><path d="M11 11 21 21M16.4 16.4l3-3M19 19l2.4-2.4" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/>', // Schlüssel
-  unbekannt: '<path d="M8.5 8.5a3.5 3.5 0 1 1 5.2 3c-1.2.8-1.7 1.5-1.7 3" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="19.6" r="1.7"/>', // Fragezeichen
-  sonst: '<path d="M12 3l8 9-8 9-8-9Z"/>',                                                                                                  // Raute für unbekannte Typen
+  // Ankh mit spitzer Schlaufe, Klingen als Querbalken, Stachel als Fuß
+  Kindred: '<path fill-rule="evenodd" d="M12 .8 17.8 6 15.6 12.2H8.4L6.2 6ZM12 3.6 15.4 6.4 14.2 10H9.8L8.6 6.4Z"/><path d="M.8 13.8 8 11.9H16l7.2 1.9-7.2 2.1H8Z"/><path d="M9.6 15.6h4.8L12 23.4Z"/>',
+  // Tropfen aus Facetten mit Kerbe
+  Ghoul: '<path fill-rule="evenodd" d="M12 .8 18.6 11.4 19.4 15.8 16.2 20.6 12 23.2 7.8 20.6 4.6 15.8 5.4 11.4ZM8.4 13.2 10.2 14 9.6 17.8 8 15.6Z"/>',
+  // Mensch: Kopf als Sechseck, Schultern als Trapez
+  Sterblicher: '<path d="M12 2.6 15.6 4.6V8.8L12 11.4 8.4 8.8V4.6Z"/><path d="M2.6 22.4 4.8 15.4 9.6 12.8h4.8l4.8 2.6 2.2 7Z"/>',
+  // Haus mit gebrochenem Giebel und Schornstein
+  Ort: '<path d="M12 1.6 22.6 11.6H19.4V22.4H14V15.6H10V22.4H4.6V11.6H1.4ZM16 4.2h3.2V8.4L16 5.6Z"/>',
+  // Säulenhalle: Giebel, drei Pfeiler mit gekappten Köpfen, Sockel
+  Organisation: '<path d="M12 1.2 23 7.6V9.8H1V7.6Z"/><path d="M2.6 11.4H6.6L6 19.6H3.2ZM9.8 11.4h4.4L13.6 19.6h-3.2ZM17.4 11.4h4l-.6 8.2h-2.8Z"/><path d="M.8 20.8H23.2V23.2H.8Z"/>',
+  // Schädel: Zacken, Augenhöhlen als Dreiecke, Nase, Zähne
+  Wight: '<path fill-rule="evenodd" d="M12 1.2 18.8 3.4 21.4 9.4 19 14.6 17 15.8V22L14.6 19.8 12 22.4 9.4 19.8 7 22V15.8L5 14.6 2.6 9.4 5.2 3.4ZM6.2 8.6 10.8 9.8 9 12.8ZM17.8 8.6 13.2 9.8 15 12.8ZM12 12.8 13.4 15.4H10.6Z"/>',
+  // Gespenst: Kapuze, Schlitzaugen, zerfetzter Saum
+  Geist: '<path fill-rule="evenodd" d="M12 1.2 18.2 5.6 19.2 12.8 21.6 23 17.4 19.4 14.6 23.2 12 19.6 9.4 23.2 6.6 19.4 2.4 23 4.8 12.8 5.8 5.6ZM7.6 9.2 10.8 10.8 8.2 11.8ZM16.4 9.2 13.2 10.8 15.8 11.8Z"/>',
+  // Klauenspuren: drei Risse, spitz auslaufend
+  Werwolf: '<path d="M2.6 1.4 6.8 2.2 9 22.8ZM9.2 1 13.6 1.4 14 23.2ZM15.8 1.4 20.4 2.4 18.8 22.6Z"/>',
+  // Schlüssel: Raute mit Loch, Schaft, gezackter Bart
+  Gegenstand: '<path fill-rule="evenodd" d="M12 .8 18.4 7 12 13.2 5.6 7ZM12 3.8 15.2 7 12 10.2 8.8 7Z"/><path d="M10.8 12.6h2.4V23.2L12 24 10.8 23.2ZM13.2 16.4h4.4v2.6h-4.4ZM13.2 20.2h3v2.6h-3Z"/>',
+  // Fragezeichen aus Geraden
+  unbekannt: '<path d="M6.6 7.8 12 3 17.4 7.8V12L12 15v2.6" fill="none" stroke="#000" stroke-width="3.2" stroke-linejoin="miter" stroke-miterlimit="6"/><path d="M12 19.6 14 21.6 12 23.6 10 21.6Z"/>',
+  // Vierzackiger Splitter
+  sonst: '<path d="M12 .8 14.6 9.4 23.2 12 14.6 14.6 12 23.2 9.4 14.6.8 12 9.4 9.4Z"/>',
 };
 const GLYPH_ALIAS = { Kine: "Sterblicher", Ghul: "Ghoul", "": "unbekannt", "Ohne NPC-Eintrag": "unbekannt" };
 // A3: alte Schreibweise abfangen
 export const normType = t => (t === "Ghul" ? "Ghoul" : (t || ""));
 export const glyphKey = t => { t = normType(t); t = GLYPH_ALIAS[t] || t; return GLYPH[t] ? t : "sonst"; };
-const svgUri = (key, fill) => "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${fill}" stroke="none">${GLYPH[key].replace(/stroke="#000"/g, `stroke="${fill}"`)}</svg>`);
-const uriCache = new Map();
-const glyphUri = (key, fill) => { const k = key + "|" + fill; if (!uriCache.has(k)) uriCache.set(k, svgUri(key, fill)); return uriCache.get(k); };
+// Bruchlinie für Tote: zackiger Riss durch das Symbol, in der Farbe der Fläche (wirkt wie eine Lücke)
+const CRACK = '<path d="M1.5 2.6 10.6 9.4 6.8 13 15.4 17.2 12.6 23.6" fill="none" stroke="CRACKCOL" stroke-width="1.7" stroke-linejoin="miter"/>';
+const svgUri = (key, fill, crack) => "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${fill}" stroke="none">${GLYPH[key].replace(/stroke="#000"/g, `stroke="${fill}"`)}${crack ? CRACK.replace("CRACKCOL", crack) : ""}</svg>`);
 
 // Farbe je Sekte (Zugehörigkeit). Ohne Sekte grau.
 export const SEKTEN = ["Camarilla", "Anarch", "Sabbat", "Unabhängig", "Second Inquisition"]; // Auswahl für Knoten der Spielerkarte
@@ -41,7 +52,32 @@ function inkOn(color) {
   const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
   return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .35 ? "#1a1a1a" : "#fff";
 }
-const nodeGlyph = e => glyphUri(glyphKey(e.data("type")), inkOn(sectColor(e.data("sect"))));
+// Rand: die Farbe der Fläche, stark abgedunkelt
+function darken(color, k = .38) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color); if (!m) return color;
+  const n = parseInt(m[1], 16), f = v => Math.round(v * k).toString(16).padStart(2, "0");
+  return "#" + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
+}
+// gesplitterter Umriss (Koordinaten −1…1), für alle Knoten gleich
+const SPLINTER = [[-1, -.62], [-.42, -1], [.38, -.92], [1, -.7], [.92, .12], [1, .6], [.3, 1], [-.5, .86], [-.96, .66]];
+const poly = k => SPLINTER.map(([x, y]) => (20 + x * k).toFixed(1) + "," + (20 + y * k).toFixed(1)).join(" ");
+// Der ganze Knoten ist ein Bild (Umriss, Rand, Symbol, Bruchlinie, Doppelring, Auswahl): Cytoscape kann einen frei geformten
+// Umriss mit Rand nicht zeichnen (Polygon plus border-width wirft in 3.33 einen Fehler), und so bleibt die Form für alle Knoten gleich.
+const faceCache = new Map();
+function nodeFace(e, theme) {
+  const fill = sectColor(e.data("sect")), ink = inkOn(fill), edge = darken(fill), pc = !!e.data("pc"), dead = !!e.data("dead"), sel = e.selected();
+  const key = [glyphKey(e.data("type")), fill, pc, dead, sel, theme.ink, theme.sea].join("|");
+  if (faceCache.has(key)) return faceCache.get(key);
+  const g = GLYPH[glyphKey(e.data("type"))].replace(/stroke="#000"/g, `stroke="${ink}"`);
+  const crack = dead ? CRACK.replace("CRACKCOL", fill) : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">`
+    + (sel ? `<polygon points="${poly(19.6)}" fill="none" stroke="${theme.sea}" stroke-width="3.2" stroke-linejoin="miter"/>` : "")
+    + (pc ? `<polygon points="${poly(19)}" fill="none" stroke="${theme.ink}" stroke-width="1.6" stroke-linejoin="miter"/>` : "")
+    + `<polygon points="${poly(pc ? 15.8 : 17)}" fill="${fill}" fill-opacity="${dead ? .6 : 1}" stroke="${edge}" stroke-width="2.6" stroke-linejoin="miter" stroke-miterlimit="8"${dead ? ' stroke-dasharray="4 2.2"' : ""}/>`
+    + `<svg x="8" y="8" width="24" height="24" viewBox="0 0 24 24" fill="${ink}" stroke="none">${g}${crack}</svg></svg>`;
+  const uri = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+  faceCache.set(key, uri); return uri;
+}
 
 // Legende und Filter: Symbol als Maske, nimmt die Textfarbe an (nur DOM-Knoten, kein HTML-Text)
 export function glyphIcon(key, cls) {
@@ -59,17 +95,16 @@ export function shapeLegend() {
   return el;
 }
 
-const NODE_SIZE = 36; // A4: alle Knoten gleich groß
+const NODE_SIZE = 44; // A4: alle Knoten gleich groß
 
 function cyStyle() {
   const ink = tok("--ink"), paper = tok("--surface"), line = tok("--line2"), sea = tok("--sea"), muted = tok("--muted");
   return [
-    { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "shape": "ellipse", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 4,
-      "background-image": nodeGlyph, "background-fit": "none", "background-width": "66%", "background-height": "66%", "background-position-x": "50%", "background-position-y": "50%", "background-clip": "none", "bounds-expansion": 0,
+    { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "background-opacity": 0, "shape": "rectangle", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 3,
+      "background-image": e => nodeFace(e, { ink, sea }), "background-fit": "cover", "background-clip": "none", "bounds-expansion": 0,
       "width": NODE_SIZE, "height": NODE_SIZE, "text-wrap": "ellipsis", "text-max-width": 130, "font-family": "Alegreya Sans, system-ui, sans-serif",
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
-    { selector: "node[?pc]", style: { "border-width": 4, "border-style": "double", "border-color": ink } }, // SC-Ring, nicht verwechselbar mit Ghoul-Messing
-    { selector: "node[?dead]", style: { "opacity": .5, "border-width": 1.5, "border-style": "dashed", "border-color": muted, "background-opacity": .35 } },
+    { selector: "node[?dead]", style: { "opacity": .62 } },
     { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8,
       "label": "data(label)", "font-size": 8, "color": muted, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .85, "text-background-padding": 1.5,
       "text-wrap": "ellipsis", "text-max-width": 110, "min-zoomed-font-size": 7 } },
@@ -78,7 +113,6 @@ function cyStyle() {
     { selector: ".faded", style: { "opacity": .1 } },
     { selector: "edge.hl", style: { "label": "data(label)", "font-size": 9, "color": ink, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .9, "text-background-padding": 2,
       "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160, "min-zoomed-font-size": 0 } },
-    { selector: "node:selected", style: { "border-width": 3, "border-color": sea } },
     { selector: ".hide", style: { "display": "none" } },
   ];
 }

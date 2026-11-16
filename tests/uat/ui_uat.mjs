@@ -679,10 +679,10 @@ T("U118", "Spielerkarte", "'Neu anordnen' speichert die neue Anordnung", async (
   const p = await openApp("player", "map", { wait: 1800 }); await p.getByRole("button", { name: "Bearbeitung", exact: true }).click(); const before = JSON.stringify((await db(p, "map_positions")).map(x => [x.node_key, x.x, x.y]).sort()); await p.getByRole("button", { name: "Neu anordnen" }).click(); await p.waitForTimeout(1800);
   const pos = await cyEval(p, cy => cy.nodes().map(n => [n.id(), Math.round(n.position("x")), Math.round(n.position("y"))])); const rows = await db(p, "map_positions"); for (const [id, x, y] of pos) { const r = rows.find(z => z.node_key === id); assert.deepEqual([r.x, r.y], [x, y]); } return p;
 });
-T("U119", "Spielerkarte", "Spielerkarte: alle Knoten sind Kreise, Symbol folgt dem Typ, Farbe der Sekte (ohne Sekte grau)", async () => {
+T("U119", "Spielerkarte", "Spielerkarte: alle Knoten haben denselben eckigen Umriss, Symbol folgt dem Typ, Farbe der Sekte (ohne Sekte grau)", async () => {
   const p = await openApp("player", "map", { wait: 1800 });
-  assert.deepEqual(await cyEval(p, cy => [...new Set(cy.nodes().map(n => n.style("shape")))]), ["ellipse"]);
-  const r = await cyEval(p, cy => cy.nodes().map(n => [n.data("type"), n.data("sect"), n.style("background-color"), decodeURIComponent(n.style("background-image"))]));
+  assert.ok(await cyEval(p, cy => cy.nodes().every(n => /%3Cpolygon/.test(n.style("background-image")))), "gesplitterter Umriss im Knotenbild");
+  const r = await cyEval(p, cy => cy.nodes().map(n => [n.data("type"), n.data("sect"), n.style("background-color"), n.style("background-image")]));
   assert.ok(r.length >= 3); assert.equal(new Set(r.map(x => x[2])).size, 1, "alle ohne Sekte: gleiche graue Fläche"); assert.ok(r.every(x => /svg\+xml/.test(x[3])), "Symbol im Knoten");
   assert.notEqual(r.find(x => x[0] === "Ghoul")[3], r.find(x => x[0] === "Kindred")[3], "Ghoul und Kindred haben verschiedene Symbole"); return p;
 });
@@ -705,10 +705,10 @@ T("U130", "ST-Karte", "Karte lädt NPCs und Beziehungen aus der Function; Status
   const p = await openApp("st", "st", { wait: 2500 }); assert.equal(await cyEval(p, cy => cy.nodes().length), 5); const t = await p.locator("main").innerText(); assert.match(t, /Stand .* \(Cache\)/); assert.match(t, /5 Knoten · 3 Verbindungen/);
   assert.equal((await p.evaluate(() => window.__invokes))[0].o.body.refresh, false); return p;
 });
-T("U131", "ST-Karte", "Farbe je Sekte (Camarilla, Anarch, Second Inquisition, ohne Sekte), Symbol je Wesen; alle Knoten Kreise", async () => {
+T("U131", "ST-Karte", "Farbe je Sekte (Camarilla, Anarch, Second Inquisition, ohne Sekte), Symbol je Wesen; alle Knoten eckig", async () => {
   const p = await openApp("st", "st", { wait: 2500 });
   const m = await cyEval(p, cy => Object.fromEntries(cy.nodes().map(n => [n.data("label"), { sect: n.data("sect"), col: n.style("background-color"), img: n.style("background-image"), shape: n.style("shape") }])));
-  assert.ok(Object.values(m).every(x => x.shape === "ellipse"));
+  assert.ok(Object.values(m).every(x => /%3Cpolygon/.test(x.img)), "gesplitterter Umriss im Knotenbild");
   assert.equal(m["Aniq"].sect, "Camarilla"); assert.equal(m["Mara"].sect, "Anarch"); assert.equal(m["Jäger"].sect, "Second Inquisition"); assert.equal(m["Lukas"].sect, "");
   assert.equal(new Set([m["Aniq"].col, m["Mara"].col, m["Jäger"].col, m["Lukas"].col]).size, 4, "vier Sekten-Zustände, vier Farben");
   assert.notEqual(m["Aniq"].img, m["Mara"].img, "Kindred und Ghoul: anderes Symbol"); return p;

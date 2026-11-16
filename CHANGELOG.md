@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.18.0 – 16.11.2026
+- **Karten: kantig und grimmig.** Kein Kreis mehr: Jeder Knoten hat denselben gesplitterten Umriss (neun Ecken, leicht schief) mit hartem, stark abgedunkeltem Rand in der Sektenfarbe. Die Symbole sind neu gezeichnet und bestehen nur aus Spitzen und Kanten: Ankh mit spitzer Schlaufe, Klingen als Querbalken und Stachel als Fuß (Kindred), facettierter Tropfen mit Kerbe (Ghoul), Sechskopf mit Trapezschultern (Sterblicher), Haus mit gebrochenem Giebel (Ort), Säulenhalle (Organisation), Schädel mit Dreieckshöhlen (Wight), Kapuzengespenst mit zerfetztem Saum (Geist), drei Klauenspuren (Werwolf), Rautenschlüssel mit gezacktem Bart (Gegenstand), geradliniges Fragezeichen, vierzackiger Splitter für andere Typen. Unterscheidbarkeit geht vor Lesbarkeit.
+- **Zustände im Knotenbild:** Tote haben gestrichelten Rand und eine Bruchlinie durch das Symbol statt bloßer Abdunklung, Spielercharaktere einen doppelten Rahmen, der gewählte Knoten einen roten Zusatzrahmen. Knoten 44 px.
+- **Technik:** Der ganze Knoten ist ein SVG-Bild (`nodeFace()` in `map.js`, Zwischenspeicher je Zustand). Grund: Cytoscape 3.33 wirft bei `shape: polygon` mit `border-width` einen Fehler (`hasMiterBounds`). Die Knoten sind deshalb Rechtecke ohne Füllung und ohne Rand, die Sektenfarbe steht weiter in `background-color`. Die Legende zeichnet dieselben Symbole als CSS-Maske, die Sektenpunkte tragen denselben Umriss (`clip-path`). Keine Migration, Rechte unverändert.
+- **Tests:** U119 und U131 prüfen den Umriss im Knotenbild statt der Form.
+
 ## 1.17.1 – 16.11.2026
 - **Karten: größere Knoten, neue Symbole.** Knoten 36 px statt 28 px, Symbol 66 % der Fläche (vorher 62 %), Kantenlänge der Erstanordnung 95 statt 80. Kindred tragen jetzt den **Ankh** (Erkennungszeichen der Kindred, vorher Blutstropfen), Ghoule den **Blutstropfen** (Vitae, vorher Kelch), Gegenstände einen **Schlüssel** (vorher Kiste). Die übrigen Symbole bleiben. Keine Migration, Rechte unverändert.
 
