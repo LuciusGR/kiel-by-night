@@ -219,7 +219,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .shape-legend .lg-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
 .shape-legend strong{color:var(--ink);font-weight:600;margin-right:2px}
 .shape-legend .lg-row>span{display:inline-flex;align-items:center;gap:5px}
-.shape-legend .dot{width:13px;height:13px;display:inline-block;clip-path:polygon(0 19%,29% 0,69% 4%,100% 15%,96% 56%,100% 80%,65% 100%,25% 93%,2% 83%)}
+.shape-legend .dot{width:13px;height:13px;display:inline-block}
+.symstyle{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--muted)}
+.symstyle select{min-height:32px}
 .glyph{display:inline-block;width:14px;height:14px;background:currentColor;flex:0 0 auto;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
 .chip .glyph{width:13px;height:13px}
 

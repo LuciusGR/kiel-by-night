@@ -4,43 +4,15 @@
 import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
+import { STYLES, STYLE_IDS, getStyleId, setStyleId, nodeFaceUri, glyphIcon, frameClip } from "../glyphs.js";
 
 // ---------- Symbol = Art des Wesens, Farbe = Zugehörigkeit (Sekte) ----------
-// Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Seit 1.18.0 bewusst kantig: Alle Knoten haben denselben
-// gesplitterten Umriss (kein Kreis), einen harten dunklen Rand, und die Symbole bestehen nur aus Spitzen und Kanten.
-// Unterscheidbarkeit geht vor Lesbarkeit. Symbole: Pfade im 24×24-Raster, einfarbig gefüllt (Farbe setzt der Aufrufer).
-const GLYPH = {
-  // Ankh mit spitzer Schlaufe, Klingen als Querbalken, Stachel als Fuß
-  Kindred: '<path fill-rule="evenodd" d="M12 .8 17.8 6 15.6 12.2H8.4L6.2 6ZM12 3.6 15.4 6.4 14.2 10H9.8L8.6 6.4Z"/><path d="M.8 13.8 8 11.9H16l7.2 1.9-7.2 2.1H8Z"/><path d="M9.6 15.6h4.8L12 23.4Z"/>',
-  // Tropfen aus Facetten mit Kerbe
-  Ghoul: '<path fill-rule="evenodd" d="M12 .8 18.6 11.4 19.4 15.8 16.2 20.6 12 23.2 7.8 20.6 4.6 15.8 5.4 11.4ZM8.4 13.2 10.2 14 9.6 17.8 8 15.6Z"/>',
-  // Mensch: Kopf als Sechseck, Schultern als Trapez
-  Sterblicher: '<path d="M12 2.6 15.6 4.6V8.8L12 11.4 8.4 8.8V4.6Z"/><path d="M2.6 22.4 4.8 15.4 9.6 12.8h4.8l4.8 2.6 2.2 7Z"/>',
-  // Haus mit gebrochenem Giebel und Schornstein
-  Ort: '<path d="M12 1.6 22.6 11.6H19.4V22.4H14V15.6H10V22.4H4.6V11.6H1.4ZM16 4.2h3.2V8.4L16 5.6Z"/>',
-  // Säulenhalle: Giebel, drei Pfeiler mit gekappten Köpfen, Sockel
-  Organisation: '<path d="M12 1.2 23 7.6V9.8H1V7.6Z"/><path d="M2.6 11.4H6.6L6 19.6H3.2ZM9.8 11.4h4.4L13.6 19.6h-3.2ZM17.4 11.4h4l-.6 8.2h-2.8Z"/><path d="M.8 20.8H23.2V23.2H.8Z"/>',
-  // Schädel: Zacken, Augenhöhlen als Dreiecke, Nase, Zähne
-  Wight: '<path fill-rule="evenodd" d="M12 1.2 18.8 3.4 21.4 9.4 19 14.6 17 15.8V22L14.6 19.8 12 22.4 9.4 19.8 7 22V15.8L5 14.6 2.6 9.4 5.2 3.4ZM6.2 8.6 10.8 9.8 9 12.8ZM17.8 8.6 13.2 9.8 15 12.8ZM12 12.8 13.4 15.4H10.6Z"/>',
-  // Gespenst: Kapuze, Schlitzaugen, zerfetzter Saum
-  Geist: '<path fill-rule="evenodd" d="M12 1.2 18.2 5.6 19.2 12.8 21.6 23 17.4 19.4 14.6 23.2 12 19.6 9.4 23.2 6.6 19.4 2.4 23 4.8 12.8 5.8 5.6ZM7.6 9.2 10.8 10.8 8.2 11.8ZM16.4 9.2 13.2 10.8 15.8 11.8Z"/>',
-  // Klauenspuren: drei Risse, spitz auslaufend
-  Werwolf: '<path d="M2.6 1.4 6.8 2.2 9 22.8ZM9.2 1 13.6 1.4 14 23.2ZM15.8 1.4 20.4 2.4 18.8 22.6Z"/>',
-  // Schlüssel: Raute mit Loch, Schaft, gezackter Bart
-  Gegenstand: '<path fill-rule="evenodd" d="M12 .8 18.4 7 12 13.2 5.6 7ZM12 3.8 15.2 7 12 10.2 8.8 7Z"/><path d="M10.8 12.6h2.4V23.2L12 24 10.8 23.2ZM13.2 16.4h4.4v2.6h-4.4ZM13.2 20.2h3v2.6h-3Z"/>',
-  // Fragezeichen aus Geraden
-  unbekannt: '<path d="M6.6 7.8 12 3 17.4 7.8V12L12 15v2.6" fill="none" stroke="#000" stroke-width="3.2" stroke-linejoin="miter" stroke-miterlimit="6"/><path d="M12 19.6 14 21.6 12 23.6 10 21.6Z"/>',
-  // Vierzackiger Splitter
-  sonst: '<path d="M12 .8 14.6 9.4 23.2 12 14.6 14.6 12 23.2 9.4 14.6.8 12 9.4 9.4Z"/>',
-};
+// Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Die Symbole und Umrisse stehen in `glyphs.js` in drei
+// umschaltbaren Stilen (Holzschnitt, Sigil, Spritzer); hier stehen Zuordnung Art → Symbol, Sektenfarben und die Knoten.
 const GLYPH_ALIAS = { Kine: "Sterblicher", Ghul: "Ghoul", "": "unbekannt", "Ohne NPC-Eintrag": "unbekannt" };
 // A3: alte Schreibweise abfangen
 export const normType = t => (t === "Ghul" ? "Ghoul" : (t || ""));
-export const glyphKey = t => { t = normType(t); t = GLYPH_ALIAS[t] || t; return GLYPH[t] ? t : "sonst"; };
-// Bruchlinie für Tote: zackiger Riss durch das Symbol, in der Farbe der Fläche (wirkt wie eine Lücke)
-const CRACK = '<path d="M1.5 2.6 10.6 9.4 6.8 13 15.4 17.2 12.6 23.6" fill="none" stroke="CRACKCOL" stroke-width="1.7" stroke-linejoin="miter"/>';
-const svgUri = (key, fill, crack) => "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${fill}" stroke="none">${GLYPH[key].replace(/stroke="#000"/g, `stroke="${fill}"`)}${crack ? CRACK.replace("CRACKCOL", crack) : ""}</svg>`);
-
+export const glyphKey = t => { t = normType(t); t = GLYPH_ALIAS[t] || t; return STYLES.spritzer.g[t] ? t : "sonst"; };
 // Farbe je Sekte (Zugehörigkeit). Ohne Sekte grau.
 export const SEKTEN = ["Camarilla", "Anarch", "Sabbat", "Unabhängig", "Second Inquisition"]; // Auswahl für Knoten der Spielerkarte
 const SECT_TOK = { Camarilla: "--slate", Anarch: "--rust", Sabbat: "--blood", "Unabhängig": "--teal", "Second Inquisition": "--plum" };
@@ -58,32 +30,11 @@ function darken(color, k = .38) {
   const n = parseInt(m[1], 16), f = v => Math.round(v * k).toString(16).padStart(2, "0");
   return "#" + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
 }
-// gesplitterter Umriss (Koordinaten −1…1), für alle Knoten gleich
-const SPLINTER = [[-1, -.62], [-.42, -1], [.38, -.92], [1, -.7], [.92, .12], [1, .6], [.3, 1], [-.5, .86], [-.96, .66]];
-const poly = k => SPLINTER.map(([x, y]) => (20 + x * k).toFixed(1) + "," + (20 + y * k).toFixed(1)).join(" ");
-// Der ganze Knoten ist ein Bild (Umriss, Rand, Symbol, Bruchlinie, Doppelring, Auswahl): Cytoscape kann einen frei geformten
-// Umriss mit Rand nicht zeichnen (Polygon plus border-width wirft in 3.33 einen Fehler), und so bleibt die Form für alle Knoten gleich.
-const faceCache = new Map();
-function nodeFace(e, theme) {
-  const fill = sectColor(e.data("sect")), ink = inkOn(fill), edge = darken(fill), pc = !!e.data("pc"), dead = !!e.data("dead"), sel = e.selected();
-  const key = [glyphKey(e.data("type")), fill, pc, dead, sel, theme.ink, theme.sea].join("|");
-  if (faceCache.has(key)) return faceCache.get(key);
-  const g = GLYPH[glyphKey(e.data("type"))].replace(/stroke="#000"/g, `stroke="${ink}"`);
-  const crack = dead ? CRACK.replace("CRACKCOL", fill) : "";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">`
-    + (sel ? `<polygon points="${poly(19.6)}" fill="none" stroke="${theme.sea}" stroke-width="3.2" stroke-linejoin="miter"/>` : "")
-    + (pc ? `<polygon points="${poly(19)}" fill="none" stroke="${theme.ink}" stroke-width="1.6" stroke-linejoin="miter"/>` : "")
-    + `<polygon points="${poly(pc ? 15.8 : 17)}" fill="${fill}" fill-opacity="${dead ? .6 : 1}" stroke="${edge}" stroke-width="2.6" stroke-linejoin="miter" stroke-miterlimit="8"${dead ? ' stroke-dasharray="4 2.2"' : ""}/>`
-    + `<svg x="8" y="8" width="24" height="24" viewBox="0 0 24 24" fill="${ink}" stroke="none">${g}${crack}</svg></svg>`;
-  const uri = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-  faceCache.set(key, uri); return uri;
-}
+const nodeFace = (e, theme) => {
+  const fill = sectColor(e.data("sect"));
+  return nodeFaceUri({ type: glyphKey(e.data("type")), fill, ink: inkOn(fill), edge: darken(fill), pc: !!e.data("pc"), dead: !!e.data("dead"), sel: e.selected(), inkTheme: theme.ink, sea: theme.sea });
+};
 
-// Legende und Filter: Symbol als Maske, nimmt die Textfarbe an (nur DOM-Knoten, kein HTML-Text)
-export function glyphIcon(key, cls) {
-  const u = `url("${svgUri(key, "#000")}")`;
-  return h("span", { class: "glyph " + (cls || ""), "aria-hidden": "true", style: `-webkit-mask-image:${u};mask-image:${u}` });
-}
 export function shapeLegend() {
   const el = h("div", { class: "shape-legend", "aria-label": "Symbole und Farben" });
   const row = (label, items) => h("div", { class: "lg-row" }, h("strong", {}, label), ...items);
@@ -91,7 +42,7 @@ export function shapeLegend() {
   const typeName = { unbekannt: "ohne Typ" };
   el.append(
     row("Symbol = Art:", types.map(k => h("span", {}, glyphIcon(k), typeName[k] || k))),
-    row("Farbe = Sekte:", [...SEKTEN, ""].map(s => h("span", {}, h("span", { class: "dot", style: "background:" + sectColor(s) }), s || "ohne Sekte"))));
+    row("Farbe = Sekte:", [...SEKTEN, ""].map(s => h("span", {}, h("span", { class: "dot", style: "background:" + sectColor(s) + ";clip-path:" + frameClip() }), s || "ohne Sekte"))));
   return el;
 }
 
@@ -141,7 +92,8 @@ export function MapView(root, src) {
   const nodeList = h("details", { class: "node-list" });
   const actions = h("div", { class: "row", style: "margin-bottom:10px" });
   const status = h("span", { class: "muted", style: "font-size:.86rem" });
-  root.append(...[actions, src.legend ? shapeLegend() : null, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas, nodeList), panel)].filter(Boolean));
+  let legendEl = src.legend ? shapeLegend() : null;
+  root.append(...[actions, legendEl, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas, nodeList), panel)].filter(Boolean));
 
   // Zwei Modi für bearbeitbare Karten: Ansicht (Standard) sperrt Anlegen, Bearbeiten, Löschen, Verschieben und Neu anordnen.
   let mode = "view";
@@ -151,6 +103,15 @@ export function MapView(root, src) {
   const relayoutBtn = h("button", { class: "btn", type: "button", onclick: () => relayout(true, true) }, "Neu anordnen");
   if (src.editable) actions.append(h("div", { class: "toggle", role: "group", "aria-label": "Modus" }, bView, bEdit), addNodeBtn, addEdgeBtn);
   actions.append(relayoutBtn);
+  // Symbolstil (Holzschnitt, Sigil, Spritzer): gilt für beide Karten, bleibt im Browser gespeichert
+  const styleSel = h("select", { id: "map-symstyle", "aria-label": "Symbolstil" }, ...STYLE_IDS.map(id => h("option", { value: id, selected: id === getStyleId() ? true : null }, STYLES[id].name)));
+  styleSel.addEventListener("change", () => {
+    setStyleId(styleSel.value);
+    if (legendEl) { const n = shapeLegend(); legendEl.replaceWith(n); legendEl = n; }
+    if (cy) cy.style(cyStyle());
+    drawChips();
+  });
+  actions.append(h("label", { class: "symstyle" }, "Symbolstil ", styleSel));
   function paintMode() {
     if (!src.editable) return;
     const e = mode === "edit";
