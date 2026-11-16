@@ -10,15 +10,15 @@ import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
 // das Symbol steht im Kreis, die Fläche trägt die Farbe der Sekte.
 // Symbole: Pfade in einem 24×24-Raster, einfarbig gefüllt (Farbe setzt der Aufrufer).
 const GLYPH = {
-  Kindred: '<path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2Z"/>',                                                             // Blutstropfen
-  Ghoul: '<path d="M5 3h14c0 5-2.2 8.4-6 9.3V18h4v3H7v-3h4v-5.7C7.2 11.4 5 8 5 3Z"/>',                                                    // Kelch (Vitae)
+  Kindred: '<ellipse cx="12" cy="7" rx="4" ry="4.6" fill="none" stroke="#000" stroke-width="2.6"/><path d="M12 11.6V22M5.5 14h13" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/>', // Ankh (Erkennungszeichen der Kindred)
+  Ghoul: '<path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2Z"/>',                                                             // Blutstropfen (Vitae, die ihn bindet)
   Sterblicher: '<circle cx="12" cy="7" r="4"/><path d="M4 21c0-5 3.5-8 8-8s8 3 8 8Z"/>',                                                  // Mensch
   Ort: '<path d="M12 3 2 12h3v9h5v-6h4v6h5v-9h3Z"/>',                                                                                      // Haus
   Organisation: '<path d="M12 2 2 8v2h20V8ZM4 11h3v8H4zM10.5 11h3v8h-3zM17 11h3v8h-3zM2 20h20v2H2z"/>',                                  // Säulenbau
   Wight: '<path fill-rule="evenodd" d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5 3 6v4h2v-2h2v2h2v-2h2v2h2v-4c1.5-1 3-3 3-6a8 8 0 0 0-8-8ZM9 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/>', // Schädel
   Geist: '<path fill-rule="evenodd" d="M12 2a7 7 0 0 0-7 7v13l3.5-3 3.5 3 3.5-3 3.5 3V9a7 7 0 0 0-7-7ZM9.5 8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Zm5 0a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z"/>', // Geist
   Werwolf: '<ellipse cx="12" cy="16" rx="5.2" ry="4.4"/><circle cx="5.2" cy="11" r="2.1"/><circle cx="9.4" cy="6.4" r="2.2"/><circle cx="14.6" cy="6.4" r="2.2"/><circle cx="18.8" cy="11" r="2.1"/>', // Pfote
-  Gegenstand: '<path fill-rule="evenodd" d="M12 2l9 5v10l-9 5-9-5V7Zm0 3.2L6 8.6v6.8l6 3.4 6-3.4V8.6Z"/>',                              // Kiste
+  Gegenstand: '<circle cx="7.6" cy="7.6" r="4.4" fill="none" stroke="#000" stroke-width="2.6"/><path d="M11 11 21 21M16.4 16.4l3-3M19 19l2.4-2.4" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/>', // Schlüssel
   unbekannt: '<path d="M8.5 8.5a3.5 3.5 0 1 1 5.2 3c-1.2.8-1.7 1.5-1.7 3" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="19.6" r="1.7"/>', // Fragezeichen
   sonst: '<path d="M12 3l8 9-8 9-8-9Z"/>',                                                                                                  // Raute für unbekannte Typen
 };
@@ -59,13 +59,13 @@ export function shapeLegend() {
   return el;
 }
 
-const NODE_SIZE = 28; // A4: alle Knoten gleich groß
+const NODE_SIZE = 36; // A4: alle Knoten gleich groß
 
 function cyStyle() {
   const ink = tok("--ink"), paper = tok("--surface"), line = tok("--line2"), sea = tok("--sea"), muted = tok("--muted");
   return [
     { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "shape": "ellipse", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 4,
-      "background-image": nodeGlyph, "background-fit": "none", "background-width": "62%", "background-height": "62%", "background-position-x": "50%", "background-position-y": "50%", "background-clip": "none", "bounds-expansion": 0,
+      "background-image": nodeGlyph, "background-fit": "none", "background-width": "66%", "background-height": "66%", "background-position-x": "50%", "background-position-y": "50%", "background-clip": "none", "bounds-expansion": 0,
       "width": NODE_SIZE, "height": NODE_SIZE, "text-wrap": "ellipsis", "text-max-width": 130, "font-family": "Alegreya Sans, system-ui, sans-serif",
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
     { selector: "node[?pc]", style: { "border-width": 4, "border-style": "double", "border-color": ink } }, // SC-Ring, nicht verwechselbar mit Ghoul-Messing
@@ -228,7 +228,7 @@ export function MapView(root, src) {
   }
   function relayout(animate, persist) {
     if (!cy) return;
-    const l = cy.layout({ name: "cose", animate: !!animate && !matchMedia("(prefers-reduced-motion: reduce)").matches, randomize: true, nodeRepulsion: () => 9000, idealEdgeLength: () => 80, gravity: .6, numIter: 1200, fit: true, padding: 30 });
+    const l = cy.layout({ name: "cose", animate: !!animate && !matchMedia("(prefers-reduced-motion: reduce)").matches, randomize: true, nodeRepulsion: () => 9000, idealEdgeLength: () => 95, gravity: .6, numIter: 1200, fit: true, padding: 30 });
     l.one("layoutstop", () => { capZoom(); if (persist) queuePos(allPositions()); });
     l.run();
   }
