@@ -96,7 +96,7 @@ export function nodeFaceUri(o, styleId = current) {
   const st = STYLES[styleId], [bx, by, bs] = st.box, k = o.pc ? .92 : 1;
   const g = (st.g[o.type] || st.g.sonst).replace(/§/g, o.ink) + (o.dead ? crackSvg(o.fill) : "");
   const frame = (sc, extra) => `<g transform="translate(20 20) scale(${sc}) translate(-20 -20)"><polygon points="${P(st.pts)}" ${extra} stroke-linejoin="miter" stroke-miterlimit="8"/></g>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">`
     + (o.sel ? frame(1.1, `fill="none" stroke="${o.sea}" stroke-width="3"`) : "")
     + (o.pc ? frame(1.1, `fill="none" stroke="${o.inkTheme}" stroke-width="1.5"`) : "")
     + frame(k, `fill="${o.fill}" fill-opacity="${o.dead ? .6 : 1}" stroke="${o.edge}" stroke-width="2.6"${o.dead ? ' stroke-dasharray="4 2.2"' : ""}`)
@@ -109,7 +109,7 @@ export function nodeFaceUri(o, styleId = current) {
 /** Symbol für Legende und Filter: Maske, nimmt die Textfarbe an (nur DOM-Knoten, kein HTML-Text) */
 export function glyphIcon(type, cls, styleId = current) {
   const st = STYLES[styleId], g = (st.g[type] || st.g.sonst).replace(/§/g, "#000");
-  const u = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${g}</svg>`)}")`;
+  const u = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">${g}</svg>`)}")`;
   return h("span", { class: "glyph " + (cls || ""), "aria-hidden": "true", style: `-webkit-mask-image:${u};mask-image:${u}` });
 }
 
