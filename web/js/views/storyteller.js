@@ -4,7 +4,7 @@ import { sb, S, go, registerView, personName, charOf, loadProfiles, saveChecked,
 import { richText } from "../wikilinks.js";
 import { stTabs } from "./sttabs.js";
 import { download, stamp } from "../export.js";
-import { MapView, shapeForSekte, normType, SEKTEN } from "./map.js";
+import { MapView, normType, normSect, SEKTEN } from "./map.js";
 import { savePositions, loadPositions } from "./playermap.js";
 import { sceneMentions } from "./scenes.js";
 import { docLinksBox } from "./doclinks.js";
@@ -130,7 +130,7 @@ export function buildGraph(payload) {
     const n = {
       label: r.name || r.label || "?", alt: r.label || "", type: normType(r.wesen), cat: r.kategorie || "", tags,
       description: brToNl(r.notes), dead: r.status === "Tot", pc: tags.includes("Player Character"),
-      shape: shapeForSekte(r.sekte), raw: r,
+      sect: normSect(r.sekte), raw: r,
     };
     nodes.set(r.id, n);
     if (n.alt) byLabel.set(n.alt.toLowerCase(), r.id);
@@ -141,7 +141,7 @@ export function buildGraph(payload) {
     const l = String(label || "").trim(); if (!l) return null;
     const k = byLabel.get(l.toLowerCase()); if (k) return k;
     const pid = "lbl:" + l;
-    if (!nodes.has(pid)) nodes.set(pid, { label: l, type: "Ohne NPC-Eintrag", tags: [], shape: "ellipse", description: "Kommt nur als Endpunkt in „Beziehungen“ vor (Ort, Organisation oder fehlender NPC-Eintrag).", raw: null });
+    if (!nodes.has(pid)) nodes.set(pid, { label: l, type: "Ohne NPC-Eintrag", tags: [], sect: "", description: "Kommt nur als Endpunkt in „Beziehungen“ vor (Ort, Organisation oder fehlender NPC-Eintrag).", raw: null });
     return pid;
   };
   const edges = new Map();

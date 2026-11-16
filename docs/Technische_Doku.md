@@ -1,6 +1,6 @@
 # Kiel by Night · Technische Dokumentation
 
-Stand: 12.11.2026 · gilt für Website-Version 1.16.0 (siehe `CHANGELOG.md`)
+Stand: 12.11.2026 · gilt für Website-Version 1.19.0 (siehe `CHANGELOG.md`)
 
 Dieses Dokument ist ein **lebendes Dokument**. Es wird bei jeder Änderung an Funktionen, Rechten, Datenbank, Edge Function oder Betrieb mitgepflegt. Jede Änderung steht unten in der Änderungsliste. Die Bedienung beschreibt das [Benutzerhandbuch](Benutzerhandbuch.md).
 
@@ -65,7 +65,7 @@ tests/                       RLS-Tests, Function-Test, Browser-Smoke-Test
 
 ## 4. Frontend
 
-Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()` in `lib.js`), nirgends `innerHTML` mit Nutzerdaten. Einzige Ausnahme ist die feste SVG-Legende der Formen in `map.js`.
+Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()` in `lib.js`), nirgends `innerHTML` mit Nutzerdaten. Die Symbole der Karten entstehen als Data-URI beziehungsweise CSS-Maske aus festen Pfaden in `map.js`.
 
 ### 4.1 Start und Router
 - `app.js` prüft `config.js`, holt die Sitzung, lädt Profile und Charaktere und ruft `go(view)`. Ohne Sitzung erscheint das Login-Formular. Ohne Profil erscheint „Für dieses Konto gibt es kein Profil“.
@@ -91,7 +91,8 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 | `private.js` | Privat | Private Notizen (Spieler), Adresse `#private/<id>`, Entwürfe; der ST liest und ändert sie im Storyteller-Bereich |
 | `playermap.js` | Spielerkarte | gemeinsame Karte (Knoten, Kanten, Positionen), Realtime für Knoten und Kanten. Detailfeld zeigt verknüpfte Dokumente (`nodeExtras`), `S.arg.focus` wählt einen Knoten aus |
 | `doclinks.js` | Dokument-Verknüpfungen | `docLinksBox(scope, key, label, canEdit)`: Liste der verknüpften Dokumente im Detailfeld eines Knotens, Auswahl und „Verknüpfen“ nur bei `canEdit` (Spielerkarte: Modus Bearbeitung; Storytellerkarte: immer) |
-| `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape) |
+| `map.js` | Kartenansicht | von Spielerkarte und ST-Karte genutzt (Cytoscape). Auswahl „Symbolstil" (`select#map-symstyle`) |
+| `../glyphs.js` | Symbolstile der Karten | `STYLES` (holzschnitt, sigil, spritzer: Umriss, Zierlinien, Symbole je Art), `nodeFaceUri()`, `glyphIcon()`, `frameClip()`, `getStyleId()`/`setStyleId()` (`localStorage` `kbn_symstyle`, Standard `spritzer`) |
 | `storyteller.js` | Storyteller | Beziehungskarte aus Notion (nur lesend), private Spielernotizen (`stPrivate()`: lesen, ändern, löschen) und Gruppe (`stGroup()`: Anzeigenamen und Rollen ändern, Profil zu einer User-ID anlegen, Sicherung als JSON (`backup()`, Format `kbn-backup/1`, alle für den ST lesbaren Tabellen, ohne Dateien); `revealDialog()` überträgt einen NPC mit gewählten Angaben (Typ, Sekte, Beschreibung) auf die Spielerkarte; kein Löschen von Profilen, weil `session_notes`, `private_notes` und `documents` per `on delete cascade` mitgingen) |
 | `wiki.js` | Wiki | Kategorien, Tags, Verweise `[[Seitentitel]]`, Adresse `#wiki/<Seiten-ID>` (`openPage()`), Entwürfe, Verlauf aus `wiki_page_versions` (`historyBox()`, ansehen und wiederherstellen; fehlt die Tabelle, bleibt der Block weg) |
 | `docs.js` | Dokumente | Upload und Öffnen über signierte URLs, Titel und Beschreibung nachträglich ändern (`editForm()`), verknüpfte Karten-Elemente als Chips (`linkChips()`), `S.arg.focus` scrollt zu einem Dokument und hebt es hervor |
@@ -108,7 +109,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - **Modi Ansicht (Standard) und Bearbeitung** nur bei bearbeitbaren Karten. In der Ansicht sind Anlegen, Bearbeiten, Löschen, Verschieben (`autoungrabify`) und „Neu anordnen“ gesperrt. Suche, Filter und Auswählen bleiben. Die Suche zeigt alle Treffer als Liste aus `<details>`-Einträgen im Seitenfeld, zugeklappt bei mehr als einem Treffer, offen bei genau einem (`resultsView()`).
 - Cytoscape wird mit `layout: preset` gestartet. Sonst legt die Bibliothek ein Raster über die gespeicherten Positionen. Fehlende Positionen werden zufällig im sichtbaren Bereich gesetzt, die Erstanordnung (Cose-Layout) wird gespeichert.
 - Positionen: Tabelle `map_positions` (scope `player` oder `st`, Schlüssel = Knoten-ID bzw. Notion-ID ohne Bindestriche oder `lbl:<Text>`). Schreiben gebündelt 700 ms nach dem Ziehen, Rest beim Verlassen der Ansicht. Andere sehen Positionsänderungen erst nach Neuladen.
-- ST-Karte: Form je Sekte (Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis), Farbe je Wesen, Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur den Namen an (`ensurePlayerNode()` in `storyteller.js`: `type` bleibt leer, die Spieler tragen ihn selbst ein; keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
+- Beide Karten (seit 1.17.0): **Symbol je Wesen, Farbe je Sekte**. Knoten sind seit 1.18.0 keine Kreise mehr, seit 1.19.0 gibt es drei umschaltbare Stile in `glyphs.js` (`STYLES`: Holzschnitt, Sigil, Spritzer, je eigener Umriss und eigener Symbolsatz, `NODE_SIZE` 44). Der ganze Knoten ist ein SVG-Bild, das `nodeFaceUri()` zusammensetzt (Umriss mit Rand aus `darken()`, Symbol aus `STYLES[…].g` im 24×24-Raster, Farbe schwarz oder weiß je Helligkeit der Fläche über `inkOn()`, Bruchlinie bei Toten, Doppelrahmen bei Spielercharakteren, Zusatzrahmen bei Auswahl) und als `background-image` setzt, Zwischenspeicher je Zustand. Grund: Cytoscape 3.33 wirft bei `shape: polygon` mit `border-width` einen Fehler (`hasMiterBounds`). Der Knoten ist deshalb ein Rechteck ohne Füllung und Rand, `background-color` trägt weiter die Sektenfarbe aus `sectColor()` und `SECT_TOK`. Legende und Typ-Filter nutzen dieselben Pfade als CSS-Maske (`glyphIcon()` aus `glyphs.js`, Klasse `.glyph`), also ohne `innerHTML`. Neue Typen bekommen die Raute (`sonst`), neue Symbole gehören in `GLYPH`. Knotendaten tragen `sect` (normalisiert über `normSect()`). Tote abgedunkelt, Spielercharakter mit Doppelring. „Auf Spielerkarte“ legt nur den Namen an (`ensurePlayerNode()` in `storyteller.js`: `type` bleibt leer, die Spieler tragen ihn selbst ein; keine Beschreibung, keine Tags), bei Verbindungen ohne Beschriftung.
 
 - Typ eines Knotens (Spielerkarte): `select#nf-type` mit Standardtypen, vorhandenen Typen, „— ohne Typ —“ und „＋ Neuer Typ …“ (`input#nf-type-new`, Pflicht bei dieser Wahl).
 - Detailfeld: `src.nodeExtras(n, id, nodes, { edit })` liefert zusätzliche Bausteine (Szenen-Vorkommen, Dokumente). `edit` ist wahr bei bearbeitbarer Karte im Modus Bearbeitung. `src.focus` wählt nach dem Laden einen Knoten aus (`selectNode()`).
@@ -122,7 +123,7 @@ Reine ES-Module ohne Bundler. Alle Texte kommen als Textknoten in den DOM (`h()`
 - **Formatierung (`wikilinks.js`):** `formatInto(out, text, link)` setzt Text zeilenweise: `**fett**`, `*kursiv*`, `[[Titel]]`, Zeilenanfang `# `, `## `, `### ` als Zwischenüberschrift (`.fmt-h`), `- ` oder `* ` als Aufzählungspunkt (`.fmt-li`). Alles als DOM-Knoten, kein `innerHTML`. `richText()` und `body()` im Wiki nutzen es.
 - **Live (Realtime, `core.js` `watchTables()`):** Sessions (`session_notes`, `sessions`, `session_info`), Wiki (`wiki_pages`) und Spielabend (`characters`) abonnieren Änderungen und laden neu. Ist ein Editor offen, erscheint nur ein Hinweis. Ohne Migration `20261112120000` kommen keine Ereignisse, die Seite verhält sich dann wie zuvor.
 - **Würfeln (`web/js/dice.js`):** `rollPool(pool, hunger)`, `evaluate(roll, difficulty)`, `rerollWillpower(roll)`, `d10()` (Zufall aus `crypto.getRandomValues`, ohne Schieflage). Reine Funktionen, Test `node tests/dice_test.mjs`.
-- **Karte:** Farben je Typ in `TYPE_TOK` (`map.js`): Sterbliche `--mortal` (grün), Orte `--slate`, Organisationen `--plum`. Unter 900 px ist das Detailfeld eine Einblendung am unteren Rand (`.map-panel.sheet-open`, `closeSheet()`). `drawNodeList()` liefert alle Knoten als Liste für Tastatur und Screenreader. `src.canDeleteNode(n)` blendet „Löschen“ aus (Spielerkarte: Spielercharaktere nur ST).
+- **Karte:** Farben je Sekte in `SECT_TOK` (`map.js`): Camarilla `--slate`, Anarch `--rust`, Sabbat `--blood`, Unabhängig `--teal`, Second Inquisition `--plum`, sonst `--grey`. Unter 900 px ist das Detailfeld eine Einblendung am unteren Rand (`.map-panel.sheet-open`, `closeSheet()`). `drawNodeList()` liefert alle Knoten als Liste für Tastatur und Screenreader. `src.canDeleteNode(n)` blendet „Löschen“ aus (Spielerkarte: Spielercharaktere nur ST).
 - **Entwürfe (seit 1.14.0, `lib.js`):** `bindDraft(key, { name: Feld })` schreibt bei jeder Eingabe den Inhalt der Felder nach `localStorage` (`kbn-draft:<Konto-ID>:<Art>:<ID>`, Schlüssel aus `draftKey()` in `core.js`), stellt ihn beim nächsten Öffnen wieder her und liefert `{ notice, clear }`. `clear()` nach Speichern, Abbrechen oder Löschen. Ein `MutationObserver` meldet per Toast, wenn ein Editor mit ungespeichertem Text aus der Seite verschwindet. Genutzt in `sessions.js` (`note:<id>` bzw. `note:new:<Session>`), `wiki.js` (`wiki:<id>`, `wiki:new`), `private.js` (`priv:<id>`, `priv:new`) und im Szenen-Editor (`scene:<id>`, ohne NPC-Zeilen und Chronik-Auswahl). Entwürfe liegen nur im Browser, nie in der Datenbank.
 - **Verweise außerhalb des Wikis (`wikilinks.js`):** `richText(text, attrs)` zeigt Text sofort und ersetzt `[[Titel]]` nach dem Laden der Seitentitel (`wikiTitles()`, 60 Sekunden Cache, `forgetWikiTitles()` nach Änderungen im Wiki) durch einen Link `go("wiki", { page })`. Genutzt für Session-Notizen, Zusammenfassungen und private Notizen.
 - **Wischen (`swipe.js`):** `mountSwipe(nav)` hört auf Touch-Ereignisse am Fenster. Ein waagerechter Wisch (mindestens 70 px, höchstens 700 ms, waagerechter Anteil mindestens doppelt so groß wie der senkrechte) klickt den Nachbar-Reiter in `#nav` an. Ausgenommen: Start in `input`, `textarea`, `select`, `.map-canvas`, `nav.tabs`, `dialog`, in seitlich scrollbaren Elementen, in den äußeren 24 px des Bildschirms, bei markiertem Text oder offenem Dialog. Mit der Klasse `no-swipe` lässt sich ein Bereich ausnehmen. `html, body { overscroll-behavior-x: none }` verhindert, dass Chromium mit Touch beim seitlichen Überziehen zusätzlich „Zurück“ auslöst. Ein kurzes Einblenden (`swipe-next`, `swipe-prev`, nur Deckkraft, damit Cytoscape die Lage der Karte richtig misst) entfällt bei „Bewegung reduzieren“.
@@ -300,7 +301,7 @@ Voreingestelltes Erscheinungsbild, neben dem der bisherige Look („Klassisch“
 | Edge Function | `deno run --allow-net --allow-env --allow-read --allow-sys tests/notion_proxy_test.ts` | Ablauf mit gespieltem Notion und Supabase |
 | Browser-Smoke | `cd tests/browser && npm install && npm test` | alle Bereiche, beide Rollen, hell und dunkel (Attrappe von Supabase ohne RLS) |
 
-Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, Browser: 210 Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
+Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGlite, Edge Function `notion-proxy`: 24 Fälle, Browser: 211 Fälle, Würfelregeln: 7 Fälle, Stand 12.11.2026: alle grün). Aufruf und Voraussetzungen stehen in `tests/uat/README.md`. Der Bericht dazu liegt beim Skill `kiel-by-night-website`.
 
 ## 11. Bekannte Einschränkungen
 
@@ -324,6 +325,14 @@ Der umfangreiche UAT liegt im Repo unter `tests/uat` (Rechte: 288 Fälle auf PGl
 Bei jeder Änderung an Funktionen, Rechten, Datenbank, Function, Konfiguration oder Betrieb diese Doku **und** das Benutzerhandbuch anpassen, die Änderung unten eintragen und im `CHANGELOG.md` erwähnen. Schema-Änderungen kommen immer als neue Migration, Setup-Anleitung und Review sind versionierte Schnappschüsse (`_vX_Y`). Das Benutzerhandbuch erscheint zusätzlich live im Tab „Anleitung“ (Abschnitt 4.12): Es ist für alle Mitglieder lesbar, deshalb keine Zugangsdaten, Schlüssel oder Betriebsinterna hineinschreiben, und Überschriften der Ebene 2 knapp halten (sie bilden die Gliederung).
 
 ## 13. Änderungen an dieser Doku
+
+- **16.11.2026 (Version 1.19.0):** Symbolstil umschaltbar, neue Datei `glyphs.js` (Abschnitte 4.3 und 4.4).
+
+- **16.11.2026 (Version 1.18.0):** Karten kantig: gesplitterter Umriss, neue Symbole, Zustände im Knotenbild (Abschnitt 4.4).
+
+- **16.11.2026 (Version 1.17.1):** Knoten 36 px, Symbole Kindred Ankh, Ghoul Blutstropfen, Gegenstand Schlüssel (Abschnitt 4.4).
+
+- **16.11.2026 (Version 1.17.0):** Karten: Symbol je Wesen, Farbe je Sekte (Abschnitte 4.1 und 4.4, 7).
 
 - **12.11.2026 (Version 1.16.0):** `sessions.js`: Abschnitte als `details.entry` (anfangs zu, `openNotes`), Sprung an den Anfang der geöffneten Session. Tests U291, U292, Test-Harness klappt Abschnitte für ältere Fälle auf (`o.entries`).
 - **12.11.2026 (Version 1.15.0):** Übersicht (`nextBox()`, `todoBox()`, `S.lastVisit`), Bogen (`dice.js`, `merits`, `xplog`, `portrait`, `sectionNav()`, Konfliktprüfung in `flush()`, `xpForm()`), `saveChecked()`, `deleteWithUndo()`, `ask()`, `formatInto()`, `watchTables()`, Ladebalken, Karte (Farben, Einblendung, `drawNodeList()`, `canDeleteNode`, `revealDialog()`), Spielabend (`play.js`), `sttabs.js`, Fäden-Übersicht, Sicherung, Wiki-Verlauf, Migration `20261112120000_guards_history_v1_15.sql` (68 Policies). Abschnitte 4.1, 4.2, 4.6, 5, 6, 9, 10, 11. Der Hinweis zum Badge-Kontrast entfällt (seit 1.6.1 behoben, Tests U155b und U250).

@@ -1,73 +1,61 @@
 // Kiel by Night · Kartenansicht (gemeinsam für Spielerkarte und ST-Karte)
 // Backlog umgesetzt: A1 schneller Zoom · A2 Positionen dauerhaft (inkl. Erstanordnung) · A4 gleich große Knoten
-//                    A5 Form je Sekte (nur ST-Karte, sonst Kreis) · A7 unterscheidbare Farben
+//                    A5/A7 (ab 1.17.0 umgekehrt): Symbol = Art des Wesens, Farbe = Sekte
 import { h, toast, tok, themeListeners, confirmBtn, splitTags } from "../lib.js";
 import { onCleanup } from "../core.js";
 import { toCsv, toXlsx, mapTables, download, MIME, stamp } from "../export.js";
+import { STYLES, STYLE_IDS, getStyleId, setStyleId, nodeFaceUri, glyphIcon, frameClip } from "../glyphs.js";
 
-// ---------- A7: Farben je Typ ----------
-const TYPE_TOK = {
-  // Sterbliche sind grün (eigener Ton --mortal): Im Stil Rulebook ist --sea karmesinrot und war von Kindred kaum zu unterscheiden.
-  // Orte sind deshalb blau statt graugrün, Organisationen violett.
-  Kindred: "--blood", Ghoul: "--brass", Sterblicher: "--mortal", Kine: "--mortal",
-  Wight: "--rust", Geist: "--teal", Werwolf: "--rust",
-  Ort: "--slate", Organisation: "--plum", Gegenstand: "--olive",
-  "Ohne NPC-Eintrag": "--grey",
-};
-const FALLBACK_TOK = ["--moss", "--teal", "--rust", "--olive", "--grey"]; // ohne die Töne der festen Typen Sterblicher, Ort, Organisation
+// ---------- Symbol = Art des Wesens, Farbe = Zugehörigkeit (Sekte) ----------
+// Bis 1.16.1 war es umgekehrt (Form je Sekte, Farbe je Wesen). Die Symbole und Umrisse stehen in `glyphs.js` in drei
+// umschaltbaren Stilen (Holzschnitt, Sigil, Spritzer); hier stehen Zuordnung Art → Symbol, Sektenfarben und die Knoten.
+const GLYPH_ALIAS = { Kine: "Sterblicher", Ghul: "Ghoul", "": "unbekannt", "Ohne NPC-Eintrag": "unbekannt" };
 // A3: alte Schreibweise abfangen
 export const normType = t => (t === "Ghul" ? "Ghoul" : (t || ""));
-export function typeColor(t) {
-  t = normType(t);
-  if (!t) return tok("--grey");
-  if (TYPE_TOK[t]) return tok(TYPE_TOK[t]);
-  let x = 0; for (const ch of t) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
-  return tok(FALLBACK_TOK[x % FALLBACK_TOK.length]);
-}
-
-// ---------- A5: Form je Sekte (eigene Zuordnung, nur aus Notion "Sekte" abgeleitet) ----------
-export const SEKTE_SHAPE = {
-  Camarilla: "hexagon",
-  Anarch: "triangle",
-  Sabbat: "diamond",
-  Unabhaengig: "round-rectangle",
-  "Second Inquisition": "star",
-};
+export const glyphKey = t => { t = normType(t); t = GLYPH_ALIAS[t] || t; return STYLES.spritzer.g[t] ? t : "sonst"; };
+// Farbe je Sekte (Zugehörigkeit). Ohne Sekte grau.
 export const SEKTEN = ["Camarilla", "Anarch", "Sabbat", "Unabhängig", "Second Inquisition"]; // Auswahl für Knoten der Spielerkarte
-export function shapeForSekte(s) {
-  const k = String(s || "").trim().replace("Unabhängig", "Unabhaengig");
-  return SEKTE_SHAPE[k] || "ellipse";
+const SECT_TOK = { Camarilla: "--slate", Anarch: "--rust", Sabbat: "--blood", "Unabhängig": "--teal", "Second Inquisition": "--plum" };
+export const normSect = s => { const k = String(s || "").trim().replace("Unabhaengig", "Unabhängig"); return SEKTEN.includes(k) ? k : ""; };
+export const sectColor = s => tok(SECT_TOK[normSect(s)] || "--grey");
+// schwarz oder weiß, je nach Helligkeit der Fläche
+function inkOn(color) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color); if (!m) return "#fff";
+  const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+  return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .35 ? "#1a1a1a" : "#fff";
 }
-const SVG_SHAPE = {
-  ellipse: '<circle cx="7" cy="7" r="6"/>',
-  hexagon: '<polygon points="4,1 10,1 13,7 10,13 4,13 1,7"/>',
-  triangle: '<polygon points="7,1 13,13 1,13"/>',
-  diamond: '<polygon points="7,1 13,7 7,13 1,7"/>',
-  "round-rectangle": '<rect x="1" y="2" width="12" height="10" rx="3"/>',
-  star: '<polygon points="7,1 8.8,5.2 13,5.4 9.7,8.2 10.8,13 7,10.4 3.2,13 4.3,8.2 1,5.4 5.2,5.2"/>',
+// Rand: die Farbe der Fläche, stark abgedunkelt
+function darken(color, k = .38) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color); if (!m) return color;
+  const n = parseInt(m[1], 16), f = v => Math.round(v * k).toString(16).padStart(2, "0");
+  return "#" + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
+}
+const nodeFace = (e, theme) => {
+  const fill = sectColor(e.data("sect"));
+  return nodeFaceUri({ type: glyphKey(e.data("type")), fill, ink: inkOn(fill), edge: darken(fill), pc: !!e.data("pc"), dead: !!e.data("dead"), sel: e.selected(), inkTheme: theme.ink, sea: theme.sea });
 };
+
 export function shapeLegend() {
-  const items = [...Object.entries(SEKTE_SHAPE), ["ohne Sekte", "ellipse"]];
-  const el = h("div", { class: "shape-legend", "aria-label": "Formen je Sekte" });
-  for (const [label, shape] of items) {
-    const s = h("span", {});
-    s.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">${SVG_SHAPE[shape]}</svg>`;
-    s.append(label);
-    el.append(s);
-  }
+  const el = h("div", { class: "shape-legend", "aria-label": "Symbole und Farben" });
+  const row = (label, items) => h("div", { class: "lg-row" }, h("strong", {}, label), ...items);
+  const types = ["Kindred", "Ghoul", "Sterblicher", "Ort", "Organisation", "Wight", "Geist", "Werwolf", "Gegenstand", "unbekannt"];
+  const typeName = { unbekannt: "ohne Typ" };
+  el.append(
+    row("Symbol = Art:", types.map(k => h("span", {}, glyphIcon(k), typeName[k] || k))),
+    row("Farbe = Sekte:", [...SEKTEN, ""].map(s => h("span", {}, h("span", { class: "dot", style: "background:" + sectColor(s) + ";clip-path:" + frameClip() }), s || "ohne Sekte"))));
   return el;
 }
 
-const NODE_SIZE = 22; // A4: alle Knoten gleich groß
+const NODE_SIZE = 44; // A4: alle Knoten gleich groß
 
 function cyStyle() {
   const ink = tok("--ink"), paper = tok("--surface"), line = tok("--line2"), sea = tok("--sea"), muted = tok("--muted");
   return [
-    { selector: "node", style: { "background-color": e => typeColor(e.data("type")), "shape": "data(shape)", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 4,
+    { selector: "node", style: { "background-color": e => sectColor(e.data("sect")), "background-opacity": 0, "shape": "rectangle", "label": "data(label)", "font-size": 10, "color": ink, "text-valign": "bottom", "text-margin-y": 3,
+      "background-image": e => nodeFace(e, { ink, sea }), "background-fit": "cover", "background-clip": "none", "bounds-expansion": 0,
       "width": NODE_SIZE, "height": NODE_SIZE, "text-wrap": "ellipsis", "text-max-width": 130, "font-family": "Alegreya Sans, system-ui, sans-serif",
       "text-background-color": paper, "text-background-opacity": .75, "text-background-padding": 1, "border-width": 0 } },
-    { selector: "node[?pc]", style: { "border-width": 4, "border-style": "double", "border-color": ink } }, // SC-Ring, nicht verwechselbar mit Ghoul-Messing
-    { selector: "node[?dead]", style: { "opacity": .5, "border-width": 1.5, "border-style": "dashed", "border-color": muted, "background-opacity": .35 } },
+    { selector: "node[?dead]", style: { "opacity": .62 } },
     { selector: "edge", style: { "width": 1.1, "line-color": line, "curve-style": "bezier", "target-arrow-shape": "triangle", "target-arrow-color": line, "arrow-scale": .7, "opacity": .8,
       "label": "data(label)", "font-size": 8, "color": muted, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .85, "text-background-padding": 1.5,
       "text-wrap": "ellipsis", "text-max-width": 110, "min-zoomed-font-size": 7 } },
@@ -76,7 +64,6 @@ function cyStyle() {
     { selector: ".faded", style: { "opacity": .1 } },
     { selector: "edge.hl", style: { "label": "data(label)", "font-size": 9, "color": ink, "text-rotation": "autorotate", "text-background-color": paper, "text-background-opacity": .9, "text-background-padding": 2,
       "line-color": sea, "target-arrow-color": sea, "source-arrow-color": sea, "width": 2, "opacity": 1, "text-wrap": "ellipsis", "text-max-width": 160, "min-zoomed-font-size": 0 } },
-    { selector: "node:selected", style: { "border-width": 3, "border-color": sea } },
     { selector: ".hide", style: { "display": "none" } },
   ];
 }
@@ -84,7 +71,7 @@ function cyStyle() {
 /*
  src = {
    editable, legend?,
-   load(): Promise<{nodes:Map<id,{label,type,shape?,tags?,description?,pc?,dead?,cat?,alt?}>, edges:Map<id,{from,to,label,direction,description}>, positions:{[id]:[x,y]}}>
+   load(): Promise<{nodes:Map<id,{label,type,sect?,tags?,description?,pc?,dead?,cat?,alt?}>, edges:Map<id,{from,to,label,direction,description}>, positions:{[id]:[x,y]}}>
    savePositions(list:[[id,x,y]]): Promise
    watch?(onChange): unsubscribe       // Realtime
    reloadLabel?: string                // z. B. "Aus Notion neu laden"
@@ -105,7 +92,8 @@ export function MapView(root, src) {
   const nodeList = h("details", { class: "node-list" });
   const actions = h("div", { class: "row", style: "margin-bottom:10px" });
   const status = h("span", { class: "muted", style: "font-size:.86rem" });
-  root.append(...[actions, src.legend ? shapeLegend() : null, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas, nodeList), panel)].filter(Boolean));
+  let legendEl = src.legend ? shapeLegend() : null;
+  root.append(...[actions, legendEl, h("div", { class: "map-grid" }, h("div", { style: "min-width:0" }, tools, canvas, nodeList), panel)].filter(Boolean));
 
   // Zwei Modi für bearbeitbare Karten: Ansicht (Standard) sperrt Anlegen, Bearbeiten, Löschen, Verschieben und Neu anordnen.
   let mode = "view";
@@ -115,6 +103,15 @@ export function MapView(root, src) {
   const relayoutBtn = h("button", { class: "btn", type: "button", onclick: () => relayout(true, true) }, "Neu anordnen");
   if (src.editable) actions.append(h("div", { class: "toggle", role: "group", "aria-label": "Modus" }, bView, bEdit), addNodeBtn, addEdgeBtn);
   actions.append(relayoutBtn);
+  // Symbolstil (Holzschnitt, Sigil, Spritzer): gilt für beide Karten, bleibt im Browser gespeichert
+  const styleSel = h("select", { id: "map-symstyle", "aria-label": "Symbolstil" }, ...STYLE_IDS.map(id => h("option", { value: id, selected: id === getStyleId() ? true : null }, STYLES[id].name)));
+  styleSel.addEventListener("change", () => {
+    setStyleId(styleSel.value);
+    if (legendEl) { const n = shapeLegend(); legendEl.replaceWith(n); legendEl = n; }
+    if (cy) cy.style(cyStyle());
+    drawChips();
+  });
+  actions.append(h("label", { class: "symstyle" }, "Symbolstil ", styleSel));
   function paintMode() {
     if (!src.editable) return;
     const e = mode === "edit";
@@ -171,7 +168,7 @@ export function MapView(root, src) {
 
   function elementsFor() {
     const out = [];
-    for (const [id, n] of nodes) out.push({ group: "nodes", data: { id, label: n.label || "?", type: normType(n.type), shape: n.shape || "ellipse", pc: !!n.pc, dead: !!n.dead }, position: pos(id) });
+    for (const [id, n] of nodes) out.push({ group: "nodes", data: { id, label: n.label || "?", type: normType(n.type), sect: normSect(n.sect), pc: !!n.pc, dead: !!n.dead }, position: pos(id) });
     for (const [id, e] of edges) if (nodes.has(e.from) && nodes.has(e.to)) out.push({ group: "edges", data: { id, source: e.from, target: e.to, label: e.label || "", dir: e.direction || "directed" } });
     return out;
   }
@@ -226,7 +223,7 @@ export function MapView(root, src) {
   }
   function relayout(animate, persist) {
     if (!cy) return;
-    const l = cy.layout({ name: "cose", animate: !!animate && !matchMedia("(prefers-reduced-motion: reduce)").matches, randomize: true, nodeRepulsion: () => 9000, idealEdgeLength: () => 80, gravity: .6, numIter: 1200, fit: true, padding: 30 });
+    const l = cy.layout({ name: "cose", animate: !!animate && !matchMedia("(prefers-reduced-motion: reduce)").matches, randomize: true, nodeRepulsion: () => 9000, idealEdgeLength: () => 95, gravity: .6, numIter: 1200, fit: true, padding: 30 });
     l.one("layoutstop", () => { capZoom(); if (persist) queuePos(allPositions()); });
     l.run();
   }
@@ -244,7 +241,7 @@ export function MapView(root, src) {
     const cats = [...new Set([...nodes.values()].map(n => n.cat).filter(Boolean))];
     drawNodeList();
     chips.replaceChildren(
-      ...types.map(t => h("button", { type: "button", class: "chip", "aria-pressed": String(!hidden.has(t)), onclick: () => { hidden.has(t) ? hidden.delete(t) : hidden.add(t); applyFilter(); drawChips(); } }, h("span", { class: "dot", style: "background:" + typeColor(t) }), t || "ohne Typ")),
+      ...types.map(t => h("button", { type: "button", class: "chip", "aria-pressed": String(!hidden.has(t)), onclick: () => { hidden.has(t) ? hidden.delete(t) : hidden.add(t); applyFilter(); drawChips(); } }, glyphIcon(glyphKey(t)), t || "ohne Typ")),
       ...cats.map(c => h("button", { type: "button", class: "chip", "aria-pressed": String(!hiddenCat.has(c)), onclick: () => { hiddenCat.has(c) ? hiddenCat.delete(c) : hiddenCat.add(c); applyFilter(); drawChips(); } }, c)));
   }
   // Suche: zeigt alle Treffer als Liste im Detailfeld. Mehrere Treffer = zugeklappt, genau ein Treffer = aufgeklappt.
@@ -352,11 +349,12 @@ export function MapView(root, src) {
     const label = h("input", { type: "text", id: "nf-label", value: d.label || ""});
     // Sekte (nur Karten mit src.sects): bestimmt die Form des Knotens, die Vorschau wechselt sofort
     const sect = src.sects ? h("select", { id: "nf-sect" }, h("option", { value: "" }, "— keine —"), ...SEKTEN.map(x => h("option", { value: x, selected: x === d.sect ? true : null }, x))) : null;
-    if (sect && d.id) sect.addEventListener("change", () => { const el = cy && cy.getElementById(d.id); if (el && !el.empty()) el.data("shape", shapeForSekte(sect.value)); });
-    const restoreShape = () => { const el = cy && d.id && cy.getElementById(d.id); if (el && !el.empty() && nodes.get(d.id)) el.data("shape", nodes.get(d.id).shape || "ellipse"); };
+    // Vorschau: Farbe (Sekte) und Symbol (Typ) wechseln sofort, „Abbrechen“ stellt den gespeicherten Stand wieder her
+    const nodeEl = () => { const el = cy && d.id && cy.getElementById(d.id); return el && !el.empty() ? el : null; };
+    if (sect) sect.addEventListener("change", () => { const el = nodeEl(); if (el) el.data("sect", normSect(sect.value)); });
     const type = h("select", { id: "nf-type" }, h("option", { value: "" }, "— ohne Typ —"), ...types.map(t => h("option", { value: t, selected: t === cur ? true : null }, t)), h("option", { value: "__new__" }, "＋ Neuer Typ …"));
     const newType = h("input", { type: "text", id: "nf-type-new", placeholder: "Neuen Typ eingeben", hidden: true, "aria-label": "Neuer Typ" });
-    type.addEventListener("change", () => { newType.hidden = type.value !== "__new__"; if (!newType.hidden) newType.focus(); });
+    type.addEventListener("change", () => { const el = nodeEl(); if (el && type.value !== "__new__") el.data("type", normType(type.value)); newType.hidden = type.value !== "__new__"; if (!newType.hidden) newType.focus(); });
     const tags = h("input", { type: "text", id: "nf-tags", value: (d.tags || []).join(", "), placeholder: "durch Komma getrennt" }), desc = h("textarea", { id: "nf-desc" }, d.description || "");
     return h("div", { class: "panel stack" }, h("h3", {}, d.id ? "Knoten bearbeiten" : "Neuer Knoten"),
       h("div", { class: "field" }, h("label", { for: "nf-label" }, "Name"), label),
@@ -373,7 +371,7 @@ export function MapView(root, src) {
           if (d.id) await src.updateNode(d.id, body); else { const id = await src.addNode(body); if (id) sel = { kind: "node", id }; }
           await afterWrite();
         } }, "Speichern"),
-        h("button", { class: "btn", type: "button", onclick: () => { restoreShape(); editing = null; drawPanel(); } }, "Abbrechen")));
+        h("button", { class: "btn", type: "button", onclick: () => { const el = nodeEl(), o = nodes.get(d.id); if (el && o) { el.data("sect", normSect(o.sect)); el.data("type", normType(o.type)); } editing = null; drawPanel(); } }, "Abbrechen")));
   }
   function edgeForm(d) {
     d = d || {};

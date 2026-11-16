@@ -1,6 +1,6 @@
 # Kiel by Night · Benutzerhandbuch
 
-Stand: 12.11.2026 · gilt für Website-Version 1.16.0
+Stand: 12.11.2026 · gilt für Website-Version 1.19.0
 
 Dieses Handbuch erklärt die Chronik-Website für **Spieler** und für den **Storyteller (ST)**. Technische Hintergründe stehen in der [Technischen Dokumentation](Technische_Doku.md). Das Handbuch wird bei jeder Änderung an der Bedienung mitgepflegt.
 
@@ -112,10 +112,10 @@ Die gemeinsame Karte der Coterie: **Was ihr über Kiels Nächte wisst.** Alle be
 Bedienung:
 - **Knoten antippen:** zeigt rechts (am Handy als Einblendung am unteren Rand über der Karte, mit „Schließen“) Typ, Tags, Beschreibung („Was wir wissen“) und alle Verbindungen mit Beschriftung und Details. Die Beschriftung steht auch auf der Linie in der Karte (beim Hineinzoomen). Ein Klick auf einen Namen in der Verbindungsliste springt zum Nachbarn.
 - **Suche** („Name suchen …“): findet Namen und Alias. Die Karte hebt alle Treffer hervor, rechts steht eine Liste mit einem aufklappbaren Eintrag je Treffer. Bei mehr als einem Treffer sind die Einträge zugeklappt, bei genau einem ist er aufgeklappt und die Karte springt dorthin. Aufklappen eines Eintrags zentriert die Karte auf den Knoten. Beispiel: „Decker“ zeigt Elizabeth und Karl. Ein leeres Suchfeld beendet die Suche. Das gilt für die Spielerkarte und für die Beziehungskarte des Storytellers.
-- **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein. **Farben:** Kindred dunkelrot, Ghoul messing, Sterbliche grün, Orte blau, Organisationen violett. Das gilt für die Spielerkarte und die Beziehungskarte des Storytellers.
+- **Filter:** Die Typ-Knöpfe über der Karte blenden Typen aus oder ein. **Symbole** zeigen die Art (Kindred, Ghoul, Sterblicher, Ort, Organisation, Wight, Geist, Werwolf, Gegenstand, ohne Typ, sonst); die Legende über der Karte zeigt sie im gewählten **Symbolstil**: **Spritzer** (Standard: Blutspritzer-Umriss, wie geritzte Schnitte), **Holzschnitt** (wackliger Block, schwere Silhouetten) oder **Sigil** (schmale Raute, dünne okkulte Linienzeichen). Die Auswahl „Symbolstil“ steht über der Karte, gilt für Spieler- und Beziehungskarte und bleibt in deinem Browser gespeichert. **Farben** zeigen die Sekte: Camarilla blau, Anarch orange, Sabbat dunkelrot, Unabhängig türkis, Second Inquisition violett, ohne Sekte grau. Die Legende über der Karte zeigt beides. Das gilt für die Spielerkarte und die Beziehungskarte des Storytellers.
 - **Alle Knoten als Liste:** Unter der Karte klappt eine alphabetische Liste aller Knoten auf. Ein Klick wählt den Knoten aus. So lässt sich die Karte auch nur mit der Tastatur oder einem Screenreader nutzen.
 - **Bilder:** Ist ein verknüpftes Dokument ein Bild, erscheint es im Detailfeld als Vorschau (zum Beispiel ein Porträt der Person).
-- **Sekte und Form:** Im Formular gibt es die Auswahl „Sekte“ (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition). Die Form des Knotens richtet sich danach (Legende über der Karte); beim Ändern der Auswahl wechselt die Form sofort, mit „Abbrechen“ springt sie zurück.
+- **Sekte und Form:** Im Formular gibt es die Auswahl „Sekte“ (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition). Die Farbe des Knotens richtet sich danach (Legende über der Karte). Beim Ändern von Sekte oder Typ wechseln Farbe und Symbol sofort, mit „Abbrechen“ springen sie zurück.
 - **Knoten anlegen:** Name (Pflicht), Typ, Sekte, Tags (durch Komma getrennt), Beschreibung. Der Typ ist eine Auswahl (Kindred, Ghoul, Sterblicher, Ort, Organisation und alle schon vorhandenen Typen). „— ohne Typ —“ lässt ihn leer, „＋ Neuer Typ …“ öffnet ein Feld für einen eigenen Typ. **Verbindung:** zwei verschiedene Knoten, Beschriftung, Richtung (gerichtet, wechselseitig, ungerichtet).
 - **Verschieben:** Knoten ziehen. Die Position wird für alle gespeichert und bleibt erhalten. Andere sehen sie nach einem Neuladen.
 - **Dokumente am Knoten:** Im Detailfeld steht „Dokumente (n)“ mit den verknüpften Dokumenten. Ein Klick auf den Titel springt zum Dokument. Im Modus **Bearbeitung** wählst du ein Dokument aus der Liste und klickst „Verknüpfen“. Mit „×“ löst du die Verknüpfung (das Dokument bleibt erhalten).
@@ -162,7 +162,7 @@ In der Kopfleiste steht nur noch **Storyteller**. Dahinter liegen fünf Reiter: 
 
 - **Spielabend:** Für den Abend am Tisch. Oben wählst du die Session. Links steht immer genau eine Szene groß und vollständig (Fäden, Ort, Stimmung, Ziel, Gegenspieler, NPCs mit Motivation, Ausgänge, Ablauf, Details), darüber die Szenen der Session zum Anspringen. „Gespielt, weiter →“, „Übersprungen“ und „Verschoben“ setzen den Status und blättern zur nächsten Szene. Rechts steht die **Coterie**: Hunger, Health, Willpower und Humanity aller Charaktere. Ein Klick auf ein Kästchen ändert den Bogen sofort, die Anzeige frischt sich alle 30 Sekunden auf. Darunter **Meine Notizen**: nur für dich, je Session eine Notiz, mit Entwurfssicherung.
 - **Beziehungskarte:** zeigt NPCs und Beziehungen aus Notion (nur Lesen). Oben steht „Stand … (Cache)“ oder „(frisch)“. **„Aus Notion neu laden“** holt den aktuellen Stand.
-  - **Formen** zeigen die Sekte: Camarilla Sechseck, Anarch Dreieck, Sabbat Raute, Unabhängig abgerundetes Rechteck, Second Inquisition Stern, sonst Kreis. **Farben** zeigen das Wesen (Kindred, Ghoul, Sterblicher …). **Abgedunkelt** sind Tote, Spielercharaktere haben einen Doppelring. Grau „Ohne NPC-Eintrag“ sind Orte oder Gruppen, die nur in Beziehungen vorkommen.
+  - **Symbole** zeigen die Art des Wesens (Kindred, Ghoul, Sterblicher …), **Farben** die Sekte (Camarilla, Anarch, Sabbat, Unabhängig, Second Inquisition, sonst grau). **Tote** sind abgedunkelt, gestrichelt umrandet und haben einen Riss im Symbol, Spielercharaktere haben einen Doppelrahmen. Grau „Ohne NPC-Eintrag“ sind Orte oder Gruppen, die nur in Beziehungen vorkommen.
   - **„Mit Angaben …“** (neben „Auf Spielerkarte“) öffnet eine Auswahl: Hake an, ob Typ, Sekte und deine Beschreibung mit auf die Spielerkarte sollen. Besteht der Knoten dort schon, werden nur die angehakten Angaben überschrieben. So enthüllst du einen NPC in einem Schritt.
   - **Knoten antippen:** Details aus Notion, „In Notion öffnen“ und **„Auf Spielerkarte“**. Das legt den Knoten auf der Spielerkarte an, **nur mit dem Namen, ohne Typ und ohne Beschreibung**. Den Typ (Kindred, Sterblicher, …) tragen die Spieler selbst ein, weil er nicht immer offensichtlich ist. Für Verbindungen gilt dasselbe ohne Beschriftung. Ein zweiter Klick legt nichts doppelt an.
   - Die Anordnung kannst du ziehen („Neu anordnen“ ordnet alles neu). Sie bleibt gespeichert.
@@ -246,6 +246,14 @@ Schlägt die Anmeldung wegen des Netzes fehl, prüft die Seite selbst, woran es 
 - Der Zugang ist nur für die Chronik-Gruppe vorgesehen. Die Seite ist nicht für Suchmaschinen gedacht (noindex).
 
 ## 14. Änderungen an diesem Handbuch
+
+- **16.11.2026 (Version 1.19.0):** Karten: Auswahl „Symbolstil" (Holzschnitt, Sigil, Spritzer) (Abschnitt 7).
+
+- **16.11.2026 (Version 1.18.0):** Karten kantiger: gesplitterter Umriss, neue Symbole, Tote mit Riss, Spielercharaktere mit Doppelrahmen (Abschnitt 7).
+
+- **16.11.2026 (Version 1.17.1):** Größere Knoten, neue Symbole für Kindred (Ankh), Ghoul (Blutstropfen) und Gegenstand (Schlüssel) (Abschnitt 7).
+
+- **16.11.2026 (Version 1.17.0):** Karten: Symbol zeigt die Art, Farbe die Sekte, vorher umgekehrt (Abschnitte 7 und 10).
 
 - **12.11.2026 (Version 1.16.0):** Abschnitte einer Session sind aufklappbar und anfangs zu, eine geöffnete Session springt an ihren Anfang (Abschnitt 5).
 - **12.11.2026 (Version 1.15.0):** Übersicht mit nächster Session, „Neu seit deinem letzten Besuch“ und offenen Punkten für den ST (Abschnitt 3). Bogen mit Sprungmarken, Porträt, Vorteilen mit Punkten, XP-Verlauf und Würfeln (Abschnitt 4). Formatierung, Rückfrage bei gleichzeitigem Bearbeiten, „Rückgängig“ und Live-Aktualisierung (Abschnitt 5). Karte mit Einblendung am Handy, Knotenliste, neuen Farben und Schutz der Spielercharaktere (Abschnitt 7). Wiki-Verlauf (Abschnitt 8). Storyteller: Reiter gebündelt, Spielabend, Fäden, „Mit Angaben …“, XP vergeben, Sicherung (Abschnitt 10).

@@ -3,6 +3,27 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.19.0 – 16.11.2026
+- **Karten: Symbolstil umschaltbar.** Über beiden Karten gibt es die Auswahl „Symbolstil" mit **Holzschnitt** (wackliger Block, schwere Silhouetten mit Schnitten), **Sigil** (schmale Raute, dünne okkulte Linienzeichen) und **Spritzer** (Blutspritzer-Umriss, wie geritzte Schnitte, Standard). Die Wahl bleibt im Browser gespeichert (`kbn_symstyle`) und gilt für beide Karten. Legende, Typ-Filter und Sektenpunkte folgen dem Stil.
+- **Spritzer überarbeitet:** kürzere Zacken, größerer Körper, größere Symbolfläche (23 statt 22), kräftigere Schnitte (Bissmale, Tropfbalken, Netz, Dolch).
+- **Code:** Neue Datei `web/js/glyphs.js` (Stile mit Umriss, Symbolsatz und Zierlinien, `nodeFaceUri()`, `glyphIcon()`, `frameClip()`, Speicherung der Wahl). `map.js` behält Zuordnung Art → Symbol, Sektenfarben und die Knoten. Keine Migration, Rechte unverändert.
+- **Tests:** Browser 211 Fälle (neu U293: Auswahl, Knotenbild, Legende, Speicherung).
+
+## 1.18.0 – 16.11.2026
+- **Karten: kantig und grimmig.** Kein Kreis mehr: Jeder Knoten hat denselben gesplitterten Umriss (neun Ecken, leicht schief) mit hartem, stark abgedunkeltem Rand in der Sektenfarbe. Die Symbole sind neu gezeichnet und bestehen nur aus Spitzen und Kanten: Ankh mit spitzer Schlaufe, Klingen als Querbalken und Stachel als Fuß (Kindred), facettierter Tropfen mit Kerbe (Ghoul), Sechskopf mit Trapezschultern (Sterblicher), Haus mit gebrochenem Giebel (Ort), Säulenhalle (Organisation), Schädel mit Dreieckshöhlen (Wight), Kapuzengespenst mit zerfetztem Saum (Geist), drei Klauenspuren (Werwolf), Rautenschlüssel mit gezacktem Bart (Gegenstand), geradliniges Fragezeichen, vierzackiger Splitter für andere Typen. Unterscheidbarkeit geht vor Lesbarkeit.
+- **Zustände im Knotenbild:** Tote haben gestrichelten Rand und eine Bruchlinie durch das Symbol statt bloßer Abdunklung, Spielercharaktere einen doppelten Rahmen, der gewählte Knoten einen roten Zusatzrahmen. Knoten 44 px.
+- **Technik:** Der ganze Knoten ist ein SVG-Bild (`nodeFace()` in `map.js`, Zwischenspeicher je Zustand). Grund: Cytoscape 3.33 wirft bei `shape: polygon` mit `border-width` einen Fehler (`hasMiterBounds`). Die Knoten sind deshalb Rechtecke ohne Füllung und ohne Rand, die Sektenfarbe steht weiter in `background-color`. Die Legende zeichnet dieselben Symbole als CSS-Maske, die Sektenpunkte tragen denselben Umriss (`clip-path`). Keine Migration, Rechte unverändert.
+- **Tests:** U119 und U131 prüfen den Umriss im Knotenbild statt der Form.
+
+## 1.17.1 – 16.11.2026
+- **Karten: größere Knoten, neue Symbole.** Knoten 36 px statt 28 px, Symbol 66 % der Fläche (vorher 62 %), Kantenlänge der Erstanordnung 95 statt 80. Kindred tragen jetzt den **Ankh** (Erkennungszeichen der Kindred, vorher Blutstropfen), Ghoule den **Blutstropfen** (Vitae, vorher Kelch), Gegenstände einen **Schlüssel** (vorher Kiste). Die übrigen Symbole bleiben. Keine Migration, Rechte unverändert.
+
+## 1.17.0 – 16.11.2026
+- **Karten: Symbol und Farbe umgekehrt.** Das **Symbol** im Knoten zeigt jetzt die Art des Wesens, die **Farbe** die Sekte. Vorher war es andersherum (Form je Sekte, Farbe je Wesen). Alle Knoten sind Kreise gleicher Größe (28 px). Symbole (ab 1.17.1 geändert: Kindred Ankh, Ghoul Blutstropfen, Gegenstand Schlüssel): Kindred Blutstropfen, Ghoul Kelch, Sterblicher Person, Ort Haus, Organisation Säulenbau, Wight Schädel, Geist Gespenst, Werwolf Pfote, Gegenstand Kiste, ohne Typ und „Ohne NPC-Eintrag“ Fragezeichen, unbekannte Typen Raute. Farben: Camarilla blau (`--slate`), Anarch orange (`--rust`), Sabbat dunkelrot (`--blood`), Unabhängig türkis (`--teal`), Second Inquisition violett (`--plum`), ohne Sekte grau. Das Symbol wechselt je nach Helligkeit der Fläche zwischen hell und dunkel, damit es in beiden Themes lesbar bleibt.
+- **Legende und Filter:** Die Legende über beiden Karten hat zwei Zeilen („Symbol = Art“, „Farbe = Sekte“). Die Typ-Knöpfe tragen das Symbol statt eines Farbpunkts. Im Knotenformular der Spielerkarte wechseln beim Ändern von Typ oder Sekte Symbol und Farbe sofort, „Abbrechen“ stellt den gespeicherten Stand wieder her.
+- **Code:** `map.js` (`GLYPH`, `glyphKey()`, `sectColor()`, `normSect()`, `glyphIcon()`, `shapeLegend()`). `shapeForSekte()`, `SEKTE_SHAPE`, `typeColor()` und `TYPE_TOK` entfallen. Knotendaten tragen `sect` statt `shape`. Keine Migration, Rechte unverändert.
+- **Tests:** U119, U131, U141 und U281 an die neue Logik angepasst (Browser weiter 210 Fälle).
+
 ## 1.16.1 – 15.11.2026
 - **Session-Titel und -Datum:** Die Bearbeitung gab es schon, sie steckte aber nur in der aufgeklappten Session. Beschriftung jetzt „Titel und Datum ändern“. Auf der Startseite gibt es dafür bewusst keinen Knopf. Keine Migration, Rechte unverändert (jedes Mitglied darf `sessions` ändern).
 

@@ -1,7 +1,7 @@
-// Kiel by Night · Spielerkarte (gemeinsam, alle bearbeiten; Form immer Kreis gemäß A5-Entscheidung)
+// Kiel by Night · Spielerkarte (gemeinsam, alle bearbeiten; Symbol = Typ, Farbe = Sekte)
 import { guard, head } from "../lib.js";
 import { sb, S, registerView } from "../core.js";
-import { MapView, shapeForSekte } from "./map.js";
+import { MapView } from "./map.js";
 import { docLinksBox } from "./doclinks.js";
 
 export async function savePositions(scope, list) {
@@ -31,7 +31,7 @@ export function playerMapSource() {
         loadPositions("player"),
       ]);
       if (n.error) throw n.error; if (e.error) throw e.error;
-      const nodes = new Map(n.data.map(x => [x.id, { label: x.label, type: x.type, tags: x.tags || [], description: x.description, pc: x.is_pc, sect: x.sect || "", shape: shapeForSekte(x.sect) }]));
+      const nodes = new Map(n.data.map(x => [x.id, { label: x.label, type: x.type, tags: x.tags || [], description: x.description, pc: x.is_pc, sect: x.sect || "" }]));
       const edges = new Map(e.data.map(x => [x.id, { from: x.from_node, to: x.to_node, label: x.label, direction: x.direction, description: x.description }]));
       return { nodes, edges, positions };
     },
