@@ -3,6 +3,12 @@
 Versionierung: `MAJOR.MINOR.PATCH`. MAJOR steht für Architekturwechsel, MINOR für neue Funktionen oder Schemaänderungen, PATCH für Korrekturen.
 Dokumente in `docs/` und Migrationen tragen ihre Version im Dateinamen (`_vX_Y`) und werden nie überschrieben. Ausnahme: `Technische_Doku.md` und `Benutzerhandbuch.md` sind lebende Dokumente (Version im Kopf, Änderungsliste am Ende) und werden bei jeder Änderung an Funktionen, Rechten, Datenbank oder Betrieb mitgepflegt. Änderungen am Schema kommen immer als **neue** Migration.
 
+## 1.19.0 – 16.11.2026
+- **Karten: Symbolstil umschaltbar.** Über beiden Karten gibt es die Auswahl „Symbolstil" mit **Holzschnitt** (wackliger Block, schwere Silhouetten mit Schnitten), **Sigil** (schmale Raute, dünne okkulte Linienzeichen) und **Spritzer** (Blutspritzer-Umriss, wie geritzte Schnitte, Standard). Die Wahl bleibt im Browser gespeichert (`kbn_symstyle`) und gilt für beide Karten. Legende, Typ-Filter und Sektenpunkte folgen dem Stil.
+- **Spritzer überarbeitet:** kürzere Zacken, größerer Körper, größere Symbolfläche (23 statt 22), kräftigere Schnitte (Bissmale, Tropfbalken, Netz, Dolch).
+- **Code:** Neue Datei `web/js/glyphs.js` (Stile mit Umriss, Symbolsatz und Zierlinien, `nodeFaceUri()`, `glyphIcon()`, `frameClip()`, Speicherung der Wahl). `map.js` behält Zuordnung Art → Symbol, Sektenfarben und die Knoten. Keine Migration, Rechte unverändert.
+- **Tests:** Browser 211 Fälle (neu U293: Auswahl, Knotenbild, Legende, Speicherung).
+
 ## 1.18.0 – 16.11.2026
 - **Karten: kantig und grimmig.** Kein Kreis mehr: Jeder Knoten hat denselben gesplitterten Umriss (neun Ecken, leicht schief) mit hartem, stark abgedunkeltem Rand in der Sektenfarbe. Die Symbole sind neu gezeichnet und bestehen nur aus Spitzen und Kanten: Ankh mit spitzer Schlaufe, Klingen als Querbalken und Stachel als Fuß (Kindred), facettierter Tropfen mit Kerbe (Ghoul), Sechskopf mit Trapezschultern (Sterblicher), Haus mit gebrochenem Giebel (Ort), Säulenhalle (Organisation), Schädel mit Dreieckshöhlen (Wight), Kapuzengespenst mit zerfetztem Saum (Geist), drei Klauenspuren (Werwolf), Rautenschlüssel mit gezacktem Bart (Gegenstand), geradliniges Fragezeichen, vierzackiger Splitter für andere Typen. Unterscheidbarkeit geht vor Lesbarkeit.
 - **Zustände im Knotenbild:** Tote haben gestrichelten Rand und eine Bruchlinie durch das Symbol statt bloßer Abdunklung, Spielercharaktere einen doppelten Rahmen, der gewählte Knoten einen roten Zusatzrahmen. Knoten 44 px.

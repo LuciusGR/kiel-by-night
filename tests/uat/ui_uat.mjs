@@ -1456,6 +1456,17 @@ T("U292", "Handy 390 px", "Session öffnen springt an ihren Anfang, auch wenn di
   assert.equal(r.open, true); assert.equal(r.others, 1); assert.ok(r.gap >= 0 && r.gap <= 30, "Anfang der Session steht direkt unter der Kopfzeile, Abstand " + r.gap);
   assert.equal(await p.locator('details.session-item[data-session="3"] > summary').isVisible(), true); assert.equal(await hashOf(p), "#sessions/3"); return p;
 });
+T("U293", "ST-Karte", "Symbolstil umschaltbar (Holzschnitt, Sigil, Spritzer): Knotenbild, Legende und Auswahl wechseln, die Wahl bleibt nach dem Neuladen", async () => {
+  const p = await openApp("st", "st", { wait: 2500 });
+  const sel = p.locator("#map-symstyle"); assert.deepEqual(await sel.locator("option").allInnerTexts(), ["Holzschnitt", "Sigil", "Spritzer"]); assert.equal(await sel.inputValue(), "spritzer", "Standard ist Spritzer");
+  const img = () => cyEval(p, cy => cy.nodes().filter(n => n.data("label") === "Aniq")[0].style("background-image"));
+  const seen = new Set([await img()]); const legend = [await p.locator(".shape-legend .glyph").first().getAttribute("style")];
+  for (const id of ["holzschnitt", "sigil"]) { await sel.selectOption(id); await p.waitForTimeout(300); seen.add(await img()); legend.push(await p.locator(".shape-legend .glyph").first().getAttribute("style")); }
+  assert.equal(seen.size, 3, "drei verschiedene Knotenbilder"); assert.equal(new Set(legend).size, 3, "Legende wechselt mit");
+  assert.ok((await seen.values().next().value).includes("polygon") || [...seen].every(x => /svg\+xml/.test(x)), "Knotenbild ist ein SVG");
+  assert.equal(await p.evaluate(() => localStorage.getItem("kbn_symstyle")), "sigil");
+  await p.reload(); await p.waitForTimeout(2500); assert.equal(await p.locator("#map-symstyle").inputValue(), "sigil", "Wahl bleibt nach dem Neuladen"); return p;
+});
 
 // =====================================================================
 // Ausführen
